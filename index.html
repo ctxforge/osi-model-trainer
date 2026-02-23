@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Интерактивный тренажёр по модели OSI — изучение, симулятор, лаборатория">
+  <title>Модель OSI — Интерактивный тренажёр</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+</head>
+<body>
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <span class="top-bar__title">OSI Trainer</span>
+    <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
+  </header>
+
+  <!-- ===== HOME ===== -->
+  <section class="section active" id="section-home">
+    <div class="hero">
+      <h1 class="hero__title">Модель OSI</h1>
+      <p class="hero__subtitle">Интерактивный тренажёр по сетевой модели</p>
+    </div>
+
+    <div class="osi-tower" id="homeTower"></div>
+
+    <div class="nav-cards">
+      <div class="nav-card" data-nav="study">
+        <div class="nav-card__icon">📖</div>
+        <div class="nav-card__title">Изучение</div>
+        <div class="nav-card__desc">7 уровней OSI</div>
+      </div>
+      <div class="nav-card" data-nav="simulator">
+        <div class="nav-card__icon">📦</div>
+        <div class="nav-card__title">Симулятор</div>
+        <div class="nav-card__desc">Инкапсуляция</div>
+      </div>
+      <div class="nav-card" data-nav="lab">
+        <div class="nav-card__icon">🔬</div>
+        <div class="nav-card__title">Лаборатория</div>
+        <div class="nav-card__desc">Эксперименты</div>
+      </div>
+      <div class="nav-card" data-nav="dnd">
+        <div class="nav-card__icon">🧩</div>
+        <div class="nav-card__title">Тренажёр</div>
+        <div class="nav-card__desc">Drag & Drop</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STUDY ===== -->
+  <section class="section" id="section-study">
+    <div class="section-desc">Выберите уровень OSI для изучения подробной информации</div>
+    <div class="osi-tower" id="studyTower"></div>
+    <div id="studyPanel"></div>
+
+    <div class="study-nav">
+      <button class="study-nav__btn" id="studyPrev">▲ Выше</button>
+      <button class="study-nav__btn" id="studyNext">▼ Ниже</button>
+    </div>
+
+    <h3 class="mt-16 mb-12" style="font-size:.9rem">Сравнение OSI и TCP/IP</h3>
+    <div style="overflow-x:auto">
+      <table class="comparison-table" id="comparisonTable"></table>
+    </div>
+  </section>
+
+  <!-- ===== SIMULATOR ===== -->
+  <section class="section" id="section-simulator">
+    <div class="section-desc">Введите сообщение и наблюдайте процесс инкапсуляции/деинкапсуляции по уровням OSI</div>
+
+    <div class="sim-controls">
+      <input type="text" class="sim-input" id="simMessage" placeholder="Введите сообщение…" value="Hello, OSI!">
+      <div class="sim-buttons">
+        <button class="sim-btn" id="simEncap">▼ Инкапсул.</button>
+        <button class="sim-btn" id="simDecap">▲ Деинкапсул.</button>
+        <button class="sim-btn" id="simFull">⟳ Полный цикл</button>
+      </div>
+      <div class="sim-speed">
+        <span>Скорость</span>
+        <input type="range" id="simSpeed" min="200" max="1500" value="700" step="100">
+        <span id="simSpeedLabel">700мс</span>
+      </div>
+    </div>
+
+    <div class="sim-visual">
+      <div class="sim-stack" id="simSenderStack">
+        <div class="sim-stack__title">Отправитель</div>
+      </div>
+      <div class="sim-packet" id="simPacket">
+        <div class="sim-packet__title">PDU</div>
+      </div>
+      <div class="sim-stack" id="simReceiverStack">
+        <div class="sim-stack__title">Получатель</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LAB ===== -->
+  <section class="section" id="section-lab">
+    <div class="section-desc">Экспериментируйте с сетевыми параметрами и наблюдайте их влияние</div>
+
+    <div class="lab-tabs" id="labTabs"></div>
+
+    <!-- Packet Transmission -->
+    <div class="lab-content active" id="lab-packetTransmission">
+      <div id="labParams-packetTransmission"></div>
+      <button class="lab-run-btn" id="labRun-packetTransmission">▶ Запустить передачу</button>
+      <div class="lab-result" id="labResult-packetTransmission"></div>
+    </div>
+
+    <!-- Fragmentation -->
+    <div class="lab-content" id="lab-fragmentation">
+      <div id="labParams-fragmentation"></div>
+      <button class="lab-run-btn" id="labRun-fragmentation">▶ Рассчитать фрагментацию</button>
+      <div class="lab-result" id="labResult-fragmentation"></div>
+    </div>
+
+    <!-- Routing -->
+    <div class="lab-content" id="lab-routing">
+      <div id="labParams-routing"></div>
+      <button class="lab-run-btn" id="labRun-routing">▶ Отправить пакет</button>
+      <div class="lab-result" id="labResult-routing"></div>
+    </div>
+
+    <!-- IP Calculator -->
+    <div class="lab-content" id="lab-ipCalc">
+      <div id="labParams-ipCalc"></div>
+      <button class="lab-run-btn" id="labRun-ipCalc">▶ Рассчитать</button>
+      <div class="lab-result" id="labResult-ipCalc"></div>
+    </div>
+  </section>
+
+  <!-- ===== DRAG & DROP ===== -->
+  <section class="section" id="section-dnd">
+    <div class="section-desc">Перетащите протоколы и устройства на соответствующие уровни OSI</div>
+
+    <div class="dnd-controls">
+      <button class="dnd-btn dnd-btn--primary" id="dndCheck">✓ Проверить</button>
+      <button class="dnd-btn" id="dndReset">⟳ Новый набор</button>
+    </div>
+
+    <div class="dnd-items" id="dndItems"></div>
+    <div class="dnd-zones" id="dndZones"></div>
+    <div id="dndScore"></div>
+  </section>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-section="home">
+      <span class="nav-icon">🏠</span>
+      <span>Главная</span>
+    </button>
+    <button class="nav-btn" data-section="study">
+      <span class="nav-icon">📖</span>
+      <span>Изучение</span>
+    </button>
+    <button class="nav-btn" data-section="simulator">
+      <span class="nav-icon">📦</span>
+      <span>Симулятор</span>
+    </button>
+    <button class="nav-btn" data-section="lab">
+      <span class="nav-icon">🔬</span>
+      <span>Лаборатория</span>
+    </button>
+    <button class="nav-btn" data-section="dnd">
+      <span class="nav-icon">🧩</span>
+      <span>Тренажёр</span>
+    </button>
+  </nav>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
