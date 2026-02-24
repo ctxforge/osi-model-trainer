@@ -146,6 +146,26 @@
   navCards.forEach(card => card.addEventListener('click', () => navigateTo(card.dataset.nav)));
 
   // Physics lab tab switching
+  function updateChChannelInfo() {
+    const info = document.getElementById('chChannelInfo');
+    if (!info) return;
+    if (sgChannelId === 'none') {
+      info.innerHTML = '<div style="color:var(--l7);font-size:.82rem;font-weight:700">⚠ Канал не выбран. Перейдите на вкладку «Генератор + Канал» и выберите канал связи в блоке ⑤</div>';
+    } else {
+      const ch = CHANNEL_TYPES.find(c => c.id === sgChannelId);
+      const distUnit = ch.medium === 'fiber' ? sgChDistance / 1000 : sgChDistance / 100;
+      const atten = ch.attenuation * distUnit;
+      const snr = Math.max(ch.snrBase - atten, -5);
+      const q = snr > 30 ? '🟢 Отличное' : snr > 20 ? '🟡 Хорошее' : snr > 10 ? '🟠 Среднее' : snr > 0 ? '🔴 Плохое' : '⚫ Нет связи';
+      info.innerHTML = `<div class="study-section__title">Канал из генератора</div>
+        <div style="font-size:.78rem;line-height:1.7">
+          <strong>${ch.icon} ${ch.name}</strong> — расстояние: ${sgChDistance >= 1000 ? (sgChDistance/1000).toFixed(1)+' км' : sgChDistance+' м'}<br>
+          Затухание: ${atten.toFixed(1)} дБ | SNR: ${snr.toFixed(1)} дБ ${q}<br>
+          Шум генератора: ${sgNoiseLevel > 0 ? sgNoiseLevel.toFixed(2) : 'нет'} | Помехи: ${ch.interference}
+        </div>`;
+    }
+  }
+
   document.addEventListener('click', (e) => {
     if (e.target.id === 'physTabGen') {
       document.getElementById('physGenPane').style.display = 'block';
@@ -157,6 +177,7 @@
       document.getElementById('physChanPane').style.display = 'block';
       document.getElementById('physTabGen').classList.remove('active');
       document.getElementById('physTabChan').classList.add('active');
+      updateChChannelInfo();
     }
   });
 
@@ -2958,20 +2979,7 @@
     fading: 'Замирание — периодическое ослабление. Многолучевость, движение.'
   };
 
-  document.getElementById('chSnrSlider')?.addEventListener('input', (e) => {
-    const v = document.getElementById('chSnrVal'); if (v) v.textContent = e.target.value + ' дБ';
-  });
-
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('#chNoiseType .lab-toggle__btn');
-    if (btn) {
-      document.querySelectorAll('#chNoiseType .lab-toggle__btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      chNoiseMode = btn.dataset.noise;
-      const desc = document.getElementById('chNoiseDesc');
-      if (desc) desc.textContent = noiseDescs[chNoiseMode] || '';
-    }
-  });
+  // Channel SNR now comes from the generator's channel model
 
   document.getElementById('chSrcFileBtn')?.addEventListener('click', () => document.getElementById('chSrcFileInput')?.click());
   document.getElementById('chSrcLabData')?.addEventListener('click', () => {
@@ -3006,13 +3014,21 @@
   });
 
   document.getElementById('chTransmit')?.addEventListener('click', () => {
+    if (sgChannelId === 'none') {
+      document.getElementById('chResult').innerHTML = '<div class="card mt-16" style="color:var(--l7)">⚠ Сначала выберите канал на вкладке «Генератор + Канал» (блок ⑤)</div>';
+      return;
+    }
+
     if (!chSrcBytes || chSrcBytes.length === 0) {
-      const txt = document.getElementById('chSrcText').value || 'Hello';
+      const txt = document.getElementById('chSrcText')?.value || 'Hello';
       chSrcBytes = Array.from(new TextEncoder().encode(txt));
       chSrcType = 'text';
     }
 
-    const snr = parseInt(document.getElementById('chSnrSlider').value);
+    const ch = CHANNEL_TYPES.find(c => c.id === sgChannelId);
+    const distUnit = ch.medium === 'fiber' ? sgChDistance / 1000 : sgChDistance / 100;
+    const atten = ch.attenuation * distUnit;
+    const snr = Math.max(Math.round(ch.snrBase - atten), -5);
     const txBytes = chSrcBytes.slice(0, 4096);
     const txBits = [];
     txBytes.forEach(b => { for (let i = 7; i >= 0; i--) txBits.push((b >> i) & 1); });
@@ -3143,7 +3159,7 @@
       <div class="ch-hex-compare">${hexCompHtml}</div>
 
       <div class="card mt-12" style="font-size:.78rem;line-height:1.6">
-        <strong>Канал:</strong> SNR = ${snr} дБ, шум: ${chNoiseMode === 'awgn' ? 'AWGN (равномерный)' : chNoiseMode === 'impulse' ? 'импульсный (пачки ошибок)' : 'замирание (периодическое)'}.<br>
+        <strong>Канал:</strong> ${ch.icon} ${ch.name}, расстояние ${sgChDistance >= 1000 ? (sgChDistance/1000).toFixed(1)+' км' : sgChDistance+' м'}, SNR = ${snr} дБ, затухание ${atten.toFixed(1)} дБ.<br>
         <strong>Результат:</strong> из ${txBits.length.toLocaleString()} бит повреждено ${errCount} (BER = ${(actualBer * 100).toFixed(4)}%).
         ${errCount === 0 ? ' Идеальная передача!' : errCount < 10 ? ' Минимальные повреждения.' : errCount < 100 ? ' Заметные повреждения.' : ' Серьёзное повреждение данных!'}
         ${chSrcType === 'image' && errCount > 0 ? '<br>Артефакты на изображении — результат повреждённых байтов.' : ''}
