@@ -1935,10 +1935,32 @@
         <div class="lab-result__title">Путь пакета — детали</div>
         ${hops.map((h, idx) => {
           if (h.type === 'device') {
+            const dl = h.layer;
+            const isEndpoint = dl >= 7;
+            const osiActions = {
+              1: { action: 'Принимает электрический/оптический сигнал → усиливает → отправляет на все порты', pdu: 'Биты → Биты' },
+              2: { action: 'Читает MAC-адрес назначения в кадре → ищет в MAC-таблице → отправляет на нужный порт. Не трогает IP.', pdu: 'Кадр → Кадр (новый L2 на выходе)' },
+              3: { action: 'Снимает L2 → читает IP назначения → ищет маршрут → создаёт новый L2 заголовок (новый MAC) → отправляет.', pdu: 'Пакет → Пакет (MAC меняется, IP остаётся)' },
+              4: { action: 'Снимает L2-L3 → анализирует порты и флаги TCP/UDP → проверяет правила → пропускает или блокирует.', pdu: 'Сегмент проверен → пакет пересобран' },
+              7: { action: 'Полная обработка: L1→L7 декапсуляция / L7→L1 инкапсуляция. Приложение формирует/принимает данные.', pdu: 'Данные ↔ Биты (все 7 уровней)' }
+            };
+            const osi = osiActions[Math.min(dl, 7)] || osiActions[7];
+
             return `<div class="nb-result-row" id="nbRes-${idx}">
               <div class="nb-result-row__icon">${h.icon}</div>
-              <div class="nb-result-row__text"><strong>${h.name}</strong> — L${h.layer}</div>
+              <div class="nb-result-row__text"><strong>${h.name}</strong> — L${dl}</div>
               <div class="nb-result-row__val">${h.latency > 0 ? '+' + h.latency.toFixed(2) + ' мс' : '—'}</div>
+            </div>
+            <div class="nb-osi-stack">
+              ${[7,6,5,4,3,2,1].map(n => {
+                const l = OSI_LAYERS.find(x => x.number === n);
+                const active = isEndpoint || n <= dl;
+                return `<div class="nb-osi-layer${active ? ' active' : ''}" style="background:${l.color}">L${n}</div>`;
+              }).join('')}
+            </div>
+            <div class="nb-osi-action">
+              <strong>${isEndpoint ? 'Все уровни L1–L7' : 'Обработка до L' + dl}:</strong> ${osi.action}<br>
+              <strong>PDU:</strong> ${osi.pdu}
             </div>`;
           }
           const p = h.phys;
