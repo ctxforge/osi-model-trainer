@@ -268,6 +268,12 @@ const LAB_EXPERIMENTS = {
       { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1200, step: 100, default: 500, unit: 'мс' }
     ]
   },
+  signals: {
+    title: 'Сигналы L1',
+    icon: '⚡',
+    description: 'Как биты превращаются в электрические, световые и радиосигналы на физическом уровне',
+    params: []
+  },
   channelPhysics: {
     title: 'Физика канала',
     icon: '📊',

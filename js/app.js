@@ -2277,6 +2277,293 @@
     reader.readAsArrayBuffer(file);
   }
 
+  /* ==================== LAB: SIGNALS L1 ==================== */
+  (function initSignalsLab() {
+    const container = document.getElementById('signalsUI');
+    let sigBits = [1,0,1,1,0,0,1,0];
+    let sigEncoding = 'nrz';
+    let sigModulation = 'ask';
+    let sigView = 'line'; // 'line' or 'mod'
+
+    const LINE_CODES = {
+      nrz:        { name: 'NRZ (Non-Return-to-Zero)', desc: 'Простейший код: 1 = высокий уровень, 0 = низкий. Используется в RS-232. Проблема: длинные последовательности одинаковых битов — потеря синхронизации.', where: 'RS-232, UART' },
+      nrzi:       { name: 'NRZ-I (Inverted)', desc: 'При «1» сигнал меняет уровень, при «0» остаётся. Решает проблему длинных серий единиц. Используется в USB, FDDI.', where: 'USB, FDDI, 4B5B+NRZI' },
+      manchester:  { name: 'Manchester (IEEE)', desc: 'Переход в середине каждого бита: вверх = 1, вниз = 0. Самосинхронизирующийся — тактовый сигнал встроен. Ethernet 10BASE-T.', where: '10BASE-T Ethernet' },
+      diffmanch:   { name: 'Differential Manchester', desc: 'Переход в середине всегда. Переход на границе бита = 0, нет перехода = 1. Используется в Token Ring.', where: 'Token Ring' },
+      ami:        { name: 'AMI (Alternate Mark Inversion)', desc: '0 = нулевой уровень, 1 = чередование +V и −V. Нет DC-составляющей. Проблема с длинными нулями.', where: 'T1/E1, ISDN' },
+      pam4:       { name: 'PAM-4 (4 уровня)', desc: '4 уровня напряжения: −3V, −1V, +1V, +3V. Каждый символ = 2 бита. Удваивает пропускную способность при той же полосе.', where: '100GBASE-T, 400G Ethernet, PCIe 6.0' }
+    };
+
+    const MOD_TYPES = {
+      ask:  { name: 'ASK (Amplitude)', desc: 'Амплитуда несущей изменяется: 1 = полная амплитуда, 0 = малая. Простейшая модуляция. Чувствительна к помехам.', bps: 1 },
+      fsk:  { name: 'FSK (Frequency)', desc: 'Частота несущей изменяется: 1 = высокая частота, 0 = низкая. Устойчивее к помехам чем ASK. Модемы, Bluetooth.', bps: 1 },
+      bpsk: { name: 'BPSK (Phase)', desc: 'Фаза несущей: 1 = 0°, 0 = 180° (инверсия). 1 бит на символ. Очень устойчива к шуму. Wi-Fi на слабом сигнале.', bps: 1 },
+      qpsk: { name: 'QPSK (4 фазы)', desc: '4 значения фазы (0°, 90°, 180°, 270°). 2 бита на символ. Удвоение скорости при той же полосе. DVB-S, LTE.', bps: 2 },
+      qam16:{ name: 'QAM-16', desc: '16 комбинаций амплитуды и фазы. 4 бита на символ. Кабельное ТВ, Wi-Fi на среднем сигнале.', bps: 4 },
+      qam256:{ name: 'QAM-256', desc: '256 комбинаций — 8 бит на символ! Максимальная эффективность, но требует высокий SNR > 30 дБ. Wi-Fi 5/6, DOCSIS 3.1.', bps: 8 }
+    };
+
+    function setupCanvas(canvas, h) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = h * dpr;
+      canvas.style.height = h + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      return { ctx, w: rect.width, h };
+    }
+
+    function drawLineCode(canvas, bits, type) {
+      const { ctx, w, h } = setupCanvas(canvas, 120);
+      const bitW = w / bits.length;
+      const mid = h / 2;
+      const amp = h * 0.35;
+      ctx.clearRect(0, 0, w, h);
+
+      // grid
+      ctx.strokeStyle = '#1a2030';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= bits.length; i++) {
+        ctx.beginPath(); ctx.moveTo(i * bitW, 0); ctx.lineTo(i * bitW, h); ctx.stroke();
+      }
+      ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke(); ctx.setLineDash([]);
+
+      // voltage labels
+      ctx.fillStyle = '#4a5568'; ctx.font = '9px sans-serif';
+      if (type === 'pam4') {
+        ['+3V','+1V','−1V','−3V'].forEach((l, i) => ctx.fillText(l, 2, mid - amp + i * (amp * 2 / 3) + 4));
+      } else {
+        ctx.fillText('+V', 2, mid - amp + 10); ctx.fillText('0', 2, mid + 3); ctx.fillText('−V', 2, mid + amp - 2);
+      }
+
+      // bit labels
+      ctx.fillStyle = '#6c7a96'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      bits.forEach((b, i) => ctx.fillText(b, i * bitW + bitW / 2, 12));
+      ctx.textAlign = 'left';
+
+      // signal
+      ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2.5; ctx.beginPath();
+      let prevLevel = 0;
+      let amiPolarity = 1;
+
+      for (let i = 0; i < bits.length; i++) {
+        const x0 = i * bitW;
+        const x1 = (i + 1) * bitW;
+        const xm = x0 + bitW / 2;
+        const b = bits[i];
+
+        if (type === 'nrz') {
+          const y = b ? mid - amp : mid + amp;
+          if (i === 0) ctx.moveTo(x0, y);
+          else ctx.lineTo(x0, y);
+          ctx.lineTo(x1, y);
+        } else if (type === 'nrzi') {
+          if (b) prevLevel = prevLevel === 0 ? 1 : 0;
+          const y = prevLevel ? mid - amp : mid + amp;
+          if (i === 0) ctx.moveTo(x0, y);
+          else ctx.lineTo(x0, y);
+          ctx.lineTo(x1, y);
+        } else if (type === 'manchester') {
+          const yH = mid - amp, yL = mid + amp;
+          if (b) { // 1: low→high
+            if (i === 0) ctx.moveTo(x0, yL); else ctx.lineTo(x0, yL);
+            ctx.lineTo(xm, yL); ctx.lineTo(xm, yH); ctx.lineTo(x1, yH);
+          } else { // 0: high→low
+            if (i === 0) ctx.moveTo(x0, yH); else ctx.lineTo(x0, yH);
+            ctx.lineTo(xm, yH); ctx.lineTo(xm, yL); ctx.lineTo(x1, yL);
+          }
+        } else if (type === 'diffmanch') {
+          const yH = mid - amp, yL = mid + amp;
+          if (b === 0) prevLevel = prevLevel ? 0 : 1;
+          const startY = prevLevel ? yH : yL;
+          const endY = prevLevel ? yL : yH;
+          if (i === 0) ctx.moveTo(x0, startY); else ctx.lineTo(x0, startY);
+          ctx.lineTo(xm, startY); ctx.lineTo(xm, endY); ctx.lineTo(x1, endY);
+          prevLevel = prevLevel ? 0 : 1;
+        } else if (type === 'ami') {
+          if (b === 0) {
+            if (i === 0) ctx.moveTo(x0, mid); else ctx.lineTo(x0, mid);
+            ctx.lineTo(x1, mid);
+          } else {
+            const y = amiPolarity > 0 ? mid - amp : mid + amp;
+            if (i === 0) ctx.moveTo(x0, mid); else ctx.lineTo(x0, mid);
+            ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, mid);
+            amiPolarity *= -1;
+          }
+        } else if (type === 'pam4') {
+          const pair = (i % 2 === 0 && i + 1 < bits.length) ? bits[i] * 2 + bits[i + 1] : bits[i] * 2;
+          const levels = [-3, -1, 1, 3];
+          const symIdx = Math.min(pair, 3);
+          const y = mid - (levels[symIdx] / 3) * amp;
+          if (i === 0) ctx.moveTo(x0, y); else ctx.lineTo(x0, y);
+          ctx.lineTo(x1, y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    function drawModulation(canvas, bits, type) {
+      const { ctx, w, h } = setupCanvas(canvas, 150);
+      const bitW = w / Math.ceil(bits.length / (MOD_TYPES[type]?.bps || 1));
+      const symbols = [];
+      const bps = MOD_TYPES[type]?.bps || 1;
+      for (let i = 0; i < bits.length; i += bps) {
+        let val = 0;
+        for (let j = 0; j < bps && i + j < bits.length; j++) val = val * 2 + bits[i + j];
+        symbols.push(val);
+      }
+      const symW = w / symbols.length;
+      const mid = h / 2;
+      const amp = h * 0.38;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 1;
+      for (let i = 0; i <= symbols.length; i++) { ctx.beginPath(); ctx.moveTo(i * symW, 0); ctx.lineTo(i * symW, h); ctx.stroke(); }
+      ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke(); ctx.setLineDash([]);
+
+      ctx.fillStyle = '#6c7a96'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      symbols.forEach((s, i) => {
+        const bitStr = s.toString(2).padStart(bps, '0');
+        ctx.fillText(bitStr, i * symW + symW / 2, 12);
+      });
+      ctx.textAlign = 'left';
+
+      // carrier (faint)
+      ctx.strokeStyle = '#1a2f3a'; ctx.lineWidth = 1; ctx.beginPath();
+      for (let x = 0; x < w; x++) { const y = mid + Math.sin(x * 0.15) * amp * 0.5; if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+      ctx.stroke();
+
+      // modulated
+      ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2; ctx.beginPath();
+      const freqLow = 0.08, freqHigh = 0.22, freqMid = 0.14;
+
+      for (let x = 0; x < w; x++) {
+        const sIdx = Math.min(Math.floor(x / symW), symbols.length - 1);
+        const val = symbols[sIdx];
+        const maxVal = Math.pow(2, bps) - 1;
+        let y;
+
+        if (type === 'ask') {
+          const a = val ? 1 : 0.15;
+          y = mid + Math.sin(x * freqMid) * amp * a;
+        } else if (type === 'fsk') {
+          const freq = val ? freqHigh : freqLow;
+          y = mid + Math.sin(x * freq) * amp * 0.8;
+        } else if (type === 'bpsk') {
+          const phase = val ? 0 : Math.PI;
+          y = mid + Math.sin(x * freqMid + phase) * amp * 0.8;
+        } else if (type === 'qpsk') {
+          const phases = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+          y = mid + Math.sin(x * freqMid + phases[val % 4]) * amp * 0.8;
+        } else if (type === 'qam16' || type === 'qam256') {
+          const norm = val / maxVal;
+          const a = 0.3 + norm * 0.7;
+          const phase = (val % 4) * Math.PI / 2;
+          y = mid + Math.sin(x * freqMid + phase) * amp * a;
+        }
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function render() {
+      const isLine = sigView === 'line';
+      const enc = isLine ? LINE_CODES[sigEncoding] : MOD_TYPES[sigModulation];
+
+      container.innerHTML = `
+        <div class="sig-section-title">Введите биты (нажмите для переключения 0/1)</div>
+        <div class="sig-bits" id="sigBitsRow">
+          ${sigBits.map((b, i) => `<div class="sig-bit sig-bit--${b}" data-idx="${i}">${b}</div>`).join('')}
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="dnd-btn${sigBits.length > 4 ? '' : ' dnd-btn--primary'}" id="sigRemBit" style="flex:1;padding:8px;font-size:.75rem"${sigBits.length <= 4 ? ' disabled' : ''}>− Бит</button>
+          <button class="dnd-btn${sigBits.length < 16 ? '' : ' dnd-btn--primary'}" id="sigAddBit" style="flex:1;padding:8px;font-size:.75rem"${sigBits.length >= 16 ? ' disabled' : ''}>+ Бит</button>
+          <button class="dnd-btn" id="sigRandBits" style="flex:1;padding:8px;font-size:.75rem">🎲 Случайно</button>
+        </div>
+
+        <div class="lab-toggle mb-12">
+          <button class="lab-toggle__btn${isLine ? ' active' : ''}" id="sigViewLine">⚡ Линейные коды</button>
+          <button class="lab-toggle__btn${!isLine ? ' active' : ''}" id="sigViewMod">📡 Модуляция</button>
+        </div>
+
+        <div class="sig-tabs" id="sigTabs">
+          ${isLine
+            ? Object.entries(LINE_CODES).map(([k, v]) => `<button class="sig-tab${k === sigEncoding ? ' active' : ''}" data-sig="${k}">${v.name.split('(')[0].trim()}</button>`).join('')
+            : Object.entries(MOD_TYPES).map(([k, v]) => `<button class="sig-tab${k === sigModulation ? ' active' : ''}" data-sig="${k}">${v.name.split('(')[0].trim()}</button>`).join('')
+          }
+        </div>
+
+        <div class="sig-canvas-wrap">
+          <canvas id="sigCanvas"></canvas>
+          <div class="sig-canvas-label">${isLine ? 'Напряжение ↕ / Время →' : 'Амплитуда ↕ / Время →'}</div>
+        </div>
+
+        <div class="card" style="font-size:.82rem;line-height:1.7">
+          <strong>${enc.name}</strong><br>
+          ${enc.desc}
+          ${enc.where ? `<br><strong>Используется:</strong> ${enc.where}` : ''}
+          ${enc.bps ? `<br><strong>Бит на символ:</strong> ${enc.bps}` : ''}
+        </div>
+
+        ${isLine ? `<div class="card mt-12" style="font-size:.78rem;line-height:1.6">
+          <strong>Как читать график:</strong><br>
+          Горизонтальная ось — время, вертикальная — напряжение на проводе.
+          Каждая вертикальная линия — граница между битами.
+          Числа сверху — передаваемые биты.
+          <br><br>
+          <strong>Почему это важно:</strong> приёмник измеряет напряжение и решает: «это 0 или 1?»
+          Если сигнал затухает или приходят помехи — приёмник ошибается (BER растёт).
+          Самосинхронизирующиеся коды (Manchester) помогают не терять такт.
+        </div>` : `<div class="card mt-12" style="font-size:.78rem;line-height:1.6">
+          <strong>Как читать график:</strong><br>
+          Тусклая линия — несущая частота (carrier). Яркая — модулированный сигнал.
+          Числа сверху — передаваемые символы (группы битов).
+          <br><br>
+          <strong>ASK</strong> — меняется амплитуда (громкость).
+          <strong>FSK</strong> — меняется частота (высота тона).
+          <strong>PSK</strong> — меняется фаза (сдвиг волны).
+          <strong>QAM</strong> — меняются амплитуда И фаза одновременно (больше бит на символ).
+          <br><br>
+          Чем больше бит на символ (QAM-256 = 8 бит) — тем выше скорость, но нужен чище сигнал (выше SNR).
+        </div>`}
+      `;
+
+      const canvas = document.getElementById('sigCanvas');
+      if (isLine) drawLineCode(canvas, sigBits, sigEncoding);
+      else drawModulation(canvas, sigBits, sigModulation);
+
+      container.querySelectorAll('.sig-bit').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = parseInt(el.dataset.idx);
+          sigBits[idx] = sigBits[idx] ? 0 : 1;
+          render();
+        });
+      });
+
+      document.getElementById('sigAddBit')?.addEventListener('click', () => { if (sigBits.length < 16) { sigBits.push(Math.round(Math.random())); render(); } });
+      document.getElementById('sigRemBit')?.addEventListener('click', () => { if (sigBits.length > 4) { sigBits.pop(); render(); } });
+      document.getElementById('sigRandBits')?.addEventListener('click', () => { sigBits = sigBits.map(() => Math.round(Math.random())); render(); });
+
+      document.getElementById('sigViewLine')?.addEventListener('click', () => { sigView = 'line'; render(); });
+      document.getElementById('sigViewMod')?.addEventListener('click', () => { sigView = 'mod'; render(); });
+
+      container.querySelectorAll('.sig-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          if (sigView === 'line') sigEncoding = tab.dataset.sig;
+          else sigModulation = tab.dataset.sig;
+          render();
+        });
+      });
+    }
+
+    const observer = new MutationObserver(() => {
+      if (document.getElementById('lab-signals')?.classList.contains('active') && !container.children.length) render();
+    });
+    observer.observe(document.getElementById('lab-signals'), { attributes: true, attributeFilter: ['class'] });
+    setTimeout(() => { if (document.getElementById('lab-signals')?.classList.contains('active')) render(); }, 100);
+  })();
+
   /* ==================== LAB: TLS / ENCRYPTION ==================== */
   document.getElementById('labRun-tls').addEventListener('click', async () => {
     const isTLS13 = labState.tls ? labState.tls.tlsVersion === 1 : true;
