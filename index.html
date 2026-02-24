@@ -105,6 +105,17 @@
     </div>
 
     <div id="simResult"></div>
+
+    <div class="card mt-16">
+      <div class="study-section__title">Или загрузите файл для анализа передачи</div>
+      <div class="file-drop" id="fileDrop">
+        <input type="file" id="fileInput" hidden>
+        <div class="file-drop__icon">📁</div>
+        <div class="file-drop__text">Перетащите файл сюда или нажмите</div>
+        <div class="file-drop__hint">Любой файл до 50 МБ</div>
+      </div>
+      <div id="fileResult"></div>
+    </div>
   </section>
 
   <!-- ===== LAB ===== -->
@@ -178,6 +189,21 @@
     </div>
   </section>
 
+  <!-- ===== TERMINAL ===== -->
+  <section class="section" id="section-terminal">
+    <div class="section-desc">Изучайте сетевые команды в интерактивном терминале. Введите <strong>help</strong> для списка команд</div>
+    <div class="terminal" id="terminal">
+      <div class="terminal__output" id="termOutput">
+        <div class="term-line term-line--info">OSI Network Terminal v1.0</div>
+        <div class="term-line term-line--info">Введите <span class="term-cmd">help</span> для списка доступных команд</div>
+      </div>
+      <div class="terminal__input-row">
+        <span class="terminal__prompt">root@osi-lab:~$</span>
+        <input type="text" class="terminal__input" id="termInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Введите команду...">
+      </div>
+    </div>
+  </section>
+
   <!-- ===== DRAG & DROP ===== -->
   <section class="section" id="section-dnd">
     <div class="section-desc">Перетащите протоколы и устройства на соответствующие уровни OSI</div>
@@ -209,6 +235,10 @@
     <button class="nav-btn" data-section="lab">
       <span class="nav-icon">🔬</span>
       <span>Лаборатория</span>
+    </button>
+    <button class="nav-btn" data-section="terminal">
+      <span class="nav-icon">💻</span>
+      <span>Терминал</span>
     </button>
     <button class="nav-btn" data-section="dnd">
       <span class="nav-icon">🧩</span>

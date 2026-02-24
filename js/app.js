@@ -1903,4 +1903,375 @@
   document.getElementById('dndReset').addEventListener('click', initDnD);
 
   initDnD();
+
+  /* ==================== FILE UPLOAD ==================== */
+  const fileDrop = document.getElementById('fileDrop');
+  const fileInput = document.getElementById('fileInput');
+  const MAX_FILE = 50 * 1024 * 1024;
+
+  fileDrop.addEventListener('click', () => fileInput.click());
+  fileDrop.addEventListener('dragover', (e) => { e.preventDefault(); fileDrop.classList.add('drag-over'); });
+  fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
+  fileDrop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    fileDrop.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+  function handleFile(file) {
+    const result = document.getElementById('fileResult');
+    if (file.size > MAX_FILE) {
+      result.innerHTML = '<div class="card mt-12" style="color:var(--l7)">Файл слишком большой. Максимум 50 МБ.</div>';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const bytes = new Uint8Array(reader.result);
+      const preview = bytes.slice(0, 128);
+      let hexLines = '';
+      for (let off = 0; off < preview.length; off += 16) {
+        const chunk = preview.slice(off, off + 16);
+        let hex = '', ascii = '';
+        for (let i = 0; i < 16; i++) {
+          if (i < chunk.length) {
+            hex += chunk[i].toString(16).toUpperCase().padStart(2, '0') + ' ';
+            ascii += (chunk[i] >= 32 && chunk[i] < 127) ? String.fromCharCode(chunk[i]) : '.';
+          } else { hex += '   '; ascii += ' '; }
+          if (i === 7) hex += ' ';
+        }
+        hexLines += off.toString(16).toUpperCase().padStart(4, '0') + '  ' + hex + ' ' + ascii + '\n';
+      }
+
+      const mtu = 1500;
+      const tcpPayload = mtu - 20 - 20;
+      const segments = Math.ceil(file.size / tcpPayload);
+      const ipPackets = segments;
+      const frames = segments;
+      const totalOverhead = segments * (14 + 20 + 20 + 4);
+      const totalOnWire = file.size + totalOverhead;
+      const overheadPct = ((totalOverhead / totalOnWire) * 100).toFixed(1);
+
+      const sizeStr = file.size >= 1048576 ? (file.size / 1048576).toFixed(2) + ' МБ'
+        : file.size >= 1024 ? (file.size / 1024).toFixed(1) + ' КБ' : file.size + ' Б';
+
+      const icon = file.type.startsWith('image/') ? '🖼️' :
+        file.type.startsWith('video/') ? '🎬' : file.type.startsWith('audio/') ? '🎵' :
+        file.type.includes('pdf') ? '📄' : file.type.includes('zip') || file.type.includes('rar') ? '📦' : '📄';
+
+      let channelRows = '';
+      CHANNEL_TYPES.forEach(ch => {
+        const timeSec = (totalOnWire * 8) / (ch.speed * 1e6);
+        const timeStr = timeSec >= 60 ? (timeSec / 60).toFixed(1) + ' мин' : timeSec >= 1 ? timeSec.toFixed(2) + ' с' : (timeSec * 1000).toFixed(1) + ' мс';
+        channelRows += `<tr><td>${ch.icon} ${ch.name}</td><td>${formatSpeed(ch.speed)}</td><td>${timeStr}</td></tr>`;
+      });
+
+      result.innerHTML = `
+        <div class="file-info">
+          <div class="file-info__header">
+            <div class="file-info__icon">${icon}</div>
+            <div>
+              <div class="file-info__name">${file.name}</div>
+              <div class="file-info__meta">${file.type || 'unknown'} — ${sizeStr} — ${file.size.toLocaleString()} байт</div>
+            </div>
+          </div>
+          <div class="study-section__title">Hex-превью (первые ${preview.length} байт)</div>
+          <div class="file-hex">${hexLines}</div>
+          <div class="lab-stats">
+            <div class="lab-stat"><div class="lab-stat__value">${segments.toLocaleString()}</div><div class="lab-stat__label">TCP-сегментов</div></div>
+            <div class="lab-stat"><div class="lab-stat__value">${ipPackets.toLocaleString()}</div><div class="lab-stat__label">IP-пакетов</div></div>
+            <div class="lab-stat"><div class="lab-stat__value">${frames.toLocaleString()}</div><div class="lab-stat__label">Ethernet-кадров</div></div>
+            <div class="lab-stat"><div class="lab-stat__value">${overheadPct}%</div><div class="lab-stat__label">Overhead заголовков</div></div>
+          </div>
+          <div class="pdu-fields mt-12">
+            <tr><td>Payload данных</td><td>${sizeStr}</td></tr>
+            <tr><td>+ TCP заголовки</td><td>${(segments * 20).toLocaleString()} Б (${segments} × 20)</td></tr>
+            <tr><td>+ IP заголовки</td><td>${(segments * 20).toLocaleString()} Б (${segments} × 20)</td></tr>
+            <tr><td>+ Ethernet + CRC</td><td>${(segments * 18).toLocaleString()} Б (${segments} × 18)</td></tr>
+            <tr><td><strong>Итого на линии</strong></td><td><strong>${(totalOnWire / 1024).toFixed(1)} КБ</strong></td></tr>
+          </div>
+          <div class="study-section__title mt-16">Время передачи по каналам</div>
+          <div style="overflow-x:auto">
+            <table class="file-transfer-table">
+              <thead><tr><th>Канал</th><th>Скорость</th><th>Время</th></tr></thead>
+              <tbody>${channelRows}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      addXP(5);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  /* ==================== TERMINAL ==================== */
+  const termOutput = document.getElementById('termOutput');
+  const termInput = document.getElementById('termInput');
+  const cmdHistory = [];
+  let historyIdx = -1;
+
+  const SIM_NET = {
+    hostname: 'osi-lab',
+    ip: '192.168.1.100',
+    mask: '255.255.255.0',
+    gateway: '192.168.1.1',
+    mac: 'AA:BB:CC:11:22:33',
+    dns: '8.8.8.8',
+    interfaces: [
+      { name: 'eth0', ip: '192.168.1.100', mask: '255.255.255.0', mac: 'AA:BB:CC:11:22:33', status: 'UP', mtu: 1500, rx: 1547823, tx: 892341 },
+      { name: 'wlan0', ip: '192.168.1.101', mask: '255.255.255.0', mac: 'DD:EE:FF:44:55:66', status: 'UP', mtu: 1500, rx: 328941, tx: 124567 },
+      { name: 'lo', ip: '127.0.0.1', mask: '255.0.0.0', mac: '00:00:00:00:00:00', status: 'UP', mtu: 65536, rx: 45123, tx: 45123 }
+    ],
+    arp: [
+      { ip: '192.168.1.1', mac: '00:1A:2B:3C:4D:5E', iface: 'eth0' },
+      { ip: '192.168.1.50', mac: '11:22:33:AA:BB:CC', iface: 'eth0' },
+      { ip: '192.168.1.200', mac: 'FF:EE:DD:CC:BB:AA', iface: 'wlan0' }
+    ],
+    connections: [
+      { proto: 'tcp', local: '192.168.1.100:443', remote: '93.184.216.34:54321', state: 'ESTABLISHED' },
+      { proto: 'tcp', local: '192.168.1.100:22', remote: '0.0.0.0:*', state: 'LISTEN' },
+      { proto: 'tcp', local: '192.168.1.100:80', remote: '0.0.0.0:*', state: 'LISTEN' },
+      { proto: 'tcp', local: '192.168.1.100:52341', remote: '142.250.74.78:443', state: 'ESTABLISHED' },
+      { proto: 'udp', local: '192.168.1.100:53', remote: '0.0.0.0:*', state: '' },
+      { proto: 'tcp', local: '192.168.1.100:49200', remote: '151.101.1.69:443', state: 'TIME_WAIT' }
+    ],
+    routes: [
+      { dest: '0.0.0.0', mask: '0.0.0.0', gw: '192.168.1.1', iface: 'eth0', metric: 100 },
+      { dest: '192.168.1.0', mask: '255.255.255.0', gw: '0.0.0.0', iface: 'eth0', metric: 0 },
+      { dest: '127.0.0.0', mask: '255.0.0.0', gw: '0.0.0.0', iface: 'lo', metric: 0 }
+    ],
+    hosts: {
+      'google.com': { ip: '142.250.74.78', hops: 8 },
+      'example.com': { ip: '93.184.216.34', hops: 11 },
+      'github.com': { ip: '140.82.121.4', hops: 9 },
+      'ya.ru': { ip: '87.250.250.242', hops: 6 },
+      'cloudflare.com': { ip: '104.16.132.229', hops: 5 },
+      'localhost': { ip: '127.0.0.1', hops: 0 },
+      '8.8.8.8': { ip: '8.8.8.8', hops: 7 }
+    }
+  };
+
+  function resolveHost(host) {
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return { ip: host, hops: 5 + Math.floor(Math.random() * 8) };
+    return SIM_NET.hosts[host] || { ip: `${100 + Math.floor(Math.random()*55)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`, hops: 6 + Math.floor(Math.random() * 8) };
+  }
+
+  function termLine(text, cls) {
+    const div = document.createElement('div');
+    div.className = 'term-line' + (cls ? ' term-line--' + cls : '');
+    div.innerHTML = text;
+    termOutput.appendChild(div);
+  }
+
+  function termScroll() { termOutput.scrollTop = termOutput.scrollHeight; }
+
+  const TERM_COMMANDS = {
+    help() {
+      termLine('Доступные команды:', 'header');
+      const cmds = [
+        ['ping &lt;host&gt;', 'ICMP эхо-запрос к узлу'],
+        ['traceroute &lt;host&gt;', 'Трассировка маршрута до узла'],
+        ['nslookup &lt;host&gt;', 'DNS-запрос имени'],
+        ['ifconfig', 'Показать сетевые интерфейсы'],
+        ['netstat', 'Показать активные соединения'],
+        ['arp', 'Показать ARP-таблицу'],
+        ['route', 'Показать таблицу маршрутизации'],
+        ['curl &lt;url&gt;', 'HTTP HEAD-запрос'],
+        ['whois &lt;domain&gt;', 'Информация о домене'],
+        ['clear', 'Очистить экран']
+      ];
+      cmds.forEach(c => termLine(`  <span class="term-cmd">${c[0].padEnd(25)}</span> ${c[1]}`));
+      addXP(2);
+    },
+
+    clear() { termOutput.innerHTML = ''; },
+
+    async ping(args) {
+      const host = args[0];
+      if (!host) { termLine('Использование: ping &lt;host&gt;', 'error'); return; }
+      const resolved = resolveHost(host);
+      termLine(`PING ${host} (${resolved.ip}) 56(84) bytes of data.`);
+      termScroll();
+      const baseLatency = resolved.hops * 3 + Math.random() * 10;
+      for (let i = 0; i < 4; i++) {
+        await sleep(800);
+        const lat = (baseLatency + (Math.random() - 0.5) * 8).toFixed(1);
+        const ttl = 64 - resolved.hops;
+        termLine(`64 bytes from <span class="term-ip">${resolved.ip}</span>: icmp_seq=${i + 1} ttl=${ttl} time=<span class="term-time">${lat} ms</span>`);
+        termScroll();
+      }
+      const avg = baseLatency.toFixed(1);
+      termLine(`\n--- ${host} ping statistics ---`);
+      termLine(`4 packets transmitted, 4 received, <span class="term-ok">0% packet loss</span>`);
+      termLine(`rtt min/avg/max = ${(baseLatency - 4).toFixed(1)}/${avg}/${(baseLatency + 4).toFixed(1)} ms`);
+      addXP(3);
+    },
+
+    async traceroute(args) {
+      const host = args[0];
+      if (!host) { termLine('Использование: traceroute &lt;host&gt;', 'error'); return; }
+      const resolved = resolveHost(host);
+      termLine(`traceroute to ${host} (${resolved.ip}), 30 hops max, 60 byte packets`);
+      termScroll();
+      const routers = ['gateway', 'isp-gw', 'core-1', 'core-2', 'ix-peer', 'cdn-edge', 'border-gw', 'dc-spine', 'dc-leaf', 'rack-sw', 'target'];
+      for (let i = 0; i < resolved.hops; i++) {
+        await sleep(600);
+        const rIp = `${10 + i * 12}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${1 + Math.floor(Math.random() * 254)}`;
+        const t1 = ((i + 1) * 3 + Math.random() * 5).toFixed(1);
+        const t2 = ((i + 1) * 3 + Math.random() * 5).toFixed(1);
+        const t3 = ((i + 1) * 3 + Math.random() * 5).toFixed(1);
+        const rName = (routers[i] || 'hop-' + (i + 1)) + '.net';
+        termLine(` ${String(i + 1).padStart(2)}  ${rName} (<span class="term-ip">${rIp}</span>)  <span class="term-time">${t1} ms  ${t2} ms  ${t3} ms</span>`);
+        termScroll();
+      }
+      await sleep(600);
+      const ft = ((resolved.hops) * 3 + Math.random() * 3).toFixed(1);
+      termLine(` ${String(resolved.hops + 1).padStart(2)}  ${host} (<span class="term-ip">${resolved.ip}</span>)  <span class="term-time">${ft} ms  ${ft} ms  ${ft} ms</span>`);
+      addXP(3);
+    },
+
+    nslookup(args) {
+      const host = args[0];
+      if (!host) { termLine('Использование: nslookup &lt;host&gt;', 'error'); return; }
+      const resolved = resolveHost(host);
+      termLine('Server:   8.8.8.8');
+      termLine('Address:  8.8.8.8#53\n');
+      termLine('Non-authoritative answer:');
+      termLine(`Name:     ${host}`);
+      termLine(`Address:  <span class="term-ip">${resolved.ip}</span>`);
+      addXP(2);
+    },
+
+    ifconfig() {
+      SIM_NET.interfaces.forEach(iface => {
+        termLine(`<span class="term-cmd">${iface.name}</span>: flags=4163&lt;${iface.status},BROADCAST,MULTICAST&gt;  mtu ${iface.mtu}`);
+        termLine(`        inet <span class="term-ip">${iface.ip}</span>  netmask ${iface.mask}`);
+        termLine(`        ether ${iface.mac}`);
+        termLine(`        RX packets ${iface.rx}  TX packets ${iface.tx}`);
+        termLine('');
+      });
+      addXP(2);
+    },
+
+    netstat() {
+      termLine('Proto  Local Address            Foreign Address          State', 'header');
+      SIM_NET.connections.forEach(c => {
+        const stateColor = c.state === 'ESTABLISHED' ? 'term-ok' : c.state === 'LISTEN' ? 'term-time' : '';
+        termLine(`${c.proto.padEnd(7)}${c.local.padEnd(25)}${c.remote.padEnd(25)}<span class="${stateColor}">${c.state}</span>`);
+      });
+      addXP(2);
+    },
+
+    arp() {
+      termLine('Address          HWtype  HWaddress           Iface', 'header');
+      SIM_NET.arp.forEach(a => {
+        termLine(`<span class="term-ip">${a.ip.padEnd(17)}</span>ether   ${a.mac}   ${a.iface}`);
+      });
+      addXP(2);
+    },
+
+    route() {
+      termLine('Destination      Gateway          Genmask          Iface    Metric', 'header');
+      SIM_NET.routes.forEach(r => {
+        termLine(`${r.dest.padEnd(17)}${r.gw.padEnd(17)}${r.mask.padEnd(17)}${r.iface.padEnd(9)}${r.metric}`);
+      });
+      addXP(2);
+    },
+
+    curl(args) {
+      const url = args[0];
+      if (!url) { termLine('Использование: curl &lt;url&gt;', 'error'); return; }
+      const host = url.replace(/^https?:\/\//, '').split('/')[0];
+      const resolved = resolveHost(host);
+      termLine(`> GET / HTTP/1.1`);
+      termLine(`> Host: ${host}`);
+      termLine(`> User-Agent: curl/7.88.1`);
+      termLine(`> Accept: */*`);
+      termLine('');
+      termLine('<span class="term-ok">HTTP/1.1 200 OK</span>');
+      termLine(`Server: nginx/1.24.0`);
+      termLine(`Date: ${new Date().toUTCString()}`);
+      termLine(`Content-Type: text/html; charset=UTF-8`);
+      termLine(`Content-Length: 1256`);
+      termLine(`Connection: keep-alive`);
+      termLine(`X-Served-By: cache-${resolved.ip.split('.')[0]}`);
+      termLine(`Cache-Control: max-age=604800`);
+      addXP(2);
+    },
+
+    whois(args) {
+      const domain = args[0];
+      if (!domain) { termLine('Использование: whois &lt;domain&gt;', 'error'); return; }
+      const resolved = resolveHost(domain);
+      termLine(`Domain Name: ${domain.toUpperCase()}`, 'header');
+      termLine(`Registry Domain ID: D${Math.floor(Math.random() * 9e8)}`);
+      termLine(`Registrar: Example Registrar, Inc.`);
+      termLine(`Created: 2005-08-13T04:16:17Z`);
+      termLine(`Updated: 2024-08-14T06:35:09Z`);
+      termLine(`Expires: 2025-08-13T04:16:17Z`);
+      termLine(`Status: clientDeleteProhibited`);
+      termLine(`Name Server: ns1.${domain}`);
+      termLine(`Name Server: ns2.${domain}`);
+      termLine(`IP Address: <span class="term-ip">${resolved.ip}</span>`);
+      addXP(2);
+    }
+  };
+
+  TERM_COMMANDS.tracert = TERM_COMMANDS.traceroute;
+  TERM_COMMANDS.dig = TERM_COMMANDS.nslookup;
+  TERM_COMMANDS['ip'] = function(args) {
+    if (args[0] === 'addr' || args[0] === 'a') TERM_COMMANDS.ifconfig();
+    else if (args[0] === 'route' || args[0] === 'r') TERM_COMMANDS.route();
+    else termLine('Использование: ip addr | ip route', 'error');
+  };
+
+  async function executeCommand(input) {
+    const parts = input.trim().split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    termLine(`<span class="term-line--cmd">root@osi-lab:~$ ${input.replace(/</g, '&lt;')}</span>`);
+
+    if (!cmd) { termScroll(); return; }
+
+    if (TERM_COMMANDS[cmd]) {
+      await TERM_COMMANDS[cmd](args);
+    } else {
+      termLine(`bash: ${cmd}: command not found. Введите <span class="term-cmd">help</span> для списка команд`, 'error');
+    }
+    termLine('');
+    termScroll();
+  }
+
+  termInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter' && termInput.value.trim()) {
+      const val = termInput.value;
+      cmdHistory.unshift(val);
+      historyIdx = -1;
+      termInput.value = '';
+      await executeCommand(val);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (historyIdx < cmdHistory.length - 1) {
+        historyIdx++;
+        termInput.value = cmdHistory[historyIdx];
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIdx > 0) {
+        historyIdx--;
+        termInput.value = cmdHistory[historyIdx];
+      } else {
+        historyIdx = -1;
+        termInput.value = '';
+      }
+    }
+  });
+
+  document.getElementById('section-terminal').addEventListener('click', (e) => {
+    if (e.target.closest('.terminal__input-row') || e.target === termInput) return;
+    termInput.focus();
+  });
+
 })();
