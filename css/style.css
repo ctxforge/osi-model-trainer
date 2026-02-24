@@ -2811,6 +2811,22 @@ body {
 
 .sg-export-btns button:active { transform: scale(.95); }
 
+.sg-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: .55rem;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
 /* ========== Channel Simulator ========== */
 .ch-compare {
   display: grid;

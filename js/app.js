@@ -2460,13 +2460,23 @@
   (function initSigGen() {
     const container = document.getElementById('siggenUI');
     let sgComponents = [
-      { type: 'sin', freq: 100, amp: 1, phase: 0, dc: 0 }
+      { type: 'sin', freq: 100, amp: 1, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }
     ];
     const sgFs = 8000;
     const sgN = 512;
     let sgChannelId = 'none';
     let sgChDistance = 50;
     let sgImportedSamples = null;
+
+    const PARAM_HELP = {
+      type: 'Форма базового сигнала. Синус — основа всех сигналов (теорема Фурье). Прямоугольный содержит нечётные гармоники. Шум — случайный.',
+      freq: 'Частота базового сигнала в Гц. Определяет высоту тона / скорость изменения. Макс = Fs/2 (Найквист).',
+      amp: 'Амплитуда — максимальное отклонение от нуля. Определяет мощность сигнала.',
+      phase: 'Начальная фаза в градусах. Сдвигает сигнал по времени. 180° = инверсия.',
+      carrier: 'Несущая частота для модуляции. 0 = без модуляции (baseband). >0 = сигнал модулирует несущую этой частоты. Разные несущие = FDM.',
+      modType: 'AM — меняется амплитуда несущей. FM — меняется частота. PM — меняется фаза. На спектре видны боковые полосы.',
+      modDepth: 'AM: глубина 0-1 (1 = 100%). FM: девиация частоты (Гц). PM: индекс модуляции (рад). Больше → шире спектр.'
+    };
 
     const SG_PRESETS = [
       { id: 'none', name: '— Без канала —' },
@@ -2521,7 +2531,27 @@
           else if (c.type === 'sawtooth') v = 2 * ((c.freq * t + c.phase / 360) % 1) - 1;
           else if (c.type === 'triangle') { const p = (c.freq * t + c.phase / 360) % 1; v = p < 0.5 ? 4 * p - 1 : 3 - 4 * p; }
           else if (c.type === 'noise') v = (Math.random() - 0.5) * 2;
-          samples[n] += v * c.amp + c.dc;
+          let baseband = v * c.amp + c.dc;
+
+          if (c.carrier > 0 && c.modType !== 'none') {
+            const wc = 2 * Math.PI * c.carrier;
+            if (c.modType === 'am') {
+              samples[n] += (1 + c.modDepth * baseband) * Math.cos(wc * t);
+            } else if (c.modType === 'fm') {
+              let integral = 0;
+              for (let k = 0; k <= n; k++) { const tk = k / sgFs; let vk = 0;
+                if (c.type === 'sin') vk = Math.sin(2*Math.PI*c.freq*tk); else vk = baseband;
+                integral += vk / sgFs;
+              }
+              samples[n] += c.amp * Math.cos(wc * t + 2 * Math.PI * c.modDepth * integral);
+            } else if (c.modType === 'pm') {
+              samples[n] += c.amp * Math.cos(wc * t + c.modDepth * baseband);
+            }
+          } else if (c.carrier > 0) {
+            samples[n] += baseband * Math.cos(2 * Math.PI * c.carrier * t);
+          } else {
+            samples[n] += baseband;
+          }
         }
       });
       return samples;
@@ -2646,18 +2676,25 @@
         ${sgComponents.map((c, i) => `
           <div class="sg-component">
             <div class="sg-component__header">
-              <span class="sg-component__title">#${i + 1}: ${WAVE_TYPES[c.type]}</span>
+              <span class="sg-component__title">#${i + 1}${c.carrier > 0 ? ` → несущая ${c.carrier} Гц (${c.modType === 'am' ? 'AM' : c.modType === 'fm' ? 'FM' : c.modType === 'pm' ? 'PM' : 'DSB'})` : `: ${WAVE_TYPES[c.type]} ${c.freq} Гц`}</span>
               ${sgComponents.length > 1 ? `<button class="sg-component__remove" data-rm="${i}">✕</button>` : ''}
             </div>
             <div class="sg-param-grid">
-              <div class="sg-param"><label>Форма</label><select data-ci="${i}" data-p="type">${Object.entries(WAVE_TYPES).map(([k, v]) => `<option value="${k}"${k === c.type ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
-              <div class="sg-param"><label>Частота (Гц)</label><input type="number" data-ci="${i}" data-p="freq" value="${c.freq}" min="1" max="3900" step="10"></div>
-              <div class="sg-param"><label>Амплитуда</label><input type="number" data-ci="${i}" data-p="amp" value="${c.amp}" min="0" max="10" step="0.1"></div>
-              <div class="sg-param"><label>Фаза (°)</label><input type="number" data-ci="${i}" data-p="phase" value="${c.phase}" min="0" max="360" step="15"></div>
+              <div class="sg-param"><label>Форма <span class="sg-help" data-help="type">?</span></label><select data-ci="${i}" data-p="type">${Object.entries(WAVE_TYPES).map(([k, v]) => `<option value="${k}"${k === c.type ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+              <div class="sg-param"><label>Частота (Гц) <span class="sg-help" data-help="freq">?</span></label><input type="number" data-ci="${i}" data-p="freq" value="${c.freq}" min="1" max="3900" step="10"></div>
+              <div class="sg-param"><label>Амплитуда <span class="sg-help" data-help="amp">?</span></label><input type="number" data-ci="${i}" data-p="amp" value="${c.amp}" min="0" max="10" step="0.1"></div>
+              <div class="sg-param"><label>Фаза (°) <span class="sg-help" data-help="phase">?</span></label><input type="number" data-ci="${i}" data-p="phase" value="${c.phase}" min="0" max="360" step="15"></div>
+              <div class="sg-param"><label>Несущая (Гц) <span class="sg-help" data-help="carrier">?</span></label><input type="number" data-ci="${i}" data-p="carrier" value="${c.carrier || 0}" min="0" max="3900" step="50"></div>
+              <div class="sg-param"><label>Модуляция <span class="sg-help" data-help="modType">?</span></label><select data-ci="${i}" data-p="modType"><option value="none"${c.modType === 'none' ? ' selected' : ''}>Нет</option><option value="am"${c.modType === 'am' ? ' selected' : ''}>AM</option><option value="fm"${c.modType === 'fm' ? ' selected' : ''}>FM</option><option value="pm"${c.modType === 'pm' ? ' selected' : ''}>PM</option></select></div>
+              ${c.modType !== 'none' ? `<div class="sg-param" style="grid-column:span 2"><label>${c.modType === 'am' ? 'Глубина (0-1)' : c.modType === 'fm' ? 'Девиация (Гц)' : 'Индекс (рад)'} <span class="sg-help" data-help="modDepth">?</span></label><input type="number" data-ci="${i}" data-p="modDepth" value="${c.modDepth}" min="0" max="${c.modType === 'fm' ? 500 : 10}" step="${c.modType === 'fm' ? 10 : 0.1}"></div>` : ''}
             </div>
           </div>
         `).join('')}
-        <button class="dnd-btn" id="sgAddComp" style="width:100%;padding:8px;font-size:.75rem;margin-bottom:8px"${sgComponents.length >= 4 ? ' disabled' : ''}>+ Добавить компоненту (до 4)</button>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="dnd-btn" id="sgAddComp" style="flex:1;padding:8px;font-size:.72rem"${sgComponents.length >= 4 ? ' disabled' : ''}>+ Компонента</button>
+          <button class="dnd-btn" id="sgAddFDM" style="flex:1;padding:8px;font-size:.72rem"${sgComponents.length >= 4 ? ' disabled' : ''}>+ FDM канал</button>
+        </div>
+        <div id="sgHelpBox" style="display:none;font-size:.72rem;color:var(--text-secondary);padding:8px;background:var(--bg-surface);border-radius:6px;margin-bottom:8px;border-left:3px solid var(--accent)"></div>
 
         <div class="study-section__title">📤 Передатчик (TX)</div>
         <div class="sg-canvas-wrap">
@@ -2722,7 +2759,25 @@
       });
 
       document.getElementById('sgAddComp')?.addEventListener('click', () => {
-        if (sgComponents.length < 4) { sgComponents.push({ type: 'sin', freq: 200 * (sgComponents.length + 1), amp: 0.5, phase: 0, dc: 0 }); render(); }
+        if (sgComponents.length < 4) { sgComponents.push({ type: 'sin', freq: 200 * (sgComponents.length + 1), amp: 0.5, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }); render(); }
+      });
+
+      document.getElementById('sgAddFDM')?.addEventListener('click', () => {
+        if (sgComponents.length < 4) {
+          const carriers = [500, 1000, 1500, 2000];
+          sgComponents.push({ type: 'sin', freq: 50, amp: 0.8, phase: 0, dc: 0, carrier: carriers[sgComponents.length] || 2500, modType: 'am', modDepth: 0.8 });
+          render();
+        }
+      });
+
+      container.querySelectorAll('.sg-help').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const box = document.getElementById('sgHelpBox');
+          const key = btn.dataset.help;
+          box.textContent = PARAM_HELP[key] || '';
+          box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        });
       });
 
       document.getElementById('sgChannelSel')?.addEventListener('change', (e) => { sgChannelId = e.target.value; render(); });
