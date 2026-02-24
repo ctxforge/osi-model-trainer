@@ -1945,6 +1945,92 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.nb-link__dist {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.nb-link__dist input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 4px;
+}
+
+.nb-link__dist-val {
+  font-size: .6rem;
+  color: var(--accent);
+  font-weight: 700;
+  min-width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.nb-link__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.nb-link__tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: .58rem;
+  font-weight: 600;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.nb-link__tag--warn { border-color: var(--l7); color: var(--l7); }
+
+/* Signal quality bar */
+.signal-bar {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 14px;
+}
+
+.signal-bar__seg {
+  width: 3px;
+  border-radius: 1px;
+  background: var(--border);
+  transition: background .3s ease;
+}
+
+.signal-bar__seg.on { background: var(--l4); }
+.signal-bar--fair .signal-bar__seg.on { background: var(--l5); }
+.signal-bar--poor .signal-bar__seg.on { background: var(--l6); }
+.signal-bar--dead .signal-bar__seg.on { background: var(--l7); }
+
+/* Result channel detail card */
+.nb-chan-detail {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-top: 8px;
+  font-size: .75rem;
+}
+
+.nb-chan-detail__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.nb-chan-detail__item {
+  display: flex;
+  justify-content: space-between;
+}
+
+.nb-chan-detail__label { color: var(--text-secondary); }
+.nb-chan-detail__val { font-weight: 700; font-variant-numeric: tabular-nums; }
+
 /* Network builder animation */
 .nb-device.nb-active {
   border-color: var(--l4);

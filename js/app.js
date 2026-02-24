@@ -1392,11 +1392,13 @@
   });
 
   /* ==================== NETWORK PATH BUILDER ==================== */
+  const SPEED_OF_LIGHT = 299792458; // m/s
+
   let nbPath = [
     { type: 'device', id: 'pc' },
-    { type: 'link', id: 'wifi5' },
+    { type: 'link', id: 'wifi5', dist: 10 },
     { type: 'device', id: 'router' },
-    { type: 'link', id: 'cat5e' },
+    { type: 'link', id: 'cat5e', dist: 30 },
     { type: 'device', id: 'server' }
   ];
 
@@ -1413,7 +1415,52 @@
 
   function formatSpeed(mbps) {
     if (mbps >= 1000) return (mbps / 1000).toFixed(mbps >= 10000 ? 0 : 1) + ' Гбит/с';
-    return mbps + ' Мбит/с';
+    return Math.round(mbps) + ' Мбит/с';
+  }
+
+  function formatDist(m) {
+    if (m >= 1000) return (m / 1000).toFixed(m >= 10000 ? 0 : 1) + ' км';
+    return m + ' м';
+  }
+
+  function calcChannelPhysics(ch, dist) {
+    const distUnit = ch.medium === 'fiber' ? dist / 1000 : dist / 100;
+    const attenTotal = ch.attenuation * distUnit;
+    const snr = Math.max(ch.snrBase - attenTotal, -5);
+    const snrLinear = Math.pow(10, snr / 10);
+
+    const shannonMbps = ch.bandwidthMHz * Math.log2(1 + Math.max(snrLinear, 0));
+    const effectiveSpeed = Math.min(ch.speed, shannonMbps) * (snr > 0 ? 1 : 0);
+
+    const propagationDelay = (dist / (ch.propagation * SPEED_OF_LIGHT)) * 1000;
+    const totalDelay = ch.latency + propagationDelay;
+
+    let ber;
+    if (snr > 30) ber = 1e-12;
+    else if (snr > 20) ber = 1e-9;
+    else if (snr > 15) ber = 1e-6;
+    else if (snr > 10) ber = 1e-4;
+    else if (snr > 5) ber = 1e-2;
+    else ber = 0.5;
+
+    let quality;
+    if (snr > 30) quality = 'excellent';
+    else if (snr > 20) quality = 'good';
+    else if (snr > 10) quality = 'fair';
+    else if (snr > 3) quality = 'poor';
+    else quality = 'dead';
+
+    const overMax = dist > ch.maxDist;
+
+    return { attenTotal, snr, shannonMbps, effectiveSpeed, propagationDelay, totalDelay, ber, quality, overMax };
+  }
+
+  function signalBarHTML(quality) {
+    const heights = [4, 7, 10, 14];
+    const levels = { excellent: 4, good: 3, fair: 2, poor: 1, dead: 0 };
+    const n = levels[quality] || 0;
+    const cls = quality === 'fair' ? 'signal-bar--fair' : quality === 'poor' ? 'signal-bar--poor' : quality === 'dead' ? 'signal-bar--dead' : '';
+    return `<div class="signal-bar ${cls}">${heights.map((h, i) => `<div class="signal-bar__seg${i < n ? ' on' : ''}" style="height:${h}px"></div>`).join('')}</div>`;
   }
 
   function renderNBPath() {
@@ -1438,13 +1485,26 @@
           `}
         </div>`;
       } else {
-        const ch = CHANNEL_TYPES.find(c => c.id === item.id);
-        html += `<div class="nb-link" id="nbLink-${i}" data-idx="${i}">
+        const ch = CHANNEL_TYPES.find(ct => ct.id === item.id);
+        const dist = item.dist || ch.defaultDist;
+        const phys = calcChannelPhysics(ch, dist);
+        html += `<div class="nb-link" id="nbLink-${i}" data-idx="${i}" style="flex-wrap:wrap">
           <div class="nb-link__line" style="background:${ch.color}" id="nbLine-${i}"></div>
           <select class="nb-link__select" data-idx="${i}">
-            ${CHANNEL_TYPES.map(c => `<option value="${c.id}"${c.id === item.id ? ' selected' : ''}>${c.icon} ${c.name}</option>`).join('')}
+            ${CHANNEL_TYPES.map(ct => `<option value="${ct.id}"${ct.id === item.id ? ' selected' : ''}>${ct.icon} ${ct.name}</option>`).join('')}
           </select>
-          <div class="nb-link__speed">${formatSpeed(ch.speed)}</div>
+          ${signalBarHTML(phys.quality)}
+          <div class="nb-link__dist">
+            <input type="range" min="1" max="${ch.maxDist * 2}" step="${ch.maxDist > 1000 ? 100 : 1}" value="${dist}" data-idx="${i}">
+            <div class="nb-link__dist-val">${formatDist(dist)}</div>
+          </div>
+          <div class="nb-link__details">
+            <span class="nb-link__tag">${ch.duplex === 'full' ? 'Full-duplex' : 'Half-duplex'}</span>
+            <span class="nb-link__tag">${ch.encoding}</span>
+            <span class="nb-link__tag">${ch.medium === 'copper' ? 'Медь' : ch.medium === 'fiber' ? 'Свет' : 'Радио'}</span>
+            <span class="nb-link__tag">${ch.interference === 'high' ? 'Помехи ⚠' : ch.interference === 'medium' ? 'Помехи ~' : ch.interference === 'none' ? 'Без помех' : 'Мало помех'}</span>
+            ${phys.overMax ? `<span class="nb-link__tag nb-link__tag--warn">Превышение дальности!</span>` : ''}
+          </div>
         </div>`;
       }
     });
@@ -1459,7 +1519,18 @@
 
     c.querySelectorAll('.nb-link__select').forEach(sel => {
       sel.addEventListener('change', () => {
-        nbPath[parseInt(sel.dataset.idx)].id = sel.value;
+        const idx = parseInt(sel.dataset.idx);
+        const newCh = CHANNEL_TYPES.find(ct => ct.id === sel.value);
+        nbPath[idx].id = sel.value;
+        nbPath[idx].dist = newCh.defaultDist;
+        renderNBPath();
+      });
+    });
+
+    c.querySelectorAll('.nb-link__dist input[type="range"]').forEach(slider => {
+      slider.addEventListener('input', () => {
+        const idx = parseInt(slider.dataset.idx);
+        nbPath[idx].dist = parseInt(slider.value);
         renderNBPath();
       });
     });
@@ -1480,7 +1551,7 @@
     const lastLinkIdx = nbPath.length - 1;
     nbPath.splice(lastLinkIdx, 0,
       { type: 'device', id: 'switch' },
-      { type: 'link', id: 'cat5e' }
+      { type: 'link', id: 'cat5e', dist: 30 }
     );
     renderNBPath();
   });
@@ -1488,19 +1559,33 @@
   document.getElementById('nbSend').addEventListener('click', async () => {
     const result = document.getElementById('nbResult');
     let totalLatency = 0;
+    let totalJitter = 0;
     let bottleneck = Infinity;
     let bottleneckName = '';
+    let worstBER = 0;
+    let worstSNR = 999;
+    let worstQuality = 'excellent';
     const hops = [];
     const usedCh = new Set();
+    const qualityOrder = ['dead', 'poor', 'fair', 'good', 'excellent'];
 
     for (let i = 0; i < nbPath.length; i++) {
       const item = nbPath[i];
       if (item.type === 'link') {
-        const ch = CHANNEL_TYPES.find(c => c.id === item.id);
-        totalLatency += ch.latency;
+        const ch = CHANNEL_TYPES.find(ct => ct.id === item.id);
+        const dist = item.dist || ch.defaultDist;
+        const phys = calcChannelPhysics(ch, dist);
+        totalLatency += phys.totalDelay;
+        totalJitter += ch.jitter;
         usedCh.add(ch.id);
-        if (ch.speed < bottleneck) { bottleneck = ch.speed; bottleneckName = ch.name; }
-        hops.push({ icon: ch.icon, name: ch.name, latency: ch.latency, speed: ch.speed, type: 'link', medium: ch.medium, idx: i });
+        if (phys.effectiveSpeed < bottleneck) { bottleneck = phys.effectiveSpeed; bottleneckName = ch.name; }
+        if (phys.ber > worstBER) worstBER = phys.ber;
+        if (phys.snr < worstSNR) worstSNR = phys.snr;
+        if (qualityOrder.indexOf(phys.quality) < qualityOrder.indexOf(worstQuality)) worstQuality = phys.quality;
+        hops.push({
+          icon: ch.icon, name: ch.name, type: 'link', idx: i, ch, dist, phys,
+          latency: phys.totalDelay
+        });
       } else {
         const dev = NET_DEVICES.find(d => d.id === item.id);
         totalLatency += dev.proc;
@@ -1516,56 +1601,91 @@
     });
     if (gameState.usedChannels.length >= 5) unlockAchievement('all_channels');
 
-    const throughput = bottleneck;
-    const transferTime = (1500 * 8 / (bottleneck * 1e6) * 1000).toFixed(4);
+    const berStr = worstBER < 1e-10 ? '< 10⁻¹⁰' : worstBER < 1e-6 ? worstBER.toExponential(0) : worstBER.toExponential(1);
 
     result.innerHTML = `
-      <div class="lab-result__title">Результат передачи</div>
+      <div class="lab-result__title">Анализ маршрута</div>
       <div class="lab-stats">
         <div class="lab-stat">
           <div class="lab-stat__value">${totalLatency.toFixed(2)} мс</div>
           <div class="lab-stat__label">Общая задержка</div>
         </div>
         <div class="lab-stat">
-          <div class="lab-stat__value">${formatSpeed(throughput)}</div>
-          <div class="lab-stat__label">Пропускная способность</div>
+          <div class="lab-stat__value">${bottleneck > 0 ? formatSpeed(bottleneck) : '0'}</div>
+          <div class="lab-stat__label">Эфф. пропускная способность</div>
         </div>
         <div class="lab-stat">
-          <div class="lab-stat__value">${hops.filter(h => h.type === 'device').length}</div>
-          <div class="lab-stat__label">Устройств</div>
+          <div class="lab-stat__value">${worstSNR.toFixed(1)} дБ</div>
+          <div class="lab-stat__label">Мин. SNR</div>
         </div>
         <div class="lab-stat">
-          <div class="lab-stat__value">${hops.filter(h => h.type === 'link').length}</div>
-          <div class="lab-stat__label">Каналов</div>
+          <div class="lab-stat__value">${berStr}</div>
+          <div class="lab-stat__label">BER (макс.)</div>
+        </div>
+      </div>
+      <div class="lab-stats mt-12">
+        <div class="lab-stat">
+          <div class="lab-stat__value">${totalJitter.toFixed(2)} мс</div>
+          <div class="lab-stat__label">Джиттер (сумм.)</div>
+        </div>
+        <div class="lab-stat">
+          <div class="lab-stat__value">${signalBarHTML(worstQuality)}</div>
+          <div class="lab-stat__label">Качество сигнала</div>
         </div>
       </div>
       <div class="mt-16">
-        <div class="lab-result__title">Путь пакета</div>
-        ${hops.map((h, i) => `
-          <div class="nb-result-row" id="nbRes-${i}">
+        <div class="lab-result__title">Путь пакета — детали</div>
+        ${hops.map((h, idx) => {
+          if (h.type === 'device') {
+            return `<div class="nb-result-row" id="nbRes-${idx}">
+              <div class="nb-result-row__icon">${h.icon}</div>
+              <div class="nb-result-row__text"><strong>${h.name}</strong> — L${h.layer}</div>
+              <div class="nb-result-row__val">${h.latency > 0 ? '+' + h.latency.toFixed(2) + ' мс' : '—'}</div>
+            </div>`;
+          }
+          const p = h.phys;
+          return `<div class="nb-result-row" id="nbRes-${idx}">
             <div class="nb-result-row__icon">${h.icon}</div>
-            <div class="nb-result-row__text">
-              <strong>${h.name}</strong>
-              ${h.type === 'link' ? ` — ${formatSpeed(h.speed)}, ${h.medium === 'copper' ? 'медь' : h.medium === 'fiber' ? 'оптоволокно' : 'радио'}` : ''}
-              ${h.type === 'device' && h.layer ? ` — L${h.layer}` : ''}
-            </div>
-            <div class="nb-result-row__val">${h.latency > 0 ? '+' + h.latency + ' мс' : '—'}</div>
+            <div class="nb-result-row__text"><strong>${h.name}</strong> — ${formatDist(h.dist)}</div>
+            <div class="nb-result-row__val">${signalBarHTML(p.quality)}</div>
           </div>
-        `).join('')}
+          <div class="nb-chan-detail" id="nbResDet-${idx}">
+            <div class="nb-chan-detail__grid">
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Среда</span><span class="nb-chan-detail__val">${h.ch.medium === 'copper' ? 'Медь' : h.ch.medium === 'fiber' ? 'Оптоволокно' : 'Радио'}</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Дуплекс</span><span class="nb-chan-detail__val">${h.ch.duplex === 'full' ? 'Full' : 'Half'}</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Затухание</span><span class="nb-chan-detail__val">${p.attenTotal.toFixed(1)} дБ</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">SNR</span><span class="nb-chan-detail__val">${p.snr.toFixed(1)} дБ</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Номинал</span><span class="nb-chan-detail__val">${formatSpeed(h.ch.speed)}</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Шеннон</span><span class="nb-chan-detail__val">${formatSpeed(p.shannonMbps)}</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Эффективная</span><span class="nb-chan-detail__val" style="color:${p.effectiveSpeed < h.ch.speed * 0.5 ? 'var(--l7)' : 'var(--l4)'}">${formatSpeed(p.effectiveSpeed)}</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">BER</span><span class="nb-chan-detail__val">${p.ber < 1e-10 ? '< 10⁻¹⁰' : p.ber.toExponential(0)}</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Задержка распр.</span><span class="nb-chan-detail__val">${p.propagationDelay.toFixed(3)} мс</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Джиттер</span><span class="nb-chan-detail__val">${h.ch.jitter} мс</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Кодирование</span><span class="nb-chan-detail__val">${h.ch.encoding}</span></div>
+              <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Полоса</span><span class="nb-chan-detail__val">${h.ch.bandwidthMHz >= 1000 ? (h.ch.bandwidthMHz / 1000) + ' ГГц' : h.ch.bandwidthMHz + ' МГц'}</span></div>
+            </div>
+            ${p.overMax ? `<div style="color:var(--l7);font-weight:700;margin-top:6px">⚠ Расстояние (${formatDist(h.dist)}) превышает макс. дальность (${formatDist(h.ch.maxDist)})</div>` : ''}
+          </div>`;
+        }).join('')}
       </div>
       <div class="card mt-16" style="font-size:.82rem;line-height:1.6">
-        <strong>Узкое место:</strong> ${bottleneckName} (${formatSpeed(bottleneck)}). Это самый медленный канал, который ограничивает общую пропускную способность маршрута.
-        Передача одного кадра Ethernet (1500 байт) через этот канал занимает ${transferTime} мс.
-        ${totalLatency > 50 ? '<br><br><strong>Высокая задержка!</strong> Для интерактивных приложений (VoIP, игры) желательна задержка < 50 мс.' : ''}
+        <strong>Узкое место:</strong> ${bottleneckName} (${bottleneck > 0 ? formatSpeed(bottleneck) : 'нет сигнала'}).<br>
+        ${worstQuality === 'dead' ? '<span style="color:var(--l7)"><strong>Сигнал потерян!</strong> Уменьшите расстояние или выберите канал с меньшим затуханием.</span>' :
+          worstQuality === 'poor' ? '<span style="color:var(--l6)"><strong>Слабый сигнал!</strong> Высокая вероятность ошибок. Рекомендуется усилитель или смена канала.</span>' :
+          totalLatency > 100 ? '<strong>Высокая задержка!</strong> Для VoIP/игр нужно < 50 мс. Спутниковый канал — основная причина.' :
+          totalJitter > 5 ? '<strong>Значительный джиттер.</strong> Буферизация потребуется для потоковых приложений.' :
+          'Маршрут в хорошем состоянии.'}
       </div>
     `;
 
     document.querySelectorAll('.nb-device, .nb-link__line').forEach(el => el.classList.remove('nb-active'));
 
     for (let i = 0; i < hops.length; i++) {
-      await sleep(300);
+      await sleep(250);
       const row = document.getElementById('nbRes-' + i);
       if (row) row.classList.add('visible');
+      const det = document.getElementById('nbResDet-' + i);
+      if (det) det.classList.add('visible');
 
       const idx = hops[i].idx;
       if (hops[i].type === 'device') {
