@@ -268,6 +268,12 @@ const LAB_EXPERIMENTS = {
       { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1200, step: 100, default: 500, unit: 'мс' }
     ]
   },
+  journey: {
+    title: 'Путь сообщения',
+    icon: '🚀',
+    description: 'Полный анимированный путь данных от клавиатуры отправителя до экрана получателя — через все 7 уровней OSI и физический канал',
+    params: []
+  },
   multiplexing: {
     title: 'Мультиплексирование',
     icon: '🔀',
