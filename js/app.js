@@ -145,18 +145,19 @@
   menuItems.forEach(btn => btn.addEventListener('click', () => navigateTo(btn.dataset.section)));
   navCards.forEach(card => card.addEventListener('click', () => navigateTo(card.dataset.nav)));
 
-  // Physics lab tab switching
-  document.getElementById('physTabGen')?.addEventListener('click', () => {
-    document.getElementById('physGenPane').style.display = 'block';
-    document.getElementById('physChanPane').style.display = 'none';
-    document.getElementById('physTabGen').classList.add('active');
-    document.getElementById('physTabChan').classList.remove('active');
-  });
-  document.getElementById('physTabChan')?.addEventListener('click', () => {
-    document.getElementById('physGenPane').style.display = 'none';
-    document.getElementById('physChanPane').style.display = 'block';
-    document.getElementById('physTabGen').classList.remove('active');
-    document.getElementById('physTabChan').classList.add('active');
+  // Physics lab tab switching — event delegation
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'physTabGen') {
+      document.getElementById('physGenPane').style.display = 'block';
+      document.getElementById('physChanPane').style.display = 'none';
+      document.getElementById('physTabGen').classList.add('active');
+      document.getElementById('physTabChan').classList.remove('active');
+    } else if (e.target.id === 'physTabChan') {
+      document.getElementById('physGenPane').style.display = 'none';
+      document.getElementById('physChanPane').style.display = 'block';
+      document.getElementById('physTabGen').classList.remove('active');
+      document.getElementById('physTabChan').classList.add('active');
+    }
   });
 
   /* ==================== OSI TOWER BUILDER ==================== */
@@ -2711,9 +2712,18 @@
           <div class="sg-param"><label>Тип канала</label><select id="sgChannelSel">${SG_PRESETS.map(p => `<option value="${p.id}"${p.id === sgChannelId ? ' selected' : ''}>${p.name}</option>`).join('')}</select></div>
           <div class="sg-param"><label>Расстояние</label><input type="number" id="sgChDist" value="${sgChDistance}" min="1" max="100000" step="10"></div>
         </div>
-        ${sgChannelId !== 'none' ? `<div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">
-          ${(() => { const r = applyChannel(samples, sgChannelId, sgChDistance); return `Затухание: ${r.atten.toFixed(1)} дБ | SNR: ${r.snr.toFixed(1)} дБ | Полоса: ${r.bw >= 1e6 ? (r.bw/1e6).toFixed(0) + ' МГц' : (r.bw/1e3).toFixed(0) + ' кГц'} | Среда: ${r.ch?.medium === 'copper' ? 'медь' : r.ch?.medium === 'fiber' ? 'оптика' : 'радио'}`; })()}
-        </div>` : '<div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">Выберите канал — увидите как он искажает сигнал</div>'}
+        ${sgChannelId !== 'none' ? (() => {
+          const r = applyChannel(samples, sgChannelId, sgChDistance);
+          const quality = r.snr > 30 ? '🟢 Отличное' : r.snr > 20 ? '🟡 Хорошее' : r.snr > 10 ? '🟠 Среднее' : r.snr > 0 ? '🔴 Плохое' : '⚫ Нет связи';
+          return `<div class="card" style="font-size:.72rem;line-height:1.7;padding:10px">
+            <strong>${r.ch?.icon} ${r.ch?.name}</strong> — ${r.ch?.medium === 'copper' ? 'медный кабель' : r.ch?.medium === 'fiber' ? 'оптоволокно' : 'радиоканал'}<br>
+            <strong>Затухание:</strong> ${r.atten.toFixed(1)} дБ (сигнал ослаблен в ${Math.pow(10, r.atten/20).toFixed(1)} раз)<br>
+            <strong>SNR:</strong> ${r.snr.toFixed(1)} дБ — ${quality}<br>
+            <strong>Полоса:</strong> ${r.bw >= 1e6 ? (r.bw/1e6).toFixed(0) + ' МГц' : (r.bw/1e3).toFixed(0) + ' кГц'} (частоты выше обрезаются)<br>
+            <strong>Шум:</strong> AWGN (аддитивный белый гауссов шум) — тепловой шум электроники + внешние помехи<br>
+            <strong>Помехи:</strong> ${r.ch?.interference === 'high' ? '⚠ Высокие' : r.ch?.interference === 'medium' ? '~ Средние' : r.ch?.interference === 'none' ? '✓ Нет' : '✓ Низкие'}
+          </div>`;
+        })() : '<div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">Выберите канал — увидите как он искажает сигнал. Спектр RX покажет шумовую полку (AWGN) и ограничение полосы.</div>'}
 
         <div class="study-section__title">📥 Приёмник (RX)</div>
         <div class="sg-canvas-wrap">
@@ -2847,7 +2857,7 @@
     fading: 'Замирание (fading) — периодическое ослабление сигнала. Многолучевое распространение, движение приёмника.'
   };
 
-  document.getElementById('chSnrSlider').addEventListener('input', (e) => {
+  document.getElementById('chSnrSlider')?.addEventListener('input', (e) => {
     document.getElementById('chSnrVal').textContent = e.target.value + ' дБ';
   });
 
@@ -2860,8 +2870,8 @@
     });
   });
 
-  document.getElementById('chSrcFileBtn').addEventListener('click', () => document.getElementById('chSrcFileInput').click());
-  document.getElementById('chSrcLabData').addEventListener('click', () => {
+  document.getElementById('chSrcFileBtn')?.addEventListener('click', () => document.getElementById('chSrcFileInput')?.click());
+  document.getElementById('chSrcLabData')?.addEventListener('click', () => {
     chSrcBytes = labData.bytes.slice();
     chSrcImgData = labData.imgPreview;
     chSrcFileName = labData.fileName || labData.text;
@@ -2871,13 +2881,13 @@
     p.innerHTML = chSrcImgData ? `<img src="${chSrcImgData}" style="max-width:100%;max-height:80px;border-radius:6px;margin-top:6px">` : `<div style="font-size:.72rem;color:var(--l4);margin-top:4px">Загружено ${chSrcBytes.length} байт</div>`;
   });
 
-  document.getElementById('chSrcText').addEventListener('input', (e) => {
+  document.getElementById('chSrcText')?.addEventListener('input', (e) => {
     chSrcBytes = Array.from(new TextEncoder().encode(e.target.value));
     chSrcImgData = null; chSrcFileName = null; chSrcType = 'text';
     document.getElementById('chSrcPreview').innerHTML = '';
   });
 
-  document.getElementById('chSrcFileInput').addEventListener('change', (e) => {
+  document.getElementById('chSrcFileInput')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file || file.size > 50 * 1024 * 1024) return;
     chSrcFileName = file.name;
@@ -2892,7 +2902,7 @@
     r2.readAsArrayBuffer(file);
   });
 
-  document.getElementById('chTransmit').addEventListener('click', () => {
+  document.getElementById('chTransmit')?.addEventListener('click', () => {
     if (!chSrcBytes || chSrcBytes.length === 0) {
       const txt = document.getElementById('chSrcText').value || 'Hello';
       chSrcBytes = Array.from(new TextEncoder().encode(txt));
