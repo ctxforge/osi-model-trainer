@@ -145,7 +145,20 @@
   menuItems.forEach(btn => btn.addEventListener('click', () => navigateTo(btn.dataset.section)));
   navCards.forEach(card => card.addEventListener('click', () => navigateTo(card.dataset.nav)));
 
-  // Physics lab is now a single unified pane
+  // Physics lab tab switching
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'physTabGen') {
+      document.getElementById('physGenPane').style.display = 'block';
+      document.getElementById('physChanPane').style.display = 'none';
+      document.getElementById('physTabGen').classList.add('active');
+      document.getElementById('physTabChan').classList.remove('active');
+    } else if (e.target.id === 'physTabChan') {
+      document.getElementById('physGenPane').style.display = 'none';
+      document.getElementById('physChanPane').style.display = 'block';
+      document.getElementById('physTabGen').classList.remove('active');
+      document.getElementById('physTabChan').classList.add('active');
+    }
+  });
 
   /* ==================== OSI TOWER BUILDER ==================== */
   function buildTower(container, onClick) {
@@ -2933,18 +2946,31 @@
     setTimeout(() => { if (document.getElementById('section-siggen')?.classList.contains('active')) render(); }, 200);
   })();
 
-  /* Channel simulator handlers removed — functionality merged into Physics Lab */
+  /* ==================== CHANNEL SIMULATOR ==================== */
+  let chSrcBytes = null;
+  let chSrcImgData = null;
+  let chSrcFileName = null;
+  let chSrcType = 'text';
+  let chNoiseMode = 'awgn';
+  const noiseDescs = {
+    awgn: 'AWGN — белый гауссовский шум. Каждый бит имеет независимую вероятность ошибки.',
+    impulse: 'Импульсный — пачки ошибок 4-16 бит. Молния, моторы, коммутация.',
+    fading: 'Замирание — периодическое ослабление. Многолучевость, движение.'
+  };
+
   document.getElementById('chSnrSlider')?.addEventListener('input', (e) => {
     const v = document.getElementById('chSnrVal'); if (v) v.textContent = e.target.value + ' дБ';
   });
 
-  document.querySelectorAll('#chNoiseType .lab-toggle__btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('#chNoiseType .lab-toggle__btn');
+    if (btn) {
       document.querySelectorAll('#chNoiseType .lab-toggle__btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       chNoiseMode = btn.dataset.noise;
-      document.getElementById('chNoiseDesc').textContent = noiseDescs[chNoiseMode];
-    });
+      const desc = document.getElementById('chNoiseDesc');
+      if (desc) desc.textContent = noiseDescs[chNoiseMode] || '';
+    }
   });
 
   document.getElementById('chSrcFileBtn')?.addEventListener('click', () => document.getElementById('chSrcFileInput')?.click());

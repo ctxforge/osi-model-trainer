@@ -262,8 +262,47 @@
 
   <!-- ===== PHYSICS LAB ===== -->
   <section class="section" id="section-siggen">
-    <div class="section-desc">Лабораторный стенд: Источник → Модулятор → Канал + Помехи → Приёмник → Анализатор спектра</div>
-    <div id="siggenUI"></div>
+    <div class="lab-toggle mb-12">
+      <button class="lab-toggle__btn active" id="physTabGen">〰️ Генератор + Канал</button>
+      <button class="lab-toggle__btn" id="physTabChan">📡 Передача файла</button>
+    </div>
+
+    <div id="physGenPane">
+      <div class="section-desc">Лабораторный стенд: Источник → Модулятор → Канал + Помехи → Приёмник → Анализатор спектра</div>
+      <div id="siggenUI"></div>
+    </div>
+
+    <div id="physChanPane" style="display:none">
+      <div class="section-desc">Загрузите файл или картинку — передайте через канал с помехами — увидите повреждённый результат рядом с оригиналом</div>
+      <div class="card">
+        <div class="study-section__title">Источник данных</div>
+        <input type="text" class="sim-input" id="chSrcText" placeholder="Текст для передачи..." value="">
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="dnd-btn" id="chSrcFileBtn" style="flex:1;padding:8px;font-size:.72rem">📎 Загрузить файл/картинку</button>
+          <button class="dnd-btn" id="chSrcLabData" style="flex:1;padding:8px;font-size:.72rem">📋 Из лаборатории</button>
+        </div>
+        <input type="file" id="chSrcFileInput" hidden>
+        <div id="chSrcPreview"></div>
+      </div>
+      <div class="card">
+        <div class="study-section__title">Параметры канала</div>
+        <div class="lab-param">
+          <div class="lab-param__label"><span>SNR (сигнал/шум)</span><span class="lab-param__value" id="chSnrVal">20 дБ</span></div>
+          <input type="range" id="chSnrSlider" min="-5" max="40" step="1" value="20">
+        </div>
+        <div class="lab-param">
+          <div class="lab-param__label"><span>Тип шума</span></div>
+          <div class="lab-toggle" id="chNoiseType">
+            <button class="lab-toggle__btn active" data-noise="awgn">AWGN</button>
+            <button class="lab-toggle__btn" data-noise="impulse">Импульсный</button>
+            <button class="lab-toggle__btn" data-noise="fading">Замирание</button>
+          </div>
+        </div>
+        <div style="font-size:.68rem;color:var(--text-secondary);margin-top:4px" id="chNoiseDesc">AWGN — белый гауссовский шум, каждый бит имеет независимую вероятность ошибки</div>
+      </div>
+      <button class="lab-run-btn" id="chTransmit">📡 Передать через канал</button>
+      <div id="chResult"></div>
+    </div>
   </section>
 
   <!-- ===== TERMINAL ===== -->
