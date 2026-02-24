@@ -1458,7 +1458,10 @@
       ctx.fillText('TX (передано)', 4, 14);
       ctx.fillText('RX (получено)', 4, h * 0.5 + 14);
 
-      const bits = [1,0,1,1,0,0,1,0,1,1,0,1,0,0,1,1];
+      const rawText = document.getElementById('chPhyMsg')?.value || 'Hi';
+      const rawBytes = simUploadedBytes && simUploadedBytes.length > 0 ? simUploadedBytes.slice(0, 2) : Array.from(new TextEncoder().encode(rawText.slice(0, 2)));
+      const bits = [];
+      rawBytes.forEach(b => { for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); });
       const bitWidth = w / bits.length;
 
       ctx.beginPath();
@@ -1549,6 +1552,9 @@
       const propDelay = (chState.dist / (ch.propagation * 299792458)) * 1000;
 
       container.innerHTML = `
+        <input type="text" class="enc-input" id="chPhyMsg" value="${chState.msg || 'Hi'}" placeholder="Сообщение для визуализации сигнала...">
+        ${simUploadedFile && simUploadedBytes?.length ? `<div style="font-size:.72rem;color:var(--l4);margin:-6px 0 8px">📎 Файл: ${simUploadedFile.name} — биты файла отображаются на графике</div>` : ''}
+
         <select class="ch-phy-select" id="chPhySelect">
           ${CHANNEL_TYPES.map(c => `<option value="${c.id}"${c.id === chState.channelId ? ' selected' : ''}>${c.icon} ${c.name} — ${c.medium === 'copper' ? 'медь' : c.medium === 'fiber' ? 'оптоволокно' : 'радио'}</option>`).join('')}
         </select>
@@ -1628,6 +1634,11 @@
       const rxAmp = Math.max(Math.pow(10, -totalAtten / 40), 0.01);
       const noiseAmp = Math.pow(10, -snr / 30) * 0.8;
       drawSignal(canvas, txAmp, Math.min(rxAmp, 1), Math.min(noiseAmp, 1.2), qualColor);
+
+      container.querySelector('#chPhyMsg').addEventListener('input', (e) => {
+        chState.msg = e.target.value;
+        render();
+      });
 
       container.querySelector('#chPhySelect').addEventListener('change', (e) => {
         const newCh = CHANNEL_TYPES.find(c => c.id === e.target.value);
@@ -2849,10 +2860,36 @@
   /* ==================== LAB: SIGNALS L1 ==================== */
   (function initSignalsLab() {
     const container = document.getElementById('signalsUI');
-    let sigBits = [1,0,1,1,0,0,1,0];
+    let sigText = 'Hi';
+    let sigBits = [0,1,0,0,1,0,0,0, 0,1,1,0,1,0,0,1]; // 'Hi' in binary
     let sigEncoding = 'nrz';
     let sigModulation = 'ask';
-    let sigView = 'line'; // 'line' or 'mod'
+    let sigView = 'line';
+    let sigChannel = 'cat5e';
+
+    function textToBits(text) {
+      const bytes = Array.from(new TextEncoder().encode(text)).slice(0, 4);
+      const bits = [];
+      bytes.forEach(b => { for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); });
+      return bits;
+    }
+
+    function fileBytesToBits(bytes) {
+      const limited = bytes.slice(0, 4);
+      const bits = [];
+      limited.forEach(b => { for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); });
+      return bits;
+    }
+
+    function bytesBreakdown(text) {
+      const bytes = Array.from(new TextEncoder().encode(text)).slice(0, 4);
+      return bytes.map((b, i) => ({
+        char: text[i] || '?',
+        dec: b,
+        hex: b.toString(16).toUpperCase().padStart(2, '0'),
+        bin: b.toString(2).padStart(8, '0')
+      }));
+    }
 
     const LINE_CODES = {
       nrz:        { name: 'NRZ (Non-Return-to-Zero)', desc: 'Простейший код: 1 = высокий уровень, 0 = низкий. Используется в RS-232. Проблема: длинные последовательности одинаковых битов — потеря синхронизации.', where: 'RS-232, UART' },
@@ -3039,20 +3076,41 @@
     function render() {
       const isLine = sigView === 'line';
       const enc = isLine ? LINE_CODES[sigEncoding] : MOD_TYPES[sigModulation];
+      const ch = CHANNEL_TYPES.find(c => c.id === sigChannel);
+      const useFile = simUploadedFile && simUploadedBytes && simUploadedBytes.length > 0;
+      const breakdown = useFile ? simUploadedBytes.slice(0, 4).map((b, i) => ({
+        char: '0x' + b.toString(16).toUpperCase().padStart(2, '0'),
+        dec: b, hex: b.toString(16).toUpperCase().padStart(2, '0'),
+        bin: b.toString(2).padStart(8, '0')
+      })) : bytesBreakdown(sigText);
 
       container.innerHTML = `
-        <div class="sig-section-title">Введите биты (нажмите для переключения 0/1)</div>
+        <div class="sig-section-title">Источник данных</div>
+        <input type="text" class="enc-input" id="sigTextInput" value="${sigText}" placeholder="Введите текст...">
+        ${useFile ? `<div style="font-size:.72rem;color:var(--l4);margin:-6px 0 8px">📎 Используются байты файла: ${simUploadedFile.name}</div>` : ''}
+
+        <div class="sig-section-title">Байты → Биты (первые ${breakdown.length} символа)</div>
+        <div class="enc-step" style="overflow-x:auto">
+          <table class="pdu-fields" style="margin:0;font-size:.7rem">
+            <tr><td style="width:20%">Символ</td>${breakdown.map(b => `<td style="text-align:center;font-weight:700">${b.char}</td>`).join('')}</tr>
+            <tr><td>Десятичный</td>${breakdown.map(b => `<td style="text-align:center">${b.dec}</td>`).join('')}</tr>
+            <tr><td>Hex</td>${breakdown.map(b => `<td style="text-align:center;color:var(--accent)">0x${b.hex}</td>`).join('')}</tr>
+            <tr><td>Двоичный</td>${breakdown.map(b => `<td style="text-align:center;font-family:monospace;font-size:.65rem">${b.bin}</td>`).join('')}</tr>
+          </table>
+        </div>
+
+        <div class="sig-section-title">Биты на линии (нажмите для переключения)</div>
         <div class="sig-bits" id="sigBitsRow">
           ${sigBits.map((b, i) => `<div class="sig-bit sig-bit--${b}" data-idx="${i}">${b}</div>`).join('')}
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:10px">
-          <button class="dnd-btn${sigBits.length > 4 ? '' : ' dnd-btn--primary'}" id="sigRemBit" style="flex:1;padding:8px;font-size:.75rem"${sigBits.length <= 4 ? ' disabled' : ''}>− Бит</button>
-          <button class="dnd-btn${sigBits.length < 16 ? '' : ' dnd-btn--primary'}" id="sigAddBit" style="flex:1;padding:8px;font-size:.75rem"${sigBits.length >= 16 ? ' disabled' : ''}>+ Бит</button>
-          <button class="dnd-btn" id="sigRandBits" style="flex:1;padding:8px;font-size:.75rem">🎲 Случайно</button>
-        </div>
+
+        <div class="sig-section-title">Канал связи</div>
+        <select class="ch-phy-select" id="sigChannelSelect">
+          ${CHANNEL_TYPES.map(c => `<option value="${c.id}"${c.id === sigChannel ? ' selected' : ''}>${c.icon} ${c.name}</option>`).join('')}
+        </select>
 
         <div class="lab-toggle mb-12">
-          <button class="lab-toggle__btn${isLine ? ' active' : ''}" id="sigViewLine">⚡ Линейные коды</button>
+          <button class="lab-toggle__btn${isLine ? ' active' : ''}" id="sigViewLine">⚡ ${ch.medium === 'copper' ? 'Напряжение' : ch.medium === 'fiber' ? 'Свет' : 'Радиоволна'}</button>
           <button class="lab-toggle__btn${!isLine ? ' active' : ''}" id="sigViewMod">📡 Модуляция</button>
         </div>
 
@@ -3065,42 +3123,42 @@
 
         <div class="sig-canvas-wrap">
           <canvas id="sigCanvas"></canvas>
-          <div class="sig-canvas-label">${isLine ? 'Напряжение ↕ / Время →' : 'Амплитуда ↕ / Время →'}</div>
+          <div class="sig-canvas-label">${isLine
+            ? (ch.medium === 'copper' ? '⚡ Напряжение на медном проводе ↕ / Время →' : ch.medium === 'fiber' ? '💡 Мощность света в оптоволокне ↕ / Время →' : '📶 Амплитуда радиосигнала ↕ / Время →')
+            : `📡 Модулированный сигнал (${ch.name}) ↕ / Время →`}</div>
         </div>
 
         <div class="card" style="font-size:.82rem;line-height:1.7">
-          <strong>${enc.name}</strong><br>
-          ${enc.desc}
+          <strong>${enc.name}</strong><br>${enc.desc}
           ${enc.where ? `<br><strong>Используется:</strong> ${enc.where}` : ''}
           ${enc.bps ? `<br><strong>Бит на символ:</strong> ${enc.bps}` : ''}
         </div>
 
-        ${isLine ? `<div class="card mt-12" style="font-size:.78rem;line-height:1.6">
-          <strong>Как читать график:</strong><br>
-          Горизонтальная ось — время, вертикальная — напряжение на проводе.
-          Каждая вертикальная линия — граница между битами.
-          Числа сверху — передаваемые биты.
-          <br><br>
-          <strong>Почему это важно:</strong> приёмник измеряет напряжение и решает: «это 0 или 1?»
-          Если сигнал затухает или приходят помехи — приёмник ошибается (BER растёт).
-          Самосинхронизирующиеся коды (Manchester) помогают не терять такт.
-        </div>` : `<div class="card mt-12" style="font-size:.78rem;line-height:1.6">
-          <strong>Как читать график:</strong><br>
-          Тусклая линия — несущая частота (carrier). Яркая — модулированный сигнал.
-          Числа сверху — передаваемые символы (группы битов).
-          <br><br>
-          <strong>ASK</strong> — меняется амплитуда (громкость).
-          <strong>FSK</strong> — меняется частота (высота тона).
-          <strong>PSK</strong> — меняется фаза (сдвиг волны).
-          <strong>QAM</strong> — меняются амплитуда И фаза одновременно (больше бит на символ).
-          <br><br>
-          Чем больше бит на символ (QAM-256 = 8 бит) — тем выше скорость, но нужен чище сигнал (выше SNR).
-        </div>`}
+        <div class="card mt-12" style="font-size:.78rem;line-height:1.6">
+          <strong>Привязка к каналу ${ch.icon} ${ch.name}:</strong><br>
+          ${ch.medium === 'copper'
+            ? `В медном кабеле биты передаются как уровни напряжения. ${ch.name} использует кодирование ${ch.encoding}. На расстоянии ${ch.maxDist} м сигнал затухает на ${ch.attenuation} дБ/100м. ${ch.duplex === 'full' ? 'Полный дуплекс — передача и приём одновременно.' : 'Полудуплекс — по очереди.'}`
+            : ch.medium === 'fiber'
+            ? `В оптоволокне биты — это вспышки лазера (1) и отсутствие света (0). Затухание всего ${ch.attenuation} дБ/км — сигнал может идти ${(ch.maxDist/1000).toFixed(0)} км. Невосприимчив к электромагнитным помехам.`
+            : `В радиоканале биты модулируют несущую частоту. ${ch.name} использует ${ch.encoding}. Сигнал распространяется со скоростью света, но затухает (${ch.attenuation} дБ) и подвержен помехам (${ch.interference}). ${ch.duplex === 'half' ? 'Полудуплекс (CSMA/CA) — одновременно передаёт только одно устройство.' : 'Полный дуплекс (FDD/TDD).'}`
+          }
+        </div>
       `;
 
       const canvas = document.getElementById('sigCanvas');
       if (isLine) drawLineCode(canvas, sigBits, sigEncoding);
       else drawModulation(canvas, sigBits, sigModulation);
+
+      container.querySelector('#sigTextInput').addEventListener('input', (e) => {
+        sigText = e.target.value;
+        sigBits = textToBits(sigText || 'A');
+        render();
+      });
+
+      container.querySelector('#sigChannelSelect').addEventListener('change', (e) => {
+        sigChannel = e.target.value;
+        render();
+      });
 
       container.querySelectorAll('.sig-bit').forEach(el => {
         el.addEventListener('click', () => {
@@ -3109,10 +3167,6 @@
           render();
         });
       });
-
-      document.getElementById('sigAddBit')?.addEventListener('click', () => { if (sigBits.length < 16) { sigBits.push(Math.round(Math.random())); render(); } });
-      document.getElementById('sigRemBit')?.addEventListener('click', () => { if (sigBits.length > 4) { sigBits.pop(); render(); } });
-      document.getElementById('sigRandBits')?.addEventListener('click', () => { sigBits = sigBits.map(() => Math.round(Math.random())); render(); });
 
       document.getElementById('sigViewLine')?.addEventListener('click', () => { sigView = 'line'; render(); });
       document.getElementById('sigViewMod')?.addEventListener('click', () => { sigView = 'mod'; render(); });
