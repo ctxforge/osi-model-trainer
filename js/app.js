@@ -230,6 +230,16 @@
             <div class="study-section__title">Аналогия</div>
             <div class="analogy-box" style="border-color:${layer.color}">${layer.analogy}</div>
           </div>
+          ${layer.examples && layer.examples.length ? `
+          <div class="study-section">
+            <div class="study-section__title">Примеры — как это выглядит</div>
+            ${layer.examples.map(ex => `
+              <div style="margin-bottom:8px">
+                <div style="font-size:.78rem;font-weight:700;margin-bottom:4px;color:${layer.color}">${ex.name}</div>
+                <div class="pdu-appdata" style="font-size:.68rem;line-height:1.5;max-height:none">${ex.code}</div>
+              </div>
+            `).join('')}
+          </div>` : ''}
         </div>
       </div>
     `;
