@@ -909,6 +909,7 @@ body {
 }
 
 .lab-tabs::-webkit-scrollbar { display: none; }
+.lab-groups::-webkit-scrollbar { display: none; }
 
 .lab-tab {
   padding: 8px 14px;

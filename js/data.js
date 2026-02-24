@@ -183,11 +183,112 @@ const DRAG_DROP_ITEMS = [
   { name: 'Bluetooth', layer: 1, type: 'protocol' }
 ];
 
+const LAB_GROUPS = [
+  { id: 'overview', name: '🚀 Обзор', desc: 'Полный путь данных от отправителя до получателя',
+    experiments: ['journey', 'scenario'] },
+  { id: 'physical', name: '⚡ L1 Физика', desc: 'Сигналы, модуляция, каналы связи, мультиплексирование',
+    experiments: ['signals', 'channelPhysics', 'multiplexing'] },
+  { id: 'network', name: '🌐 L2-L3 Сеть', desc: 'Устройства, маршрутизация, адресация, конструктор сети',
+    experiments: ['devices', 'netBuilder', 'routing', 'fragmentation', 'ipCalc'] },
+  { id: 'transport', name: '📦 L4 Транспорт', desc: 'TCP/UDP: соединения, передача, сравнение протоколов',
+    experiments: ['tcpHandshake', 'tcpVsUdp', 'packetTransmission'] },
+  { id: 'security', name: '🔐 L5-L7 Безопасность', desc: 'Шифрование, TLS, сертификаты',
+    experiments: ['encryption', 'tls'] }
+];
+
 const LAB_EXPERIMENTS = {
+  journey: {
+    title: 'Путь сообщения',
+    icon: '🚀',
+    description: 'Полный анимированный путь данных от клавиатуры до экрана получателя через все 7 уровней OSI',
+    params: []
+  },
+  scenario: {
+    title: 'Открытие сайта',
+    icon: '🌐',
+    description: 'Что происходит шаг за шагом, когда вы вводите URL в браузере',
+    params: []
+  },
+  signals: {
+    title: 'Сигналы L1',
+    icon: '⚡',
+    description: 'Как биты превращаются в электрические, световые и радиосигналы',
+    params: []
+  },
+  channelPhysics: {
+    title: 'Физика канала',
+    icon: '📊',
+    description: 'Затухание, помехи, SNR, BER — как среда влияет на сигнал',
+    params: []
+  },
+  multiplexing: {
+    title: 'Мультиплексирование',
+    icon: '🔀',
+    description: 'Как один кабель/частота обслуживает много устройств — TDM, FDM, OFDMA, порты',
+    params: []
+  },
+  devices: {
+    title: 'Hub / Switch / Router',
+    icon: '🔌',
+    description: 'Как устройства обрабатывают кадры на разных уровнях OSI',
+    params: []
+  },
+  netBuilder: {
+    title: 'Конструктор сети',
+    icon: '🔗',
+    description: 'Постройте маршрут из устройств и каналов, отправьте пакет, увидите OSI на каждом хопе',
+    params: []
+  },
+  routing: {
+    title: 'Маршрутизация и TTL',
+    icon: '🗺️',
+    description: 'Как маршрутизаторы выбирают путь и зачем TTL уменьшается на каждом хопе',
+    params: [
+      { id: 'ttl', label: 'TTL (Time To Live)', type: 'range', min: 1, max: 16, step: 1, default: 8, unit: '' },
+      { id: 'hops', label: 'Количество хопов', type: 'range', min: 1, max: 12, step: 1, default: 5, unit: '' },
+      { id: 'routeType', label: 'Алгоритм', type: 'toggle', options: ['Кратчайший', 'Альтернативный'], default: 0 }
+    ]
+  },
+  fragmentation: {
+    title: 'Фрагментация MTU',
+    icon: '✂️',
+    description: 'Пакет не влезает в канал — маршрутизатор разрезает его. MTU (Maximum Transmission Unit) — максимальный размер, который канал может передать за раз',
+    params: [
+      { id: 'mtu', label: 'MTU канала (байт)', type: 'range', min: 68, max: 1500, step: 1, default: 1500, unit: 'байт' },
+      { id: 'messageSize', label: 'Размер вашего сообщения', type: 'range', min: 100, max: 9000, step: 100, default: 4000, unit: 'байт' },
+      { id: 'headerSize', label: 'Размер IP-заголовка', type: 'range', min: 20, max: 60, step: 4, default: 20, unit: 'байт' }
+    ]
+  },
+  ipCalc: {
+    title: 'IP-калькулятор',
+    icon: '🔢',
+    description: 'Как IP-адрес и маска делят адрес на сетевую и хостовую часть. Рассчитайте параметры подсети',
+    params: [
+      { id: 'ip', label: 'IP-адрес', type: 'ip', default: '192.168.1.100' },
+      { id: 'cidr', label: 'Маска (CIDR)', type: 'range', min: 8, max: 30, step: 1, default: 24, unit: '' }
+    ]
+  },
+  tcpHandshake: {
+    title: 'TCP Handshake',
+    icon: '🤝',
+    description: 'Трёхстороннее рукопожатие: как TCP устанавливает надёжное соединение перед передачей данных',
+    params: [
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1500, step: 100, default: 600, unit: 'мс' }
+    ]
+  },
+  tcpVsUdp: {
+    title: 'TCP vs UDP',
+    icon: '⚔️',
+    description: 'Надёжный TCP (с подтверждениями) против быстрого UDP (без гарантий) — параллельное сравнение',
+    params: [
+      { id: 'packetLoss', label: 'Потеря пакетов', type: 'range', min: 0, max: 60, step: 5, default: 20, unit: '%' },
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 150, max: 1000, step: 50, default: 350, unit: 'мс' }
+    ]
+  },
   packetTransmission: {
     title: 'Передача пакетов',
     icon: '📡',
-    description: 'Исследуйте, как параметры сети влияют на передачу данных',
+    description: 'Как потери и задержка влияют на передачу — TCP пересылает потерянные пакеты, UDP теряет навсегда',
     params: [
       { id: 'protocol', label: 'Протокол', type: 'toggle', options: ['TCP', 'UDP'], default: 0 },
       { id: 'packetLoss', label: 'Потеря пакетов', type: 'range', min: 0, max: 50, step: 1, default: 10, unit: '%' },
@@ -260,43 +361,13 @@ const LAB_EXPERIMENTS = {
     params: []
   },
   tls: {
-    title: 'TLS / Шифрование',
-    icon: '🔐',
-    description: 'Визуализация TLS-рукопожатия, сертификатов и шифрования данных',
+    title: 'TLS / Сертификаты',
+    icon: '🔒',
+    description: 'TLS-рукопожатие пошагово: ClientHello, сертификаты X.509, обмен ключами, шифрование канала',
     params: [
       { id: 'tlsVersion', label: 'Версия TLS', type: 'toggle', options: ['TLS 1.2', 'TLS 1.3'], default: 1 },
       { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1200, step: 100, default: 500, unit: 'мс' }
     ]
-  },
-  journey: {
-    title: 'Путь сообщения',
-    icon: '🚀',
-    description: 'Полный анимированный путь данных от клавиатуры отправителя до экрана получателя — через все 7 уровней OSI и физический канал',
-    params: []
-  },
-  multiplexing: {
-    title: 'Мультиплексирование',
-    icon: '🔀',
-    description: 'Как один кабель или частота обслуживает много устройств и приложений одновременно',
-    params: []
-  },
-  encryption: {
-    title: 'Шифрование',
-    icon: '🔐',
-    description: 'Введите текст и посмотрите, как работает шифрование пошагово — от простого XOR до RSA',
-    params: []
-  },
-  signals: {
-    title: 'Сигналы L1',
-    icon: '⚡',
-    description: 'Как биты превращаются в электрические, световые и радиосигналы на физическом уровне',
-    params: []
-  },
-  channelPhysics: {
-    title: 'Физика канала',
-    icon: '📊',
-    description: 'Исследуйте, как расстояние, среда и помехи влияют на сигнал в реальном канале',
-    params: []
   }
 };
 

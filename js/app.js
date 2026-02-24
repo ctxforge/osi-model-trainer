@@ -698,22 +698,48 @@
   /* ==================== LAB ==================== */
   const labState = {};
 
+  let activeLabGroup = 'overview';
+
   function buildLabTabs() {
     const container = document.getElementById('labTabs');
-    const keys = Object.keys(LAB_EXPERIMENTS);
-    keys.forEach((key, i) => {
-      const exp = LAB_EXPERIMENTS[key];
-      const tab = document.createElement('button');
-      tab.className = 'lab-tab' + (i === 0 ? ' active' : '');
-      tab.dataset.lab = key;
-      tab.textContent = exp.icon + ' ' + exp.title;
-      tab.addEventListener('click', () => switchLabTab(key));
-      container.appendChild(tab);
+    const group = LAB_GROUPS.find(g => g.id === activeLabGroup) || LAB_GROUPS[0];
+
+    let html = '<div class="lab-groups" style="display:flex;gap:4px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none">';
+    LAB_GROUPS.forEach(g => {
+      html += `<button class="lab-tab${g.id === activeLabGroup ? ' active' : ''}" data-group="${g.id}" style="font-size:.68rem">${g.name}</button>`;
     });
+    html += '</div><div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">' + group.desc + '</div>';
+    html += '<div style="display:flex;gap:4px;overflow-x:auto;scrollbar-width:none">';
+    group.experiments.forEach((key, i) => {
+      const exp = LAB_EXPERIMENTS[key];
+      if (!exp) return;
+      html += `<button class="lab-tab${i === 0 ? ' active' : ''}" data-lab="${key}" style="font-size:.7rem">${exp.icon} ${exp.title}</button>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-group]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeLabGroup = btn.dataset.group;
+        buildLabTabs();
+        const grp = LAB_GROUPS.find(g => g.id === activeLabGroup);
+        if (grp && grp.experiments[0]) switchLabTab(grp.experiments[0]);
+      });
+    });
+
+    container.querySelectorAll('[data-lab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('[data-lab]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        switchLabTab(btn.dataset.lab);
+      });
+    });
+
+    if (group.experiments[0]) switchLabTab(group.experiments[0]);
   }
 
   function switchLabTab(key) {
-    document.querySelectorAll('.lab-tab').forEach(t => t.classList.toggle('active', t.dataset.lab === key));
+    document.querySelectorAll('.lab-tab[data-lab]').forEach(t => t.classList.toggle('active', t.dataset.lab === key));
     document.querySelectorAll('.lab-content').forEach(c => c.classList.remove('active'));
     const target = document.getElementById('lab-' + key);
     if (target) target.classList.add('active');
@@ -1012,13 +1038,10 @@
     }
   });
 
+  // Lab: IP Calculator
   document.getElementById('labRun-ipCalc').addEventListener('click', () => {
     unlockAchievement('ip_calc');
     addXP(3);
-  });
-
-  // Lab: IP Calculator
-  document.getElementById('labRun-ipCalc').addEventListener('click', () => {
     const s = labState.ipCalc;
     const ipStr = s.ip;
     const cidr = s.cidr;
