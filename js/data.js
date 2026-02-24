@@ -268,6 +268,18 @@ const LAB_EXPERIMENTS = {
       { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1200, step: 100, default: 500, unit: 'мс' }
     ]
   },
+  multiplexing: {
+    title: 'Мультиплексирование',
+    icon: '🔀',
+    description: 'Как один кабель или частота обслуживает много устройств и приложений одновременно',
+    params: []
+  },
+  encryption: {
+    title: 'Шифрование',
+    icon: '🔐',
+    description: 'Введите текст и посмотрите, как работает шифрование пошагово — от простого XOR до RSA',
+    params: []
+  },
   signals: {
     title: 'Сигналы L1',
     icon: '⚡',
