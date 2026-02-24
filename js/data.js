@@ -258,6 +258,12 @@ const LAB_EXPERIMENTS = {
     icon: '🔗',
     description: 'Постройте маршрут из реальных устройств и каналов связи, затем отправьте пакет',
     params: []
+  },
+  channelPhysics: {
+    title: 'Физика канала',
+    icon: '📊',
+    description: 'Исследуйте, как расстояние, среда и помехи влияют на сигнал в реальном канале',
+    params: []
   }
 };
 
@@ -386,6 +392,37 @@ const ACHIEVEMENTS = [
   { id: 'xp_100', name: 'Сотня', desc: 'Наберите 100 XP', icon: '💯', xp: 0 },
   { id: 'xp_300', name: 'Мастер', desc: 'Наберите 300 XP', icon: '🏆', xp: 0 }
 ];
+
+const ENV_EFFECTS = {
+  copper: [
+    { id: 'shielded', label: 'Экранирование (STP)', type: 'toggle', default: false, dbBonus: 6, desc: 'Экранированная витая пара снижает внешние наводки на ~6 дБ' },
+    { id: 'bundlePairs', label: 'Пар в пучке (crosstalk)', type: 'range', min: 1, max: 50, default: 4, dbPenalty: 0.3, desc: 'Чем больше пар в кабельном канале, тем сильнее перекрёстные наводки (NEXT/FEXT)' },
+    { id: 'temperature', label: 'Температура (°C)', type: 'range', min: -10, max: 70, default: 25, dbPenPerDeg: 0.04, baseline: 25, desc: 'Сопротивление меди растёт с температурой → затухание увеличивается' }
+  ],
+  fiber: [
+    { id: 'connectors', label: 'Кол-во разъёмов', type: 'range', min: 0, max: 12, default: 2, dbPenalty: 0.5, desc: 'Каждый разъём (SC, LC) вносит ~0.3-0.75 дБ потерь из-за несовпадения осей' },
+    { id: 'splices', label: 'Кол-во сварок', type: 'range', min: 0, max: 30, default: 4, dbPenalty: 0.1, desc: 'Каждая сварка (fusion splice) вносит ~0.05-0.2 дБ потерь' },
+    { id: 'bendRadius', label: 'Изгибов (< мин. радиуса)', type: 'range', min: 0, max: 10, default: 0, dbPenalty: 1.0, desc: 'Изгиб меньше минимального радиуса → свет выходит из ядра → потери до 1 дБ/изгиб' }
+  ],
+  radio: [
+    { id: 'walls', label: 'Стены на пути', type: 'range', min: 0, max: 6, default: 0, dbPenalty: 6, desc: 'Каждая бетонная стена ~6 дБ, кирпичная ~4 дБ, гипсокартон ~3 дБ' },
+    { id: 'people', label: 'Людей в зоне', type: 'range', min: 0, max: 100, default: 5, dbPenalty: 0.1, desc: 'Тело человека (70% воды) поглощает радиоволны — ~0.1 дБ на человека' },
+    { id: 'interference', label: 'Источники помех', type: 'range', min: 0, max: 20, default: 2, dbPenalty: 1.0, desc: 'Соседние AP, микроволновки, Bluetooth, радиотелефоны — каждый ~1 дБ к шумовой полке' },
+    { id: 'weather', label: 'Погода', type: 'select', options: ['Ясно', 'Облачно', 'Дождь', 'Гроза'], dbPenalties: [0, 1, 4, 10], desc: 'Дождь и влажность поглощают радиоволны (особенно > 10 ГГц)' }
+  ],
+  satellite: [
+    { id: 'weather', label: 'Погода (rain fade)', type: 'select', options: ['Ясно', 'Облачно', 'Дождь', 'Ливень'], dbPenalties: [0, 2, 8, 20], desc: 'Rain fade — главный враг спутниковой связи, дождь поглощает Ku/Ka-диапазон' },
+    { id: 'elevation', label: 'Угол возвышения (°)', type: 'range', min: 5, max: 90, default: 45, desc: 'Низкий угол → сигнал проходит дольше через атмосферу → больше затухание' },
+    { id: 'solar', label: 'Солнечная интерференция', type: 'toggle', default: false, dbPenalty: 15, desc: 'Когда Солнце за спутником — мощные помехи, потери до 15 дБ (раз в сезон)' }
+  ]
+};
+
+function getChannelEnvType(chId) {
+  if (['cat5e','cat6','coax','dsl'].includes(chId)) return 'copper';
+  if (['fiber_sm','fiber_mm'].includes(chId)) return 'fiber';
+  if (chId === 'satellite') return 'satellite';
+  return 'radio';
+}
 
 const ENCAPSULATION_HEADERS = [
   { layer: 7, label: 'Данные приложения', short: 'DATA', color: '#e74c3c' },

@@ -1391,6 +1391,264 @@
     addXP(5);
   });
 
+  /* ==================== CHANNEL PHYSICS LAB ==================== */
+  (function initChannelPhysics() {
+    const container = document.getElementById('channelPhysicsUI');
+    let chState = { channelId: 'cat5e', dist: 30, env: {} };
+
+    function calcEnvPenalty(ch, env) {
+      const envType = getChannelEnvType(ch.id);
+      const effects = ENV_EFFECTS[envType] || [];
+      let totalDb = 0;
+      let speedFactor = 1;
+      effects.forEach(eff => {
+        const val = env[eff.id];
+        if (val === undefined) return;
+        if (eff.type === 'toggle') {
+          if (val && eff.dbPenalty) totalDb += eff.dbPenalty;
+          if (val && eff.dbBonus) totalDb -= eff.dbBonus;
+        } else if (eff.type === 'range') {
+          if (eff.dbPenalty) totalDb += val * eff.dbPenalty;
+          if (eff.dbPenPerDeg) totalDb += Math.max(0, val - (eff.baseline || 0)) * eff.dbPenPerDeg;
+          if (eff.speedPenalty) speedFactor = Math.max(0.05, 1 - (val * eff.speedPenalty / 100));
+        } else if (eff.type === 'select') {
+          if (eff.dbPenalties) totalDb += eff.dbPenalties[val] || 0;
+        }
+      });
+      return { totalDb: Math.max(totalDb, 0), speedFactor };
+    }
+
+    function drawSignal(canvas, txAmp, rxAmp, noiseAmp, color) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      const w = rect.width, h = rect.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const midTx = h * 0.28;
+      const midRx = h * 0.72;
+
+      ctx.strokeStyle = '#2a2e3d';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(0, h * 0.5); ctx.lineTo(w, h * 0.5); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#6c7a96';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('TX (передано)', 4, 14);
+      ctx.fillText('RX (получено)', 4, h * 0.5 + 14);
+
+      const bits = [1,0,1,1,0,0,1,0,1,1,0,1,0,0,1,1];
+      const bitWidth = w / bits.length;
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < w; x++) {
+        const bitIdx = Math.floor(x / bitWidth) % bits.length;
+        const inBit = (x % bitWidth) / bitWidth;
+        let val = bits[bitIdx] ? 1 : -1;
+        const edge = 0.08;
+        if (inBit < edge) val *= inBit / edge;
+        else if (inBit > 1 - edge) val *= (1 - inBit) / edge;
+        const y = midTx - val * txAmp * (h * 0.2);
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      for (let x = 0; x < w; x++) {
+        const bitIdx = Math.floor(x / bitWidth) % bits.length;
+        const inBit = (x % bitWidth) / bitWidth;
+        let val = bits[bitIdx] ? 1 : -1;
+        const edge = 0.08;
+        if (inBit < edge) val *= inBit / edge;
+        else if (inBit > 1 - edge) val *= (1 - inBit) / edge;
+        const signal = val * rxAmp * (h * 0.2);
+        const noise = (Math.random() - 0.5) * 2 * noiseAmp * (h * 0.2);
+        const y = midRx - signal - noise;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      if (rxAmp > 0.05) {
+        ctx.strokeStyle = '#e74c3c44';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath(); ctx.moveTo(0, midRx); ctx.lineTo(w, midRx); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#e74c3c88';
+        ctx.font = '9px sans-serif';
+        ctx.fillText('порог', w - 34, midRx - 3);
+      }
+    }
+
+    function render() {
+      const ch = CHANNEL_TYPES.find(c => c.id === chState.channelId);
+      const envType = getChannelEnvType(ch.id);
+      const effects = ENV_EFFECTS[envType] || [];
+
+      effects.forEach(eff => {
+        if (chState.env[eff.id] === undefined) {
+          chState.env[eff.id] = eff.default !== undefined ? eff.default : 0;
+        }
+      });
+
+      const envPen = calcEnvPenalty(ch, chState.env);
+      const distUnit = ch.medium === 'fiber' ? chState.dist / 1000 : chState.dist / 100;
+      const cableAtten = ch.attenuation * distUnit;
+      const envAtten = envPen.totalDb;
+      const totalAtten = cableAtten + envAtten;
+      const txPower = ch.snrBase + 10;
+      const rxPower = txPower - totalAtten;
+      const noiseFloor = -5 + (ch.interference === 'high' ? 5 : ch.interference === 'medium' ? 2 : 0);
+      const snr = rxPower - noiseFloor;
+      const snrLin = Math.pow(10, Math.max(snr, 0) / 10);
+      const shannon = ch.bandwidthMHz * Math.log2(1 + snrLin);
+      const effSpeed = Math.min(ch.speed, shannon) * envPen.speedFactor * (snr > 0 ? 1 : 0);
+
+      let ber;
+      if (snr > 30) ber = '< 10⁻¹²';
+      else if (snr > 20) ber = '~10⁻⁹';
+      else if (snr > 15) ber = '~10⁻⁶';
+      else if (snr > 10) ber = '~10⁻⁴';
+      else if (snr > 5) ber = '~10⁻²';
+      else ber = '~0.5 (нет связи)';
+
+      let quality, qualColor;
+      if (snr > 30) { quality = 'Отличное'; qualColor = '#2ecc71'; }
+      else if (snr > 20) { quality = 'Хорошее'; qualColor = '#1abc9c'; }
+      else if (snr > 10) { quality = 'Среднее'; qualColor = '#f1c40f'; }
+      else if (snr > 3) { quality = 'Плохое'; qualColor = '#e67e22'; }
+      else { quality = 'Нет связи'; qualColor = '#e74c3c'; }
+
+      const overMax = chState.dist > ch.maxDist;
+      const snrPct = Math.min(Math.max(snr / 50 * 100, 0), 100);
+      const propDelay = (chState.dist / (ch.propagation * 299792458)) * 1000;
+
+      container.innerHTML = `
+        <select class="ch-phy-select" id="chPhySelect">
+          ${CHANNEL_TYPES.map(c => `<option value="${c.id}"${c.id === chState.channelId ? ' selected' : ''}>${c.icon} ${c.name} — ${c.medium === 'copper' ? 'медь' : c.medium === 'fiber' ? 'оптоволокно' : 'радио'}</option>`).join('')}
+        </select>
+
+        <div class="lab-param">
+          <div class="lab-param__label">
+            <span>Расстояние</span>
+            <span class="lab-param__value" style="${overMax ? 'color:var(--l7)' : ''}">${chState.dist >= 1000 ? (chState.dist/1000).toFixed(1) + ' км' : chState.dist + ' м'}${overMax ? ' ⚠ > макс.' : ''}</span>
+          </div>
+          <input type="range" id="chPhyDist" min="1" max="${Math.max(ch.maxDist * 2, 200)}" step="${ch.maxDist > 5000 ? 100 : 1}" value="${chState.dist}">
+        </div>
+
+        <div class="ch-canvas-wrap">
+          <canvas id="chPhyCanvas" style="height:180px"></canvas>
+          <div class="ch-canvas-legend">
+            <div class="ch-canvas-legend__item"><div class="ch-canvas-legend__dot" style="background:#2ecc71"></div> Переданный</div>
+            <div class="ch-canvas-legend__item"><div class="ch-canvas-legend__dot" style="background:${qualColor}"></div> Принятый</div>
+            <div class="ch-canvas-legend__item"><div class="ch-canvas-legend__dot" style="background:#e74c3c"></div> Порог</div>
+          </div>
+        </div>
+
+        <div class="lab-result__title">Бюджет мощности</div>
+        <div class="ch-budget">
+          <div class="ch-budget__row"><div class="ch-budget__icon">📡</div><div class="ch-budget__label">Мощность передатчика</div><div class="ch-budget__val ch-budget__val--good">+${txPower.toFixed(1)} дБ</div></div>
+          <div class="ch-budget__row"><div class="ch-budget__icon">📉</div><div class="ch-budget__label">Затухание в среде (${chState.dist >= 1000 ? (chState.dist/1000).toFixed(1)+'км' : chState.dist+'м'})</div><div class="ch-budget__val ch-budget__val--bad">−${cableAtten.toFixed(1)} дБ</div></div>
+          ${envAtten > 0 ? `<div class="ch-budget__row"><div class="ch-budget__icon">🌧️</div><div class="ch-budget__label">Потери среды (помехи, условия)</div><div class="ch-budget__val ch-budget__val--bad">−${envAtten.toFixed(1)} дБ</div></div>` : ''}
+          <div class="ch-budget__row"><div class="ch-budget__icon">📥</div><div class="ch-budget__label">Мощность на приёмнике</div><div class="ch-budget__val" style="color:${qualColor}">${rxPower.toFixed(1)} дБ</div></div>
+          <div class="ch-budget__row"><div class="ch-budget__icon">🔊</div><div class="ch-budget__label">Шумовая полка</div><div class="ch-budget__val">${noiseFloor.toFixed(1)} дБ</div></div>
+          <div class="ch-budget__row" style="font-weight:700"><div class="ch-budget__icon">📶</div><div class="ch-budget__label">SNR (сигнал/шум)</div><div class="ch-budget__val" style="color:${qualColor}">${snr.toFixed(1)} дБ — ${quality}</div></div>
+        </div>
+        <div class="ch-budget__bar"><div class="ch-budget__bar-fill" style="width:${snrPct}%;background:${qualColor}"></div></div>
+
+        <div class="lab-stats">
+          <div class="lab-stat"><div class="lab-stat__value" style="color:${qualColor}">${snr.toFixed(1)} дБ</div><div class="lab-stat__label">SNR</div></div>
+          <div class="lab-stat"><div class="lab-stat__value">${ber}</div><div class="lab-stat__label">BER</div></div>
+          <div class="lab-stat"><div class="lab-stat__value">${formatSpeed(Math.max(effSpeed, 0))}</div><div class="lab-stat__label">Эфф. скорость</div></div>
+          <div class="lab-stat"><div class="lab-stat__value">${formatSpeed(shannon)}</div><div class="lab-stat__label">Ёмкость Шеннона</div></div>
+          <div class="lab-stat"><div class="lab-stat__value">${propDelay.toFixed(3)} мс</div><div class="lab-stat__label">Задержка распр.</div></div>
+          <div class="lab-stat"><div class="lab-stat__value">${ch.duplex === 'full' ? 'Full' : 'Half'}</div><div class="lab-stat__label">Дуплекс</div></div>
+        </div>
+
+        ${effects.length ? `
+        <div class="ch-env-section">
+          <div class="ch-env-section__title">Условия среды — ${ch.medium === 'copper' ? 'медный кабель' : ch.medium === 'fiber' ? 'оптоволокно' : ch.id === 'satellite' ? 'спутниковый канал' : 'радиоканал'}</div>
+          ${effects.map(eff => {
+            const val = chState.env[eff.id];
+            if (eff.type === 'range') {
+              return `<div class="ch-env-item">
+                <div class="ch-env-item__row"><span>${eff.label}</span><span class="ch-env-item__val" id="chEnvVal-${eff.id}">${val}</span></div>
+                <input type="range" min="${eff.min}" max="${eff.max}" value="${val}" data-env="${eff.id}">
+                <div class="ch-env-item__desc">${eff.desc}</div>
+              </div>`;
+            } else if (eff.type === 'toggle') {
+              return `<div class="ch-env-item">
+                <label class="ch-env-toggle"><input type="checkbox" data-env="${eff.id}"${val ? ' checked' : ''}> ${eff.label}</label>
+                <div class="ch-env-item__desc">${eff.desc}</div>
+              </div>`;
+            } else if (eff.type === 'select') {
+              return `<div class="ch-env-item">
+                <div class="ch-env-item__row"><span>${eff.label}</span></div>
+                <select data-env="${eff.id}">${eff.options.map((o, i) => `<option value="${i}"${i === val ? ' selected' : ''}>${o}</option>`).join('')}</select>
+                <div class="ch-env-item__desc">${eff.desc}</div>
+              </div>`;
+            }
+            return '';
+          }).join('')}
+        </div>` : ''}
+
+        <div class="card mt-16" style="font-size:.82rem;line-height:1.6">
+          <strong>${ch.icon} ${ch.name}</strong> — ${ch.desc}
+          <br><br><strong>Кодирование:</strong> ${ch.encoding} | <strong>Полоса:</strong> ${ch.bandwidthMHz >= 1000 ? ch.bandwidthMHz/1000 + ' ГГц' : ch.bandwidthMHz + ' МГц'} | <strong>Макс. дальность:</strong> ${ch.maxDist >= 1000 ? (ch.maxDist/1000).toFixed(0) + ' км' : ch.maxDist + ' м'}
+        </div>
+      `;
+
+      const canvas = document.getElementById('chPhyCanvas');
+      const txAmp = 1;
+      const rxAmp = Math.max(Math.pow(10, -totalAtten / 40), 0.01);
+      const noiseAmp = Math.pow(10, -snr / 30) * 0.8;
+      drawSignal(canvas, txAmp, Math.min(rxAmp, 1), Math.min(noiseAmp, 1.2), qualColor);
+
+      container.querySelector('#chPhySelect').addEventListener('change', (e) => {
+        const newCh = CHANNEL_TYPES.find(c => c.id === e.target.value);
+        chState.channelId = e.target.value;
+        chState.dist = newCh.defaultDist;
+        chState.env = {};
+        render();
+      });
+
+      container.querySelector('#chPhyDist').addEventListener('input', (e) => {
+        chState.dist = parseInt(e.target.value);
+        render();
+      });
+
+      container.querySelectorAll('[data-env]').forEach(el => {
+        const handler = () => {
+          const key = el.dataset.env;
+          if (el.type === 'checkbox') chState.env[key] = el.checked;
+          else if (el.tagName === 'SELECT') chState.env[key] = parseInt(el.value);
+          else { chState.env[key] = parseFloat(el.value); const valEl = document.getElementById('chEnvVal-' + key); if (valEl) valEl.textContent = el.value; }
+          render();
+        };
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', handler);
+      });
+    }
+
+    const observer = new MutationObserver(() => {
+      if (document.getElementById('lab-channelPhysics')?.classList.contains('active') && !container.children.length) render();
+    });
+    observer.observe(document.getElementById('lab-channelPhysics'), { attributes: true, attributeFilter: ['class'] });
+
+    setTimeout(() => {
+      if (document.getElementById('lab-channelPhysics')?.classList.contains('active')) render();
+    }, 100);
+  })();
+
   /* ==================== NETWORK PATH BUILDER ==================== */
   const SPEED_OF_LIGHT = 299792458; // m/s
 
@@ -1423,9 +1681,11 @@
     return m + ' м';
   }
 
-  function calcChannelPhysics(ch, dist) {
+  function calcChannelPhysics(ch, dist, env) {
     const distUnit = ch.medium === 'fiber' ? dist / 1000 : dist / 100;
-    const attenTotal = ch.attenuation * distUnit;
+    const cableAtten = ch.attenuation * distUnit;
+    const envPenalty = env === 'harsh' ? (ch.medium === 'radio' ? 18 : ch.medium === 'fiber' ? 5 : 10) : env === 'ideal' ? 0 : (ch.medium === 'radio' ? 5 : ch.medium === 'fiber' ? 1 : 3);
+    const attenTotal = cableAtten + envPenalty;
     const snr = Math.max(ch.snrBase - attenTotal, -5);
     const snrLinear = Math.pow(10, snr / 10);
 
@@ -1487,7 +1747,7 @@
       } else {
         const ch = CHANNEL_TYPES.find(ct => ct.id === item.id);
         const dist = item.dist || ch.defaultDist;
-        const phys = calcChannelPhysics(ch, dist);
+        const phys = calcChannelPhysics(ch, dist, item.env || 'normal');
         html += `<div class="nb-link" id="nbLink-${i}" data-idx="${i}" style="flex-wrap:wrap">
           <div class="nb-link__line" style="background:${ch.color}" id="nbLine-${i}"></div>
           <select class="nb-link__select" data-idx="${i}">
@@ -1504,6 +1764,11 @@
             <span class="nb-link__tag">${ch.medium === 'copper' ? 'Медь' : ch.medium === 'fiber' ? 'Свет' : 'Радио'}</span>
             <span class="nb-link__tag">${ch.interference === 'high' ? 'Помехи ⚠' : ch.interference === 'medium' ? 'Помехи ~' : ch.interference === 'none' ? 'Без помех' : 'Мало помех'}</span>
             ${phys.overMax ? `<span class="nb-link__tag nb-link__tag--warn">Превышение дальности!</span>` : ''}
+            <select class="nb-device__select" data-env-idx="${i}" style="margin-left:auto;max-width:100px">
+              <option value="ideal"${(item.env || 'normal') === 'ideal' ? ' selected' : ''}>Идеально</option>
+              <option value="normal"${(item.env || 'normal') === 'normal' ? ' selected' : ''}>Норма</option>
+              <option value="harsh"${(item.env || 'normal') === 'harsh' ? ' selected' : ''}>Тяжёлые</option>
+            </select>
           </div>
         </div>`;
       }
@@ -1523,6 +1788,13 @@
         const newCh = CHANNEL_TYPES.find(ct => ct.id === sel.value);
         nbPath[idx].id = sel.value;
         nbPath[idx].dist = newCh.defaultDist;
+        renderNBPath();
+      });
+    });
+
+    c.querySelectorAll('[data-env-idx]').forEach(sel => {
+      sel.addEventListener('change', () => {
+        nbPath[parseInt(sel.dataset.envIdx)].env = sel.value;
         renderNBPath();
       });
     });
@@ -1574,7 +1846,7 @@
       if (item.type === 'link') {
         const ch = CHANNEL_TYPES.find(ct => ct.id === item.id);
         const dist = item.dist || ch.defaultDist;
-        const phys = calcChannelPhysics(ch, dist);
+        const phys = calcChannelPhysics(ch, dist, item.env || 'normal');
         totalLatency += phys.totalDelay;
         totalJitter += ch.jitter;
         usedCh.add(ch.id);
