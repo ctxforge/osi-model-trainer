@@ -145,20 +145,7 @@
   menuItems.forEach(btn => btn.addEventListener('click', () => navigateTo(btn.dataset.section)));
   navCards.forEach(card => card.addEventListener('click', () => navigateTo(card.dataset.nav)));
 
-  // Physics lab tab switching — event delegation
-  document.addEventListener('click', (e) => {
-    if (e.target.id === 'physTabGen') {
-      document.getElementById('physGenPane').style.display = 'block';
-      document.getElementById('physChanPane').style.display = 'none';
-      document.getElementById('physTabGen').classList.add('active');
-      document.getElementById('physTabChan').classList.remove('active');
-    } else if (e.target.id === 'physTabChan') {
-      document.getElementById('physGenPane').style.display = 'none';
-      document.getElementById('physChanPane').style.display = 'block';
-      document.getElementById('physTabGen').classList.remove('active');
-      document.getElementById('physTabChan').classList.add('active');
-    }
-  });
+  // Physics lab is now a single unified pane
 
   /* ==================== OSI TOWER BUILDER ==================== */
   function buildTower(container, onClick) {
@@ -2457,8 +2444,8 @@
 
   initDnD();
 
-  /* ==================== SIGNAL GENERATOR + SPECTRUM ==================== */
-  (function initSigGen() {
+  /* ==================== PHYSICS LAB BENCH ==================== */
+  (function initPhysLab() {
     const container = document.getElementById('siggenUI');
     let sgComponents = [
       { type: 'sin', freq: 100, amp: 1, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }
@@ -2468,6 +2455,9 @@
     let sgChannelId = 'none';
     let sgChDistance = 50;
     let sgImportedSamples = null;
+    let sgNoiseLevel = 0;
+    let sgSpectrumScale = 60;
+    let sgSpectrumWindow = 'rect';
 
     const PARAM_HELP = {
       type: 'Форма базового сигнала. Синус — основа всех сигналов (теорема Фурье). Прямоугольный содержит нечётные гармоники. Шум — случайный.',
@@ -2476,12 +2466,32 @@
       phase: 'Начальная фаза в градусах. Сдвигает сигнал по времени. 180° = инверсия.',
       carrier: 'Несущая частота для модуляции. 0 = без модуляции (baseband). >0 = сигнал модулирует несущую этой частоты. Разные несущие = FDM.',
       modType: 'AM — меняется амплитуда несущей. FM — меняется частота. PM — меняется фаза. На спектре видны боковые полосы.',
-      modDepth: 'AM: глубина 0-1 (1 = 100%). FM: девиация частоты (Гц). PM: индекс модуляции (рад). Больше → шире спектр.'
+      modDepth: 'AM: глубина 0-1 (1 = 100%). FM: девиация частоты (Гц). PM: индекс модуляции (рад). Больше → шире спектр.',
+      noise: 'Аддитивный белый гауссовский шум (AWGN). Присутствует в любом канале — тепловой шум электроники, космическое излучение. Увеличьте, чтобы увидеть шумовую полку на спектре.'
     };
 
-    const SG_PRESETS = [
-      { id: 'none', name: '— Без канала —' },
-      ...CHANNEL_TYPES.map(c => ({ id: c.id, name: `${c.icon} ${c.name}` }))
+    const SG_CH_PRESETS = [
+      { id: 'none', name: '— Без канала (идеальный) —' },
+      ...CHANNEL_TYPES.map(c => ({ id: c.id, name: `${c.icon} ${c.name} (${c.medium === 'copper' ? 'медь' : c.medium === 'fiber' ? 'оптика' : 'радио'})` }))
+    ];
+
+    const SG_SIGNAL_PRESETS = [
+      { name: '🎵 Тон 440 Гц (нота Ля)', components: [{ type: 'sin', freq: 440, amp: 1, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }] },
+      { name: '📻 AM-радио (несущая 1 кГц)', components: [{ type: 'sin', freq: 100, amp: 1, phase: 0, dc: 0, carrier: 1000, modType: 'am', modDepth: 0.8 }] },
+      { name: '📡 FM-сигнал (несущая 2 кГц)', components: [{ type: 'sin', freq: 50, amp: 1, phase: 0, dc: 0, carrier: 2000, modType: 'fm', modDepth: 200 }] },
+      { name: '🔀 FDM 3 канала', components: [
+        { type: 'sin', freq: 50, amp: 0.8, phase: 0, dc: 0, carrier: 500, modType: 'am', modDepth: 0.7 },
+        { type: 'sin', freq: 80, amp: 0.6, phase: 0, dc: 0, carrier: 1200, modType: 'am', modDepth: 0.7 },
+        { type: 'sin', freq: 30, amp: 0.7, phase: 0, dc: 0, carrier: 2000, modType: 'am', modDepth: 0.7 }
+      ]},
+      { name: '🎼 Аккорд (3 гармоники)', components: [
+        { type: 'sin', freq: 261, amp: 1, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 },
+        { type: 'sin', freq: 329, amp: 0.8, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 },
+        { type: 'sin', freq: 392, amp: 0.6, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }
+      ]},
+      { name: '📊 Прямоугольный импульс', components: [{ type: 'square', freq: 100, amp: 1, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }] },
+      { name: '📶 Цифровая модуляция (PSK)', components: [{ type: 'square', freq: 100, amp: 1, phase: 0, dc: 0, carrier: 1500, modType: 'pm', modDepth: 3.14 }] },
+      { name: '🔊 Белый шум', components: [{ type: 'noise', freq: 1, amp: 1, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }] }
     ];
 
     function applyChannel(samples, chId, dist) {
@@ -2612,15 +2622,21 @@
     function drawSpectrum(canvas, samples) {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr; canvas.height = 140 * dpr;
-      canvas.style.height = '140px';
+      canvas.width = rect.width * dpr; canvas.height = 160 * dpr;
+      canvas.style.height = '160px';
       const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
-      const w = rect.width, h = 140;
+      const w = rect.width, h = 160;
+      const scale = sgSpectrumScale;
       ctx.clearRect(0, 0, w, h);
 
       const re = new Float64Array(sgN);
       const im = new Float64Array(sgN);
-      for (let i = 0; i < sgN; i++) re[i] = samples[i] || 0;
+      for (let i = 0; i < sgN; i++) {
+        let win = 1;
+        if (sgSpectrumWindow === 'hann') win = 0.5 * (1 - Math.cos(2 * Math.PI * i / (sgN - 1)));
+        else if (sgSpectrumWindow === 'hamming') win = 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (sgN - 1));
+        re[i] = (samples[i] || 0) * win;
+      }
       fft(re, im);
 
       const mag = new Float64Array(sgN / 2);
@@ -2631,29 +2647,69 @@
       }
       if (maxM === 0) maxM = 1;
 
+      // Grid
       ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 1;
-      for (let db = 0; db >= -60; db -= 20) {
-        const y = h * (1 - (db + 60) / 60) * 0.9 + h * 0.05;
-        ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = '#4a5568'; ctx.font = '8px sans-serif'; ctx.fillText(db + 'dB', 2, y - 2);
+      for (let db = 0; db >= -scale; db -= 10) {
+        const y = h * 0.04 + (h * 0.88) * (-db / scale);
+        ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.moveTo(28, y); ctx.lineTo(w, y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#4a5568'; ctx.font = '8px sans-serif'; ctx.textAlign = 'right';
+        ctx.fillText(db + '', 26, y + 3);
+      }
+      ctx.textAlign = 'left';
+
+      // Frequency grid
+      for (let f = 0; f <= sgFs / 2; f += 500) {
+        const x = 28 + (f / (sgFs / 2)) * (w - 32);
+        ctx.strokeStyle = '#1a203030'; ctx.beginPath(); ctx.moveTo(x, h * 0.04); ctx.lineTo(x, h * 0.92); ctx.stroke();
       }
 
-      ctx.fillStyle = '#e67e2260';
-      ctx.strokeStyle = '#e67e22';
-      ctx.lineWidth = 1;
+      // Spectrum fill + line
+      const plotW = w - 32;
+      const barW = plotW / (sgN / 2);
+      ctx.fillStyle = '#e67e2230';
       ctx.beginPath();
-      const barW = w / (sgN / 2);
+      ctx.moveTo(28, h * 0.92);
       for (let i = 0; i < sgN / 2; i++) {
-        const dbVal = mag[i] > 0 ? 20 * Math.log10(mag[i] / maxM) : -60;
-        const barH = Math.max((dbVal + 60) / 60 * h * 0.9, 0);
-        const x = i * barW;
-        const y = h * 0.95 - barH;
-        ctx.fillRect(x, y, Math.max(barW - 0.5, 1), barH);
+        const dbVal = mag[i] > 0 ? 20 * Math.log10(mag[i] / maxM) : -scale;
+        const barH = Math.max((-dbVal) / scale, 0);
+        const x = 28 + i * barW;
+        const y = h * 0.04 + barH * h * 0.88;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(28 + plotW, h * 0.92);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let i = 0; i < sgN / 2; i++) {
+        const dbVal = mag[i] > 0 ? 20 * Math.log10(mag[i] / maxM) : -scale;
+        const barH = Math.max((-dbVal) / scale, 0);
+        const x = 28 + i * barW;
+        const y = h * 0.04 + barH * h * 0.88;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Peak markers
+      for (let i = 1; i < sgN / 2 - 1; i++) {
+        if (mag[i] > mag[i-1] && mag[i] > mag[i+1] && mag[i] > maxM * 0.1) {
+          const freq = (i / (sgN / 2)) * sgFs / 2;
+          const dbVal = 20 * Math.log10(mag[i] / maxM);
+          const x = 28 + i * barW;
+          const y = h * 0.04 + Math.max((-dbVal) / scale, 0) * h * 0.88;
+          ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#e74c3c'; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(Math.round(freq) + 'Hz', x, y - 6);
+          ctx.fillText(dbVal.toFixed(1) + 'dB', x, y - 14);
+          ctx.textAlign = 'left';
+        }
       }
 
+      // Axis labels
       ctx.fillStyle = '#4a5568'; ctx.font = '8px sans-serif';
       const freqs = [0, sgFs / 8, sgFs / 4, sgFs * 3 / 8, sgFs / 2];
-      freqs.forEach((f, i) => { ctx.fillText(f + 'Hz', (i / (freqs.length - 1)) * w, h - 2); });
+      freqs.forEach((f, i) => { ctx.fillText(f + '', 28 + (i / (freqs.length - 1)) * plotW - 8, h - 2); });
+      ctx.fillText('дБ', 2, 12);
     }
 
     function render() {
@@ -2672,8 +2728,21 @@
       });
       matlabCode += `x = ${parts.join(' + ')};\nplot(t, x); xlabel('Time (s)'); ylabel('Amplitude');\nfigure; plot(Fs/length(x)*(0:length(x)/2-1), abs(fft(x))/length(x)*2); xlabel('Freq (Hz)');`;
 
+      // Add manual noise
+      const txSamples = samples;
+      for (let i = 0; i < txSamples.length && sgNoiseLevel > 0; i++) {
+        txSamples[i] += (Math.random() - 0.5) * 2 * sgNoiseLevel;
+      }
+      const chResult = applyChannel(txSamples, sgChannelId, sgChDistance);
+      const rxSamples = chResult.rx;
+
       container.innerHTML = `
-        <div class="study-section__title">Компоненты сигнала</div>
+        <div class="study-section__title">① Пресеты сигналов</div>
+        <div style="display:flex;gap:4px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none">
+          ${SG_SIGNAL_PRESETS.map((p, i) => `<button class="lab-tab" data-preset="${i}" style="font-size:.65rem">${p.name}</button>`).join('')}
+        </div>
+
+        <div class="study-section__title">② Генератор сигналов</div>
         ${sgComponents.map((c, i) => `
           <div class="sg-component">
             <div class="sg-component__header">
@@ -2697,19 +2766,29 @@
         </div>
         <div id="sgHelpBox" style="display:none;font-size:.72rem;color:var(--text-secondary);padding:8px;background:var(--bg-surface);border-radius:6px;margin-bottom:8px;border-left:3px solid var(--accent)"></div>
 
-        <div class="study-section__title">📤 Передатчик (TX)</div>
+        <div class="study-section__title">③ Генератор помех (AWGN)</div>
+        <div class="sg-param-grid" style="margin-bottom:10px">
+          <div class="sg-param"><label>Уровень шума <span class="sg-help" data-help="noise">?</span></label><input type="range" id="sgNoiseSlider" min="0" max="2" step="0.05" value="${sgNoiseLevel}"></div>
+          <div class="sg-param"><label>Шум: ${sgNoiseLevel.toFixed(2)}</label><div style="font-size:.65rem;color:var(--text-secondary)">${sgNoiseLevel === 0 ? 'Без шума' : sgNoiseLevel < 0.3 ? 'Слабый' : sgNoiseLevel < 0.8 ? 'Умеренный' : 'Сильный'}</div></div>
+        </div>
+
+        <div class="study-section__title">④ Передатчик (TX) — осциллограмма</div>
         <div class="sg-canvas-wrap">
           <canvas id="sgTimeDomain"></canvas>
           <div class="sg-canvas-label"><span>Время →</span><span>Fs = ${sgFs} Гц, N = ${sgN}</span></div>
         </div>
         <div class="sg-canvas-wrap">
           <canvas id="sgSpectrum"></canvas>
-          <div class="sg-canvas-label"><span>Частота (Гц) →</span><span>TX Спектр</span></div>
+          <div class="sg-canvas-label"><span>0 Гц</span><span>📊 Анализатор спектра TX (FFT ${sgN} точек, 0..${sgFs/2} Гц, шкала ${sgSpectrumScale} дБ)</span><span>${sgFs/2} Гц</span></div>
+        </div>
+        <div class="sg-param-grid" style="margin-bottom:10px">
+          <div class="sg-param"><label>Шкала спектра (дБ)</label><input type="range" id="sgScaleSlider" min="20" max="100" step="10" value="${sgSpectrumScale}"></div>
+          <div class="sg-param"><label>Окно FFT</label><select id="sgWindowSel"><option value="rect"${sgSpectrumWindow==='rect'?' selected':''}>Прямоугольное</option><option value="hann"${sgSpectrumWindow==='hann'?' selected':''}>Ханна</option><option value="hamming"${sgSpectrumWindow==='hamming'?' selected':''}>Хэмминга</option></select></div>
         </div>
 
-        <div class="study-section__title" style="margin-top:16px">📡 Канал связи</div>
+        <div class="study-section__title" style="margin-top:16px">⑤ Канал связи</div>
         <div class="sg-param-grid" style="margin-bottom:8px">
-          <div class="sg-param"><label>Тип канала</label><select id="sgChannelSel">${SG_PRESETS.map(p => `<option value="${p.id}"${p.id === sgChannelId ? ' selected' : ''}>${p.name}</option>`).join('')}</select></div>
+          <div class="sg-param"><label>Тип канала <span class="sg-help" data-help="carrier">?</span></label><select id="sgChannelSel">${SG_CH_PRESETS.map(p => `<option value="${p.id}"${p.id === sgChannelId ? ' selected' : ''}>${p.name}</option>`).join('')}</select></div>
           <div class="sg-param"><label>Расстояние</label><input type="number" id="sgChDist" value="${sgChDistance}" min="1" max="100000" step="10"></div>
         </div>
         ${sgChannelId !== 'none' ? (() => {
@@ -2725,14 +2804,14 @@
           </div>`;
         })() : '<div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">Выберите канал — увидите как он искажает сигнал. Спектр RX покажет шумовую полку (AWGN) и ограничение полосы.</div>'}
 
-        <div class="study-section__title">📥 Приёмник (RX)</div>
+        <div class="study-section__title">⑥ Приёмник (RX) — осциллограмма</div>
         <div class="sg-canvas-wrap">
           <canvas id="sgRxTime"></canvas>
           <div class="sg-canvas-label"><span>Время →</span><span>Принятый сигнал</span></div>
         </div>
         <div class="sg-canvas-wrap">
           <canvas id="sgRxSpectrum"></canvas>
-          <div class="sg-canvas-label"><span>Частота (Гц) →</span><span>RX Спектр</span></div>
+          <div class="sg-canvas-label"><span>0 Гц</span><span>📊 Анализатор спектра RX</span><span>${sgFs/2} Гц</span></div>
         </div>
 
         <div class="study-section__title" style="margin-top:16px">MATLAB / Octave код</div>
@@ -2746,14 +2825,20 @@
         <input type="file" id="sgImportFileInput" hidden accept=".csv,.txt">
       `;
 
-      const txSamples = samples;
-      const chResult = applyChannel(samples, sgChannelId, sgChDistance);
-      const rxSamples = chResult.rx;
-
       drawTimeDomain(document.getElementById('sgTimeDomain'), txSamples);
       drawSpectrum(document.getElementById('sgSpectrum'), txSamples);
       drawTimeDomain(document.getElementById('sgRxTime'), rxSamples);
       drawSpectrum(document.getElementById('sgRxSpectrum'), rxSamples);
+
+      // Preset buttons
+      container.querySelectorAll('[data-preset]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const preset = SG_SIGNAL_PRESETS[parseInt(btn.dataset.preset)];
+          sgComponents = JSON.parse(JSON.stringify(preset.components));
+          sgImportedSamples = null;
+          render();
+        });
+      });
 
       container.querySelectorAll('[data-ci]').forEach(el => {
         el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
@@ -2790,6 +2875,9 @@
         });
       });
 
+      document.getElementById('sgNoiseSlider')?.addEventListener('input', (e) => { sgNoiseLevel = parseFloat(e.target.value); render(); });
+      document.getElementById('sgScaleSlider')?.addEventListener('input', (e) => { sgSpectrumScale = parseInt(e.target.value); render(); });
+      document.getElementById('sgWindowSel')?.addEventListener('change', (e) => { sgSpectrumWindow = e.target.value; render(); });
       document.getElementById('sgChannelSel')?.addEventListener('change', (e) => { sgChannelId = e.target.value; render(); });
       document.getElementById('sgChDist')?.addEventListener('input', (e) => { sgChDistance = parseInt(e.target.value) || 50; render(); });
 
@@ -2845,20 +2933,9 @@
     setTimeout(() => { if (document.getElementById('section-siggen')?.classList.contains('active')) render(); }, 200);
   })();
 
-  /* ==================== CHANNEL SIMULATOR ==================== */
-  let chSrcBytes = null;
-  let chSrcImgData = null;
-  let chSrcFileName = null;
-  let chSrcType = 'text';
-  let chNoiseMode = 'awgn';
-  const noiseDescs = {
-    awgn: 'AWGN — белый гауссовский шум. Каждый бит имеет независимую вероятность ошибки, определяемую SNR.',
-    impulse: 'Импульсный шум — короткие всплески ошибок (пачки 4-16 бит подряд). Молния, коммутация, эл. двигатели.',
-    fading: 'Замирание (fading) — периодическое ослабление сигнала. Многолучевое распространение, движение приёмника.'
-  };
-
+  /* Channel simulator handlers removed — functionality merged into Physics Lab */
   document.getElementById('chSnrSlider')?.addEventListener('input', (e) => {
-    document.getElementById('chSnrVal').textContent = e.target.value + ' дБ';
+    const v = document.getElementById('chSnrVal'); if (v) v.textContent = e.target.value + ' дБ';
   });
 
   document.querySelectorAll('#chNoiseType .lab-toggle__btn').forEach(btn => {
