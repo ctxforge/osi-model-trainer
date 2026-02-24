@@ -1,0 +1,139 @@
+/* ========== STUDY Section ========== */
+.study-panel {
+  animation: fadeIn .3s ease;
+}
+
+.study-panel__header {
+  padding: 14px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  color: #fff;
+  position: relative;
+}
+
+.study-panel__layer-num {
+  font-size: 2rem;
+  font-weight: 800;
+  opacity: .3;
+  position: absolute;
+  top: 10px;
+  right: 14px;
+}
+
+.study-panel__layer-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.study-panel__layer-name-en {
+  font-size: .85rem;
+  opacity: .7;
+}
+
+.study-panel__body {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px;
+}
+
+.study-section {
+  margin-bottom: 16px;
+}
+
+.study-section:last-child { margin-bottom: 0; }
+
+.study-section__title {
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.study-section__text {
+  font-size: .9rem;
+  line-height: 1.6;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: .75rem;
+  font-weight: 500;
+  border: 1px solid;
+  opacity: .85;
+}
+
+.study-nav {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.study-nav__btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.study-nav__btn:active { transform: scale(.96); }
+.study-nav__btn:disabled { opacity: .3; pointer-events: none; }
+
+.func-list {
+  list-style: none;
+  padding: 0;
+}
+
+.func-list li {
+  padding: 4px 0;
+  font-size: .9rem;
+  position: relative;
+  padding-left: 16px;
+}
+
+.func-list li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+/* Comparison Table */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: .8rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.comparison-table th {
+  background: var(--bg-surface);
+  font-weight: 700;
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.comparison-table td { background: var(--bg-card); }

@@ -1,0 +1,93 @@
+export const CHANNEL_TYPES = [
+  { id: 'cat5e', name: 'Ethernet Cat5e', speed: 1000, latency: 0.01, medium: 'copper', maxDist: 100,
+    icon: '🔌', color: '#3498db',
+    attenuation: 22, snrBase: 40, duplex: 'full', interference: 'low', propagation: 0.64,
+    encoding: 'PAM-5', jitter: 0.005, bandwidthMHz: 100, defaultDist: 30,
+    desc: 'Витая пара Cat5e — 4 скрученные пары медных проводников. Стандарт для LAN. Экранирование снижает наводки.' },
+  { id: 'cat6', name: 'Ethernet Cat6', speed: 10000, latency: 0.01, medium: 'copper', maxDist: 55,
+    icon: '🔌', color: '#2980b9',
+    attenuation: 20, snrBase: 44, duplex: 'full', interference: 'low', propagation: 0.64,
+    encoding: 'PAM-16', jitter: 0.003, bandwidthMHz: 250, defaultDist: 20,
+    desc: 'Cat6 — улучшенная витая пара с разделителем пар. 10 Гбит/с на коротких дистанциях, усиленная защита от перекрёстных наводок (NEXT).' },
+  { id: 'fiber_sm', name: 'Оптоволокно SM', speed: 100000, latency: 0.005, medium: 'fiber', maxDist: 80000,
+    icon: '💡', color: '#e74c3c',
+    attenuation: 0.2, snrBase: 55, duplex: 'full', interference: 'none', propagation: 0.67,
+    encoding: 'NRZ / PAM-4', jitter: 0.001, bandwidthMHz: 100000, defaultDist: 5000,
+    desc: 'Одномодовое оптоволокно — ядро 9 мкм, один луч. Минимальное затухание (0.2 дБ/км). Невосприимчиво к ЭМ-помехам. Магистральные каналы.' },
+  { id: 'fiber_mm', name: 'Оптоволокно MM', speed: 10000, latency: 0.005, medium: 'fiber', maxDist: 550,
+    icon: '💡', color: '#c0392b',
+    attenuation: 3.0, snrBase: 48, duplex: 'full', interference: 'none', propagation: 0.67,
+    encoding: '64B/66B', jitter: 0.002, bandwidthMHz: 4700, defaultDist: 100,
+    desc: 'Многомодовое оптоволокно — ядро 50/62.5 мкм, несколько лучей. Модовая дисперсия ограничивает дальность. Для дата-центров.' },
+  { id: 'wifi24', name: 'Wi-Fi 2.4 GHz', speed: 150, latency: 3, medium: 'radio', maxDist: 70,
+    icon: '📶', color: '#2ecc71',
+    attenuation: 60, snrBase: 35, duplex: 'half', interference: 'high', propagation: 0.99,
+    encoding: 'OFDM', jitter: 2, bandwidthMHz: 20, defaultDist: 15,
+    desc: 'Wi-Fi 2.4 ГГц (802.11n) — 14 каналов, 3 неперекрывающихся. Сильные помехи от микроволновок, Bluetooth, соседских сетей. Полудуплекс (CSMA/CA).' },
+  { id: 'wifi5', name: 'Wi-Fi 5 GHz', speed: 866, latency: 2, medium: 'radio', maxDist: 35,
+    icon: '📶', color: '#27ae60',
+    attenuation: 70, snrBase: 38, duplex: 'half', interference: 'medium', propagation: 0.99,
+    encoding: 'OFDM 256-QAM', jitter: 1.5, bandwidthMHz: 80, defaultDist: 10,
+    desc: 'Wi-Fi 5 ГГц (802.11ac) — больше каналов, шире полоса (80/160 МГц). Хуже проходит стены (затухание ~70 дБ на 30 м). Полудуплекс.' },
+  { id: 'wifi6', name: 'Wi-Fi 6 (ax)', speed: 2400, latency: 1, medium: 'radio', maxDist: 30,
+    icon: '📶', color: '#1abc9c',
+    attenuation: 72, snrBase: 42, duplex: 'half', interference: 'medium', propagation: 0.99,
+    encoding: 'OFDMA 1024-QAM', jitter: 0.8, bandwidthMHz: 160, defaultDist: 8,
+    desc: 'Wi-Fi 6 (802.11ax) — OFDMA для параллельного доступа, 1024-QAM, Target Wake Time. Лучше в плотных сетях, но всё ещё полудуплекс.' },
+  { id: 'coax', name: 'Коаксиальный', speed: 1000, latency: 0.5, medium: 'copper', maxDist: 500,
+    icon: '📺', color: '#e67e22',
+    attenuation: 6, snrBase: 38, duplex: 'half', interference: 'low', propagation: 0.77,
+    encoding: 'QAM-256', jitter: 0.1, bandwidthMHz: 1000, defaultDist: 100,
+    desc: 'Коаксиальный кабель — центральная жила + экран. Хорошая защита от помех. DOCSIS 3.1 для кабельного интернета. Общая среда (полудуплекс).' },
+  { id: 'dsl', name: 'DSL (телефон)', speed: 100, latency: 10, medium: 'copper', maxDist: 5500,
+    icon: '📞', color: '#f39c12',
+    attenuation: 14, snrBase: 30, duplex: 'full', interference: 'medium', propagation: 0.64,
+    encoding: 'DMT (QAM)', jitter: 2, bandwidthMHz: 17, defaultDist: 2000,
+    desc: 'DSL — телефонная пара. Скорость резко падает с расстоянием. ADSL: вниз до 24 Мбит/с, вверх до 3.5 Мбит/с. Наводки от других пар (crosstalk).' },
+  { id: 'lte', name: '4G LTE', speed: 100, latency: 30, medium: 'radio', maxDist: 10000,
+    icon: '📱', color: '#9b59b6',
+    attenuation: 40, snrBase: 25, duplex: 'full', interference: 'medium', propagation: 0.99,
+    encoding: 'OFDMA 64-QAM', jitter: 5, bandwidthMHz: 20, defaultDist: 2000,
+    desc: '4G LTE — FDD или TDD дуплекс. MIMO-антенны. Задержка 20-50 мс. Скорость зависит от загрузки соты и расстояния до вышки.' },
+  { id: '5g', name: '5G (sub-6)', speed: 1000, latency: 5, medium: 'radio', maxDist: 1000,
+    icon: '📱', color: '#8e44ad',
+    attenuation: 80, snrBase: 30, duplex: 'full', interference: 'low', propagation: 0.99,
+    encoding: 'OFDMA 256-QAM', jitter: 1, bandwidthMHz: 100, defaultDist: 300,
+    desc: '5G sub-6 ГГц — Massive MIMO, beamforming. Малый радиус, но высокая ёмкость. mmWave (28 ГГц) ещё быстрее, но всего 100-200 м.' },
+  { id: 'satellite', name: 'Спутник (GEO)', speed: 100, latency: 600, medium: 'radio', maxDist: 35786,
+    icon: '🛰️', color: '#34495e',
+    attenuation: 200, snrBase: 15, duplex: 'half', interference: 'medium', propagation: 0.99,
+    encoding: 'DVB-S2 (8PSK)', jitter: 20, bandwidthMHz: 36, defaultDist: 35786,
+    desc: 'GEO-спутник на высоте 35 786 км. Задержка ~600 мс RTT (неустранима физикой). Затухание в свободном пространстве, влияние погоды (rain fade).' }
+];
+
+export const ENV_EFFECTS = {
+  copper: [
+    { id: 'shielded', label: 'Экранирование (STP)', type: 'toggle', default: false, dbBonus: 6, desc: 'Экранированная витая пара снижает внешние наводки на ~6 дБ' },
+    { id: 'bundlePairs', label: 'Пар в пучке (crosstalk)', type: 'range', min: 1, max: 50, default: 4, dbPenalty: 0.3, desc: 'Чем больше пар в кабельном канале, тем сильнее перекрёстные наводки (NEXT/FEXT)' },
+    { id: 'temperature', label: 'Температура (°C)', type: 'range', min: -10, max: 70, default: 25, dbPenPerDeg: 0.04, baseline: 25, desc: 'Сопротивление меди растёт с температурой → затухание увеличивается' }
+  ],
+  fiber: [
+    { id: 'connectors', label: 'Кол-во разъёмов', type: 'range', min: 0, max: 12, default: 2, dbPenalty: 0.5, desc: 'Каждый разъём (SC, LC) вносит ~0.3-0.75 дБ потерь из-за несовпадения осей' },
+    { id: 'splices', label: 'Кол-во сварок', type: 'range', min: 0, max: 30, default: 4, dbPenalty: 0.1, desc: 'Каждая сварка (fusion splice) вносит ~0.05-0.2 дБ потерь' },
+    { id: 'bendRadius', label: 'Изгибов (< мин. радиуса)', type: 'range', min: 0, max: 10, default: 0, dbPenalty: 1.0, desc: 'Изгиб меньше минимального радиуса → свет выходит из ядра → потери до 1 дБ/изгиб' }
+  ],
+  radio: [
+    { id: 'walls', label: 'Стены на пути', type: 'range', min: 0, max: 6, default: 0, dbPenalty: 6, desc: 'Каждая бетонная стена ~6 дБ, кирпичная ~4 дБ, гипсокартон ~3 дБ' },
+    { id: 'people', label: 'Людей в зоне', type: 'range', min: 0, max: 100, default: 5, dbPenalty: 0.1, desc: 'Тело человека (70% воды) поглощает радиоволны — ~0.1 дБ на человека' },
+    { id: 'interference', label: 'Источники помех', type: 'range', min: 0, max: 20, default: 2, dbPenalty: 1.0, desc: 'Соседние AP, микроволновки, Bluetooth, радиотелефоны — каждый ~1 дБ к шумовой полке' },
+    { id: 'weather', label: 'Погода', type: 'select', options: ['Ясно', 'Облачно', 'Дождь', 'Гроза'], dbPenalties: [0, 1, 4, 10], desc: 'Дождь и влажность поглощают радиоволны (особенно > 10 ГГц)' }
+  ],
+  satellite: [
+    { id: 'weather', label: 'Погода (rain fade)', type: 'select', options: ['Ясно', 'Облачно', 'Дождь', 'Ливень'], dbPenalties: [0, 2, 8, 20], desc: 'Rain fade — главный враг спутниковой связи, дождь поглощает Ku/Ka-диапазон' },
+    { id: 'elevation', label: 'Угол возвышения (°)', type: 'range', min: 5, max: 90, default: 45, desc: 'Низкий угол → сигнал проходит дольше через атмосферу → больше затухание' },
+    { id: 'solar', label: 'Солнечная интерференция', type: 'toggle', default: false, dbPenalty: 15, desc: 'Когда Солнце за спутником — мощные помехи, потери до 15 дБ (раз в сезон)' }
+  ]
+};
+
+export function getChannelEnvType(chId) {
+  if (['cat5e','cat6','coax','dsl'].includes(chId)) return 'copper';
+  if (['fiber_sm','fiber_mm'].includes(chId)) return 'fiber';
+  if (chId === 'satellite') return 'satellite';
+  return 'radio';
+}

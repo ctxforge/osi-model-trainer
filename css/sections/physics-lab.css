@@ -1,0 +1,204 @@
+/* ========== Signal Generator ========== */
+.sg-component {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.sg-component__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sg-component__title { font-size: .8rem; font-weight: 700; }
+
+.sg-component__remove {
+  background: none; border: none; color: var(--text-secondary);
+  font-size: 1rem; cursor: pointer; padding: 2px 6px;
+}
+
+.sg-param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sg-param label {
+  display: block;
+  font-size: .65rem;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.sg-param input, .sg-param select {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: .78rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  outline: none;
+}
+
+.sg-param input:focus, .sg-param select:focus { border-color: var(--accent); }
+
+.sg-canvas-wrap {
+  background: #0a0e14;
+  border: 1px solid #1a1f2e;
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  margin: 10px 0;
+}
+
+.sg-canvas-wrap canvas {
+  width: 100%;
+  display: block;
+}
+
+.sg-canvas-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: .6rem;
+  color: #4a5568;
+  margin-top: 4px;
+}
+
+.sg-formula {
+  background: #0a0e14;
+  border: 1px solid #1a1f2e;
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .72rem;
+  color: #2ecc71;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 8px 0;
+}
+
+.sg-export-btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sg-export-btns button {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.sg-export-btns button:active { transform: scale(.95); }
+
+.sg-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: .55rem;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+/* ========== Channel Simulator ========== */
+.ch-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.ch-compare__side {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.ch-compare__title {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.ch-compare__img {
+  max-width: 100%;
+  max-height: 120px;
+  border-radius: var(--radius-xs);
+  display: block;
+  margin: 0 auto;
+}
+
+.ch-compare__text {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .78rem;
+  word-break: break-all;
+  text-align: left;
+  padding: 6px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xs);
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.ch-bits-compare {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .55rem;
+  line-height: 1.4;
+  word-break: break-all;
+  padding: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  max-height: 100px;
+  overflow-y: auto;
+  margin: 8px 0;
+}
+
+.ch-bits-compare .bit-ok { color: var(--text-secondary); }
+.ch-bits-compare .bit-err { color: #e74c3c; font-weight: 700; background: #e74c3c20; }
+
+.ch-hex-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.ch-hex-byte {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 2px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .6rem;
+  font-weight: 600;
+  border-radius: 3px;
+}
+
+.ch-hex-byte--ok { background: var(--bg-surface); color: var(--text-secondary); }
+.ch-hex-byte--err { background: #e74c3c25; color: #e74c3c; }

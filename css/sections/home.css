@@ -1,0 +1,113 @@
+/* ========== HOME Section ========== */
+.hero {
+  text-align: center;
+  padding: 32px 0 24px;
+}
+
+.hero__title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--l7), var(--l4), var(--l1));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.hero__subtitle {
+  color: var(--text-secondary);
+  font-size: .95rem;
+}
+
+/* OSI Tower (shared) */
+.osi-tower {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 20px 0;
+}
+
+.osi-layer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.osi-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: .12;
+  transition: opacity var(--transition);
+}
+
+.osi-layer:active { transform: scale(.97); }
+.osi-layer:active::before { opacity: .2; }
+
+.osi-layer__number {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: .9rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.osi-layer__info { flex: 1; min-width: 0; }
+
+.osi-layer__name {
+  font-weight: 600;
+  font-size: .9rem;
+}
+
+.osi-layer__name-en {
+  font-size: .75rem;
+  color: var(--text-secondary);
+}
+
+.osi-layer__arrow {
+  color: var(--text-secondary);
+  font-size: .8rem;
+}
+
+.osi-layer.active {
+  border-color: currentColor;
+}
+
+.osi-layer.active::before { opacity: .18; }
+
+/* Home nav cards */
+.nav-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.nav-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.nav-card:active { transform: scale(.96); }
+.nav-card__icon { font-size: 1.8rem; margin-bottom: 6px; }
+.nav-card__title { font-size: .85rem; font-weight: 600; }
+.nav-card__desc { font-size: .7rem; color: var(--text-secondary); margin-top: 4px; }

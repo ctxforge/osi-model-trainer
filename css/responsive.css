@@ -1,0 +1,7 @@
+/* ========== Desktop enhancements ========== */
+@media (min-width: 768px) {
+  .section { max-width: 720px; padding: 24px; }
+  .hero__title { font-size: 2.4rem; }
+
+  .nav-cards { grid-template-columns: repeat(4, 1fr); }
+}

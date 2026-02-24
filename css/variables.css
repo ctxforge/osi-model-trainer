@@ -1,0 +1,37 @@
+/* ========== CSS Variables & Theme ========== */
+:root {
+  --bg: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-card-hover: #222633;
+  --bg-surface: #141620;
+  --text: #e8eaf0;
+  --text-secondary: #9399a9;
+  --border: #2a2e3d;
+  --border-hover: #3a3f52;
+  --shadow: 0 4px 24px rgba(0,0,0,.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.3);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+  --nav-height: 60px;
+  --accent: #6c5ce7;
+  --accent-glow: rgba(108,92,231,.25);
+  --transition: .25s cubic-bezier(.4,0,.2,1);
+
+  --l7: #e74c3c; --l6: #e67e22; --l5: #f1c40f; --l4: #2ecc71;
+  --l3: #1abc9c; --l2: #3498db; --l1: #9b59b6;
+}
+
+[data-theme="light"] {
+  --bg: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8f9fb;
+  --bg-surface: #e9ecf0;
+  --text: #1a1d27;
+  --text-secondary: #5f6878;
+  --border: #d5d9e2;
+  --border-hover: #b8bfcc;
+  --shadow: 0 4px 24px rgba(0,0,0,.08);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.05);
+  --accent-glow: rgba(108,92,231,.12);
+}

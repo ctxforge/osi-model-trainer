@@ -1,0 +1,140 @@
+/* ========== DRAG & DROP Section ========== */
+.dnd-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.dnd-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.dnd-btn:active { transform: scale(.95); }
+
+.dnd-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dnd-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  min-height: 48px;
+  padding: 12px;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.dnd-item {
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: grab;
+  transition: all var(--transition);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.dnd-item:active { cursor: grabbing; transform: scale(1.05); }
+
+.dnd-item--dragging {
+  opacity: .5;
+  transform: scale(.9);
+}
+
+.dnd-item--correct {
+  background: rgba(46,204,113,.15);
+  border-color: var(--l4);
+  color: var(--l4);
+}
+
+.dnd-item--wrong {
+  background: rgba(231,76,60,.15);
+  border-color: var(--l7);
+  color: var(--l7);
+}
+
+.dnd-item--type-device::before {
+  content: '⚙ ';
+}
+
+.dnd-item--type-protocol::before {
+  content: '⚡ ';
+}
+
+.dnd-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dnd-zone {
+  min-height: 52px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 2px dashed;
+  opacity: .7;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dnd-zone.drag-over {
+  opacity: 1;
+  transform: scale(1.01);
+}
+
+.dnd-zone__label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dnd-zone__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.dnd-score {
+  text-align: center;
+  padding: 20px;
+  margin-top: 12px;
+  animation: fadeIn .3s ease;
+}
+
+.dnd-score__value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.dnd-score__label {
+  font-size: .85rem;
+  color: var(--text-secondary);
+}
