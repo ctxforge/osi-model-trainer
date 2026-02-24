@@ -67,33 +67,36 @@
 
   <!-- ===== SIMULATOR ===== -->
   <section class="section" id="section-simulator">
-    <div class="section-desc">Введите сообщение и наблюдайте процесс инкапсуляции/деинкапсуляции по уровням OSI</div>
+    <div class="section-desc">Введите сообщение и параметры — увидите полную структуру пакета на каждом уровне OSI, включая заголовки, байты и биты</div>
 
-    <div class="sim-controls">
+    <div class="card">
       <input type="text" class="sim-input" id="simMessage" placeholder="Введите сообщение…" value="Hello, OSI!">
-      <div class="sim-buttons">
-        <button class="sim-btn" id="simEncap">▼ Инкапсул.</button>
-        <button class="sim-btn" id="simDecap">▲ Деинкапсул.</button>
-        <button class="sim-btn" id="simFull">⟳ Полный цикл</button>
+      <div class="sim-config-grid">
+        <div class="sim-config-field">
+          <label>IP источника</label>
+          <input type="text" class="sim-input sim-input--sm" id="simSrcIp" value="192.168.1.100" inputmode="decimal">
+        </div>
+        <div class="sim-config-field">
+          <label>IP назначения</label>
+          <input type="text" class="sim-input sim-input--sm" id="simDstIp" value="93.184.216.34" inputmode="decimal">
+        </div>
+        <div class="sim-config-field">
+          <label>Порт источника</label>
+          <input type="number" class="sim-input sim-input--sm" id="simSrcPort" value="49152" inputmode="numeric">
+        </div>
+        <div class="sim-config-field">
+          <label>Порт назначения</label>
+          <input type="number" class="sim-input sim-input--sm" id="simDstPort" value="80" inputmode="numeric">
+        </div>
       </div>
-      <div class="sim-speed">
-        <span>Скорость</span>
-        <input type="range" id="simSpeed" min="200" max="1500" value="700" step="100">
-        <span id="simSpeedLabel">700мс</span>
+      <div class="lab-toggle mt-12" id="simProtoToggle">
+        <button class="lab-toggle__btn active" data-proto="tcp">TCP</button>
+        <button class="lab-toggle__btn" data-proto="udp">UDP</button>
       </div>
+      <button class="lab-run-btn" id="simBuild">▶ Показать инкапсуляцию</button>
     </div>
 
-    <div class="sim-visual">
-      <div class="sim-stack" id="simSenderStack">
-        <div class="sim-stack__title">Отправитель</div>
-      </div>
-      <div class="sim-packet" id="simPacket">
-        <div class="sim-packet__title">PDU</div>
-      </div>
-      <div class="sim-stack" id="simReceiverStack">
-        <div class="sim-stack__title">Получатель</div>
-      </div>
-    </div>
+    <div id="simResult"></div>
   </section>
 
   <!-- ===== LAB ===== -->

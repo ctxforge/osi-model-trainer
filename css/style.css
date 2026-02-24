@@ -419,13 +419,6 @@ body {
 .comparison-table td { background: var(--bg-card); }
 
 /* ========== SIMULATOR Section ========== */
-.sim-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
 .sim-input {
   width: 100%;
   padding: 12px 14px;
@@ -440,140 +433,306 @@ body {
 
 .sim-input:focus { border-color: var(--accent); }
 
-.sim-buttons {
+.sim-input--sm {
+  padding: 9px 10px;
+  font-size: .82rem;
+}
+
+.sim-config-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
+  margin-top: 10px;
 }
 
-.sim-btn {
-  padding: 10px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text);
-  font-size: .75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.sim-btn:active { transform: scale(.95); }
-
-.sim-btn--active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.sim-speed {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: .8rem;
-  color: var(--text-secondary);
-}
-
-.sim-speed input[type="range"] {
-  flex: 1;
-  accent-color: var(--accent);
-  height: 4px;
-}
-
-.sim-visual {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
-  min-height: 380px;
-}
-
-.sim-stack {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.sim-stack__title {
-  text-align: center;
+.sim-config-field label {
+  display: block;
   font-size: .7rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+/* PDU Layer Cards */
+.pdu-overview {
+  margin-top: 16px;
+}
+
+.pdu-overview__title {
+  font-size: .8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .5px;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
-.sim-stack__layer {
-  flex: 1;
+.pdu-size-bar {
+  display: flex;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  height: 32px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.pdu-size-bar__seg {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-xs);
-  font-size: .65rem;
-  font-weight: 600;
-  color: #fff;
-  opacity: .3;
-  transition: all .4s ease;
-  text-align: center;
-  padding: 4px 2px;
-  line-height: 1.2;
-}
-
-.sim-stack__layer.active {
-  opacity: 1;
-  transform: scale(1.05);
-  box-shadow: 0 0 12px rgba(255,255,255,.15);
-}
-
-.sim-packet {
-  width: 80px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 2px;
-  position: relative;
-}
-
-.sim-packet__title {
-  font-size: .65rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: .3px;
-  margin-bottom: 4px;
-}
-
-.sim-packet__header {
-  width: 100%;
-  padding: 6px 2px;
-  border-radius: var(--radius-xs);
-  text-align: center;
   font-size: .6rem;
   font-weight: 700;
   color: #fff;
-  opacity: 0;
-  transform: scaleY(0);
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 2px;
   transition: all .3s ease;
 }
 
-.sim-packet__header.visible {
-  opacity: 1;
-  transform: scaleY(1);
+.pdu-size-bar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: .7rem;
 }
 
-.sim-packet__msg {
-  padding: 8px 4px;
-  background: var(--bg-surface);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-xs);
-  font-size: .6rem;
-  text-align: center;
+.pdu-size-bar__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--text-secondary);
-  word-break: break-all;
+}
+
+.pdu-size-bar__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Layer card */
+.pdu-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all var(--transition);
+}
+
+.pdu-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.pdu-card__badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: .85rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.pdu-card__title-area { flex: 1; min-width: 0; }
+
+.pdu-card__title {
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.pdu-card__subtitle {
+  font-size: .72rem;
+  color: var(--text-secondary);
+}
+
+.pdu-card__size {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdu-card__toggle {
+  font-size: .8rem;
+  color: var(--text-secondary);
+  transition: transform .2s ease;
+  flex-shrink: 0;
+}
+
+.pdu-card.open .pdu-card__toggle { transform: rotate(90deg); }
+
+.pdu-card__body {
+  display: none;
+  padding: 0 14px 14px;
+  animation: fadeIn .25s ease;
+}
+
+.pdu-card.open .pdu-card__body { display: block; }
+
+/* Packet structure diagram inside card */
+.pdu-diagram {
+  display: flex;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  height: 28px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+
+.pdu-diagram__seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .58rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 1px solid rgba(255,255,255,.2);
+  padding: 0 4px;
+}
+
+.pdu-diagram__seg:last-child { border-right: none; }
+
+/* Header fields table */
+.pdu-fields {
   width: 100%;
+  border-collapse: collapse;
+  font-size: .78rem;
+  margin-bottom: 12px;
+}
+
+.pdu-fields td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.pdu-fields td:first-child {
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  width: 40%;
+}
+
+.pdu-fields td:last-child {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  word-break: break-all;
+}
+
+.pdu-fields tr:last-child td { border-bottom: none; }
+
+/* Hex dump */
+.pdu-hex-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.pdu-hex-toggle__arrow {
+  transition: transform .2s ease;
+  font-size: .7rem;
+}
+
+.pdu-hex-toggle.open .pdu-hex-toggle__arrow { transform: rotate(90deg); }
+
+.pdu-hex {
+  display: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: .68rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pdu-hex.open { display: block; }
+
+.pdu-hex .hex-offset { color: var(--text-secondary); }
+.pdu-hex .hex-byte { color: var(--text); }
+.pdu-hex .hex-byte-hl { font-weight: 700; }
+.pdu-hex .hex-ascii { color: var(--text-secondary); }
+
+/* Binary view (L1) */
+.pdu-binary {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: .65rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pdu-binary .bit-0 { color: var(--text-secondary); }
+.pdu-binary .bit-1 { color: var(--l4); font-weight: 700; }
+
+/* Application data display */
+.pdu-appdata {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: .78rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pdu-note {
+  font-size: .78rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 8px 0;
+  line-height: 1.5;
+}
+
+/* Full frame hex dump at bottom */
+.full-frame {
+  margin-top: 16px;
+}
+
+.full-frame__title {
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
 }
 
 /* ========== LAB Section ========== */
