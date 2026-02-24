@@ -127,13 +127,14 @@
   <section class="section" id="section-lab">
     <div class="lab-data-panel" id="labDataPanel">
       <div class="lab-data-panel__header">
-        <span style="font-weight:700;font-size:.85rem">📋 Данные для экспериментов</span>
+        <span style="font-weight:700;font-size:.85rem">📋 Ваше сообщение</span>
         <span class="lab-data-panel__size" id="labDataSize">0 Б</span>
       </div>
-      <input type="text" class="sim-input" id="labDataText" placeholder="Введите сообщение..." value="Привет, OSI!">
+      <div style="font-size:.68rem;color:var(--text-secondary);margin-bottom:6px">Введите текст, загрузите файл или сгенерируйте случайные данные — они будут проходить через все эксперименты ниже</div>
+      <input type="text" class="sim-input" id="labDataText" placeholder="Напишите что-нибудь…" value="Привет, OSI!">
       <div style="display:flex;gap:6px;margin-top:6px">
-        <button class="dnd-btn" id="labDataFileBtn" style="flex:2;padding:8px;font-size:.72rem">📎 Файл</button>
-        <button class="dnd-btn" id="labDataRandom" style="flex:1;padding:8px;font-size:.72rem">🎲 Случайно</button>
+        <button class="dnd-btn" id="labDataFileBtn" style="flex:2;padding:8px;font-size:.72rem">📎 Загрузить файл/картинку</button>
+        <button class="dnd-btn" id="labDataRandom" style="flex:1;padding:8px;font-size:.72rem">🎲 Случайные байты</button>
       </div>
       <input type="file" id="labDataFileInput" hidden>
       <div id="labDataPreview"></div>

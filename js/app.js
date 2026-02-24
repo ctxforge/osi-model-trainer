@@ -219,8 +219,13 @@
             </div>
           </div>
           <div class="study-section">
-            <div class="study-section__title">PDU (единица данных)</div>
-            <div class="study-section__text">${layer.pdu}</div>
+            <div class="study-section__title">PDU — ${layer.pdu}</div>
+            ${layer.pduFields ? `<div class="pdu-diagram" style="height:auto;flex-wrap:wrap;margin-bottom:8px">
+              ${layer.pduFields.map(f => `<div class="pdu-diagram__seg" style="flex:${f.size === 'N' || f.size.includes('1500') ? 4 : 1};background:${f.color};padding:6px 4px;min-height:36px;flex-direction:column;gap:1px">
+                <span>${f.name}</span>
+                ${f.size ? `<span style="font-size:.5rem;opacity:.7">${f.size}</span>` : ''}
+              </div>`).join('')}
+            </div>` : ''}
           </div>
           <div class="study-section">
             <div class="study-section__title">Инкапсуляция</div>
@@ -820,27 +825,23 @@
     const container = document.getElementById('labTabs');
     const group = LAB_GROUPS.find(g => g.id === activeLabGroup) || LAB_GROUPS[0];
 
-    let html = '<div class="lab-groups" style="display:flex;gap:4px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none">';
-    LAB_GROUPS.forEach(g => {
-      html += `<button class="lab-tab${g.id === activeLabGroup ? ' active' : ''}" data-group="${g.id}" style="font-size:.68rem">${g.name}</button>`;
-    });
-    html += '</div><div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">' + group.desc + '</div>';
-    html += '<div style="display:flex;gap:4px;overflow-x:auto;scrollbar-width:none">';
+    let html = `<select class="ch-phy-select" id="labGroupSelect" style="margin-bottom:8px;font-weight:700">
+      ${LAB_GROUPS.map(g => `<option value="${g.id}"${g.id === activeLabGroup ? ' selected' : ''}>${g.name} — ${g.desc}</option>`).join('')}
+    </select>`;
+    html += '<div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px">';
     group.experiments.forEach((key, i) => {
       const exp = LAB_EXPERIMENTS[key];
       if (!exp) return;
-      html += `<button class="lab-tab${i === 0 ? ' active' : ''}" data-lab="${key}" style="font-size:.7rem">${exp.icon} ${exp.title}</button>`;
+      html += `<button class="lab-tab${i === 0 ? ' active' : ''}" data-lab="${key}">${exp.icon} ${exp.title}</button>`;
     });
     html += '</div>';
     container.innerHTML = html;
 
-    container.querySelectorAll('[data-group]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        activeLabGroup = btn.dataset.group;
-        buildLabTabs();
-        const grp = LAB_GROUPS.find(g => g.id === activeLabGroup);
-        if (grp && grp.experiments[0]) switchLabTab(grp.experiments[0]);
-      });
+    container.querySelector('#labGroupSelect').addEventListener('change', (e) => {
+      activeLabGroup = e.target.value;
+      buildLabTabs();
+      const grp = LAB_GROUPS.find(g => g.id === activeLabGroup);
+      if (grp && grp.experiments[0]) switchLabTab(grp.experiments[0]);
     });
 
     container.querySelectorAll('[data-lab]').forEach(btn => {
