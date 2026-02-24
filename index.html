@@ -12,8 +12,16 @@
   <!-- Top Bar -->
   <header class="top-bar">
     <span class="top-bar__title">OSI Trainer</span>
-    <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
+    <div class="top-bar__right">
+      <button class="xp-badge" id="xpBadge" aria-label="Прогресс">
+        <span class="xp-badge__icon" id="xpIcon">🌱</span>
+        <span class="xp-badge__value" id="xpValue">0 XP</span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
+    </div>
   </header>
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="xp-panel" id="xpPanel"></div>
 
   <!-- ===== HOME ===== -->
   <section class="section active" id="section-home">
@@ -158,6 +166,15 @@
       <div id="labParams-tcpVsUdp"></div>
       <button class="lab-run-btn" id="labRun-tcpVsUdp">▶ Запустить передачу</button>
       <div class="lab-result" id="labResult-tcpVsUdp"></div>
+    </div>
+
+    <!-- Network Path Builder -->
+    <div class="lab-content" id="lab-netBuilder">
+      <div class="nb-presets" id="nbPresets"></div>
+      <div class="nb-path" id="nbPath"></div>
+      <button class="lab-run-btn" id="nbAddHop" style="background:var(--bg-card);color:var(--text);border:1px dashed var(--border);margin-top:8px">+ Добавить устройство и канал</button>
+      <button class="lab-run-btn" id="nbSend">▶ Отправить пакет</button>
+      <div class="lab-result" id="nbResult"></div>
     </div>
   </section>
 

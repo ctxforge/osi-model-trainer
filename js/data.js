@@ -252,8 +252,92 @@ const LAB_EXPERIMENTS = {
       { id: 'packetLoss', label: 'Потеря пакетов', type: 'range', min: 0, max: 60, step: 5, default: 20, unit: '%' },
       { id: 'speed', label: 'Скорость анимации', type: 'range', min: 150, max: 1000, step: 50, default: 350, unit: 'мс' }
     ]
+  },
+  netBuilder: {
+    title: 'Конструктор сети',
+    icon: '🔗',
+    description: 'Постройте маршрут из реальных устройств и каналов связи, затем отправьте пакет',
+    params: []
   }
 };
+
+const CHANNEL_TYPES = [
+  { id: 'cat5e', name: 'Ethernet Cat5e', speed: 1000, latency: 0.01, medium: 'copper', maxDist: 100, icon: '🔌', color: '#3498db', desc: 'Витая пара Cat5e. Стандартный кабель для локальных сетей. До 1 Гбит/с.' },
+  { id: 'cat6', name: 'Ethernet Cat6', speed: 10000, latency: 0.01, medium: 'copper', maxDist: 55, icon: '🔌', color: '#2980b9', desc: 'Витая пара Cat6. Поддерживает 10 Гбит/с на коротких дистанциях.' },
+  { id: 'fiber_sm', name: 'Оптоволокно SM', speed: 100000, latency: 0.005, medium: 'fiber', maxDist: 80000, icon: '💡', color: '#e74c3c', desc: 'Одномодовое оптоволокно. Максимальная скорость и дальность. Используется магистральными провайдерами.' },
+  { id: 'fiber_mm', name: 'Оптоволокно MM', speed: 10000, latency: 0.005, medium: 'fiber', maxDist: 550, icon: '💡', color: '#c0392b', desc: 'Многомодовое оптоволокно. Для дата-центров и зданий. Дешевле одномодового.' },
+  { id: 'wifi24', name: 'Wi-Fi 2.4 GHz', speed: 150, latency: 3, medium: 'radio', maxDist: 70, icon: '📶', color: '#2ecc71', desc: 'Wi-Fi на 2.4 ГГц. Большая дальность, но низкая скорость и помехи от соседей.' },
+  { id: 'wifi5', name: 'Wi-Fi 5 GHz', speed: 866, latency: 2, medium: 'radio', maxDist: 35, icon: '📶', color: '#27ae60', desc: 'Wi-Fi на 5 ГГц. Быстрее, меньше помех, но меньшая дальность и хуже проходит стены.' },
+  { id: 'wifi6', name: 'Wi-Fi 6 (ax)', speed: 2400, latency: 1, medium: 'radio', maxDist: 30, icon: '📶', color: '#1abc9c', desc: 'Wi-Fi 6 (802.11ax). Высокая скорость, OFDMA, лучше работает в плотных сетях.' },
+  { id: 'coax', name: 'Коаксиальный', speed: 1000, latency: 0.5, medium: 'copper', maxDist: 500, icon: '📺', color: '#e67e22', desc: 'Коаксиальный кабель. Используется в кабельном ТВ и DOCSIS-сетях.' },
+  { id: 'dsl', name: 'DSL (телефон)', speed: 100, latency: 10, medium: 'copper', maxDist: 5500, icon: '📞', color: '#f39c12', desc: 'DSL — интернет по телефонной линии. Скорость зависит от расстояния до АТС.' },
+  { id: 'lte', name: '4G LTE', speed: 100, latency: 30, medium: 'radio', maxDist: 10000, icon: '📱', color: '#9b59b6', desc: '4G LTE — мобильная связь. Хорошее покрытие, средняя скорость, заметная задержка.' },
+  { id: '5g', name: '5G', speed: 1000, latency: 5, medium: 'radio', maxDist: 1000, icon: '📱', color: '#8e44ad', desc: '5G — новое поколение. Высокая скорость и низкая задержка, но малый радиус.' },
+  { id: 'satellite', name: 'Спутник (GEO)', speed: 100, latency: 600, medium: 'radio', maxDist: 35786, icon: '🛰️', color: '#34495e', desc: 'Геостационарный спутник. Огромная задержка (600 мс RTT) из-за расстояния 36000 км.' }
+];
+
+const NET_DEVICES = [
+  { id: 'pc', name: 'Компьютер', layer: 7, icon: '💻', color: '#95a5a6', proc: 0, desc: 'Конечное устройство. Работает на всех 7 уровнях OSI.' },
+  { id: 'server', name: 'Сервер', layer: 7, icon: '🖥️', color: '#7f8c8d', proc: 0, desc: 'Серверное оборудование. Принимает и обрабатывает запросы.' },
+  { id: 'hub', name: 'Хаб', layer: 1, icon: '🔌', color: '#9b59b6', proc: 0, desc: 'L1. Повторяет сигнал на все порты без анализа. Общий домен коллизий.' },
+  { id: 'switch', name: 'Коммутатор', layer: 2, icon: '🔀', color: '#3498db', proc: 0.01, desc: 'L2. Читает MAC-адрес, пересылает кадр только на нужный порт.' },
+  { id: 'router', name: 'Маршрутизатор', layer: 3, icon: '🌐', color: '#1abc9c', proc: 0.1, desc: 'L3. Анализирует IP, выбирает маршрут, меняет MAC-заголовок.' },
+  { id: 'ap', name: 'Точка доступа', layer: 2, icon: '📡', color: '#2ecc71', proc: 0.02, desc: 'L2. Мост между проводной и беспроводной сетью.' },
+  { id: 'modem', name: 'Модем', layer: 1, icon: '📟', color: '#e67e22', proc: 0.5, desc: 'L1. Преобразует цифровой сигнал в аналоговый и обратно.' },
+  { id: 'firewall', name: 'Файрвол', layer: 4, icon: '🛡️', color: '#e74c3c', proc: 0.2, desc: 'L3-L7. Анализирует пакеты и фильтрует по правилам безопасности.' }
+];
+
+const NET_PRESETS = [
+  { name: '🏠 Домашняя сеть', path: [
+    { type: 'device', id: 'pc' }, { type: 'link', id: 'wifi5' },
+    { type: 'device', id: 'router' }, { type: 'link', id: 'cat5e' },
+    { type: 'device', id: 'modem' }, { type: 'link', id: 'fiber_mm' },
+    { type: 'device', id: 'router' }, { type: 'link', id: 'fiber_sm' },
+    { type: 'device', id: 'server' }
+  ]},
+  { name: '🏢 Офисная LAN', path: [
+    { type: 'device', id: 'pc' }, { type: 'link', id: 'cat6' },
+    { type: 'device', id: 'switch' }, { type: 'link', id: 'cat6' },
+    { type: 'device', id: 'firewall' }, { type: 'link', id: 'cat6' },
+    { type: 'device', id: 'server' }
+  ]},
+  { name: '📱 Мобильный', path: [
+    { type: 'device', id: 'pc' }, { type: 'link', id: '5g' },
+    { type: 'device', id: 'router' }, { type: 'link', id: 'fiber_sm' },
+    { type: 'device', id: 'router' }, { type: 'link', id: 'cat6' },
+    { type: 'device', id: 'server' }
+  ]},
+  { name: '🛰️ Спутник', path: [
+    { type: 'device', id: 'pc' }, { type: 'link', id: 'cat5e' },
+    { type: 'device', id: 'modem' }, { type: 'link', id: 'satellite' },
+    { type: 'device', id: 'modem' }, { type: 'link', id: 'cat5e' },
+    { type: 'device', id: 'router' }, { type: 'link', id: 'fiber_sm' },
+    { type: 'device', id: 'server' }
+  ]}
+];
+
+const XP_LEVELS = [
+  { level: 1, name: 'Новичок', minXp: 0, icon: '🌱' },
+  { level: 2, name: 'Стажёр', minXp: 30, icon: '📗' },
+  { level: 3, name: 'Техник', minXp: 80, icon: '🔧' },
+  { level: 4, name: 'Инженер', minXp: 160, icon: '⚙️' },
+  { level: 5, name: 'Архитектор', minXp: 300, icon: '🏗️' },
+  { level: 6, name: 'Сетевой Гуру', minXp: 500, icon: '🧠' }
+];
+
+const ACHIEVEMENTS = [
+  { id: 'first_encap', name: 'Первый пакет', desc: 'Запустите симулятор инкапсуляции', icon: '📦', xp: 10 },
+  { id: 'study_all', name: 'Знаток OSI', desc: 'Изучите все 7 уровней', icon: '📖', xp: 20 },
+  { id: 'tcp_hand', name: 'Рукопожатие', desc: 'Запустите TCP Handshake', icon: '🤝', xp: 10 },
+  { id: 'scenario_done', name: 'Веб-сёрфер', desc: 'Пройдите сценарий открытия сайта', icon: '🌐', xp: 10 },
+  { id: 'dnd_perfect', name: 'Точное попадание', desc: 'Разместите всё правильно в тренажёре', icon: '🎯', xp: 25 },
+  { id: 'net_builder', name: 'Сетевой строитель', desc: 'Отправьте пакет по своей сети', icon: '🔗', xp: 15 },
+  { id: 'all_channels', name: 'Связист', desc: 'Используйте 5 разных каналов связи', icon: '📡', xp: 20 },
+  { id: 'tcp_vs_udp', name: 'Протокольный дуэлянт', desc: 'Запустите TCP vs UDP', icon: '⚔️', xp: 10 },
+  { id: 'ip_calc', name: 'Подсетевик', desc: 'Рассчитайте IP-подсеть', icon: '🔢', xp: 10 },
+  { id: 'xp_100', name: 'Сотня', desc: 'Наберите 100 XP', icon: '💯', xp: 0 },
+  { id: 'xp_300', name: 'Мастер', desc: 'Наберите 300 XP', icon: '🏆', xp: 0 }
+];
 
 const ENCAPSULATION_HEADERS = [
   { layer: 7, label: 'Данные приложения', short: 'DATA', color: '#e74c3c' },

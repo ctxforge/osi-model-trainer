@@ -1,6 +1,106 @@
 (function () {
   'use strict';
 
+  /* ==================== GAMIFICATION ==================== */
+  let gameState = JSON.parse(localStorage.getItem('osi-game') || '{}');
+  if (!gameState.xp) gameState.xp = 0;
+  if (!gameState.achievements) gameState.achievements = [];
+  if (!gameState.studiedLayers) gameState.studiedLayers = [];
+  if (!gameState.usedChannels) gameState.usedChannels = [];
+
+  function saveGame() { localStorage.setItem('osi-game', JSON.stringify(gameState)); }
+
+  function getCurrentLevel() {
+    let lvl = XP_LEVELS[0];
+    for (const l of XP_LEVELS) { if (gameState.xp >= l.minXp) lvl = l; }
+    return lvl;
+  }
+
+  function getNextLevel() {
+    const cur = getCurrentLevel();
+    return XP_LEVELS.find(l => l.minXp > cur.minXp) || cur;
+  }
+
+  function addXP(amount) {
+    const oldLevel = getCurrentLevel().level;
+    gameState.xp += amount;
+    saveGame();
+    const newLevel = getCurrentLevel().level;
+    updateXPDisplay();
+    if (newLevel > oldLevel) {
+      const lvl = getCurrentLevel();
+      showToast(lvl.icon, `Уровень ${lvl.level}: ${lvl.name}!`, '');
+    }
+    if (gameState.xp >= 100) unlockAchievement('xp_100');
+    if (gameState.xp >= 300) unlockAchievement('xp_300');
+  }
+
+  function unlockAchievement(id) {
+    if (gameState.achievements.includes(id)) return;
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    if (!ach) return;
+    gameState.achievements.push(id);
+    saveGame();
+    showToast(ach.icon, ach.name, ach.xp > 0 ? `+${ach.xp} XP` : '');
+    if (ach.xp > 0) addXP(ach.xp);
+    updateXPDisplay();
+  }
+
+  function showToast(icon, text, xpText) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<span class="toast__icon">${icon}</span><span>${text}</span>${xpText ? `<span class="toast__xp">${xpText}</span>` : ''}`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3200);
+  }
+
+  function updateXPDisplay() {
+    const lvl = getCurrentLevel();
+    const next = getNextLevel();
+    document.getElementById('xpIcon').textContent = lvl.icon;
+    document.getElementById('xpValue').textContent = gameState.xp + ' XP';
+
+    const panel = document.getElementById('xpPanel');
+    const pct = next.minXp > lvl.minXp ? ((gameState.xp - lvl.minXp) / (next.minXp - lvl.minXp)) * 100 : 100;
+    panel.innerHTML = `
+      <div class="xp-panel__header">
+        <div class="xp-panel__avatar">${lvl.icon}</div>
+        <div>
+          <div class="xp-panel__level-name">Уровень ${lvl.level}: ${lvl.name}</div>
+          <div class="xp-panel__level-sub">${gameState.xp} XP</div>
+        </div>
+      </div>
+      <div class="xp-bar"><div class="xp-bar__fill" style="width:${pct}%"></div></div>
+      <div class="xp-bar__label">${next.minXp > lvl.minXp ? `${gameState.xp}/${next.minXp} XP до «${next.name}»` : 'Максимальный уровень!'}</div>
+      <div class="xp-achievements">
+        <div class="xp-achievements__title">Достижения (${gameState.achievements.length}/${ACHIEVEMENTS.length})</div>
+        ${ACHIEVEMENTS.map(a => {
+          const unlocked = gameState.achievements.includes(a.id);
+          return `<div class="xp-ach ${unlocked ? '' : 'xp-ach--locked'}">
+            <div class="xp-ach__icon">${a.icon}</div>
+            <div class="xp-ach__info"><div class="xp-ach__name">${a.name}</div><div class="xp-ach__desc">${a.desc}</div></div>
+            ${a.xp > 0 ? `<div class="xp-ach__xp">${unlocked ? '✓' : '+' + a.xp}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  updateXPDisplay();
+
+  document.getElementById('xpBadge').addEventListener('click', () => {
+    const panel = document.getElementById('xpPanel');
+    panel.classList.toggle('open');
+  });
+
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('xpPanel');
+    if (panel.classList.contains('open') && !panel.contains(e.target) && !document.getElementById('xpBadge').contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  });
+
   /* ==================== THEME ==================== */
   const themeToggle = document.getElementById('themeToggle');
   const root = document.documentElement;
@@ -136,9 +236,19 @@
 
     document.getElementById('studyPrev').disabled = num === 7;
     document.getElementById('studyNext').disabled = num === 1;
+    trackStudyLayer(num);
   }
 
   selectStudyLayer(7);
+
+  function trackStudyLayer(num) {
+    if (!gameState.studiedLayers.includes(num)) {
+      gameState.studiedLayers.push(num);
+      saveGame();
+      addXP(3);
+    }
+    if (gameState.studiedLayers.length === 7) unlockAchievement('study_all');
+  }
 
   document.getElementById('studyPrev').addEventListener('click', () => {
     if (currentStudyLayer < 7) selectStudyLayer(currentStudyLayer + 1);
@@ -564,7 +674,11 @@
     });
   }
 
-  document.getElementById('simBuild').addEventListener('click', buildFullPacket);
+  document.getElementById('simBuild').addEventListener('click', () => {
+    buildFullPacket();
+    unlockAchievement('first_encap');
+    addXP(5);
+  });
 
   /* ==================== LAB ==================== */
   const labState = {};
@@ -883,6 +997,11 @@
     }
   });
 
+  document.getElementById('labRun-ipCalc').addEventListener('click', () => {
+    unlockAchievement('ip_calc');
+    addXP(3);
+  });
+
   // Lab: IP Calculator
   document.getElementById('labRun-ipCalc').addEventListener('click', () => {
     const s = labState.ipCalc;
@@ -1019,6 +1138,8 @@
       if (step) step.classList.add('visible');
       if (desc) desc.classList.add('visible');
     }
+    unlockAchievement('tcp_hand');
+    addXP(5);
   });
 
   /* ==================== LAB: SCENARIO ==================== */
@@ -1077,6 +1198,8 @@
       const el = document.getElementById('scenarioStep-' + i);
       if (el) el.classList.add('visible');
     }
+    unlockAchievement('scenario_done');
+    addXP(5);
   });
 
   /* ==================== LAB: HUB vs SWITCH vs ROUTER ==================== */
@@ -1264,6 +1387,198 @@
       if (el) el.classList.add('visible');
       ti++;
     }
+    unlockAchievement('tcp_vs_udp');
+    addXP(5);
+  });
+
+  /* ==================== NETWORK PATH BUILDER ==================== */
+  let nbPath = [
+    { type: 'device', id: 'pc' },
+    { type: 'link', id: 'wifi5' },
+    { type: 'device', id: 'router' },
+    { type: 'link', id: 'cat5e' },
+    { type: 'device', id: 'server' }
+  ];
+
+  function renderNBPresets() {
+    const c = document.getElementById('nbPresets');
+    c.innerHTML = NET_PRESETS.map((p, i) => `<button class="nb-preset" data-preset="${i}">${p.name}</button>`).join('');
+    c.querySelectorAll('.nb-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        nbPath = JSON.parse(JSON.stringify(NET_PRESETS[parseInt(btn.dataset.preset)].path));
+        renderNBPath();
+      });
+    });
+  }
+
+  function formatSpeed(mbps) {
+    if (mbps >= 1000) return (mbps / 1000).toFixed(mbps >= 10000 ? 0 : 1) + ' Гбит/с';
+    return mbps + ' Мбит/с';
+  }
+
+  function renderNBPath() {
+    const c = document.getElementById('nbPath');
+    let html = '';
+    nbPath.forEach((item, i) => {
+      if (item.type === 'device') {
+        const dev = NET_DEVICES.find(d => d.id === item.id);
+        const isEndpoint = i === 0 || i === nbPath.length - 1;
+        const lyr = OSI_LAYERS.find(l => l.number === dev.layer);
+        html += `<div class="nb-device" id="nbDev-${i}" data-idx="${i}">
+          <div class="nb-device__icon" style="background:${dev.color}20;border:1px solid ${dev.color}40">${dev.icon}</div>
+          <div class="nb-device__info">
+            <div class="nb-device__name">${dev.name}</div>
+            <div class="nb-device__layer" style="color:${lyr.color}">L${dev.layer} ${lyr.name}</div>
+          </div>
+          ${isEndpoint ? '' : `
+            <select class="nb-device__select" data-idx="${i}">
+              ${NET_DEVICES.filter(d => !['pc','server'].includes(d.id)).map(d => `<option value="${d.id}"${d.id === item.id ? ' selected' : ''}>${d.icon} ${d.name}</option>`).join('')}
+            </select>
+            <button class="nb-device__remove" data-idx="${i}">✕</button>
+          `}
+        </div>`;
+      } else {
+        const ch = CHANNEL_TYPES.find(c => c.id === item.id);
+        html += `<div class="nb-link" id="nbLink-${i}" data-idx="${i}">
+          <div class="nb-link__line" style="background:${ch.color}" id="nbLine-${i}"></div>
+          <select class="nb-link__select" data-idx="${i}">
+            ${CHANNEL_TYPES.map(c => `<option value="${c.id}"${c.id === item.id ? ' selected' : ''}>${c.icon} ${c.name}</option>`).join('')}
+          </select>
+          <div class="nb-link__speed">${formatSpeed(ch.speed)}</div>
+        </div>`;
+      }
+    });
+    c.innerHTML = html;
+
+    c.querySelectorAll('.nb-device__select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        nbPath[parseInt(sel.dataset.idx)].id = sel.value;
+        renderNBPath();
+      });
+    });
+
+    c.querySelectorAll('.nb-link__select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        nbPath[parseInt(sel.dataset.idx)].id = sel.value;
+        renderNBPath();
+      });
+    });
+
+    c.querySelectorAll('.nb-device__remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        nbPath.splice(idx - 1, 2);
+        renderNBPath();
+      });
+    });
+  }
+
+  renderNBPresets();
+  renderNBPath();
+
+  document.getElementById('nbAddHop').addEventListener('click', () => {
+    const lastLinkIdx = nbPath.length - 1;
+    nbPath.splice(lastLinkIdx, 0,
+      { type: 'device', id: 'switch' },
+      { type: 'link', id: 'cat5e' }
+    );
+    renderNBPath();
+  });
+
+  document.getElementById('nbSend').addEventListener('click', async () => {
+    const result = document.getElementById('nbResult');
+    let totalLatency = 0;
+    let bottleneck = Infinity;
+    let bottleneckName = '';
+    const hops = [];
+    const usedCh = new Set();
+
+    for (let i = 0; i < nbPath.length; i++) {
+      const item = nbPath[i];
+      if (item.type === 'link') {
+        const ch = CHANNEL_TYPES.find(c => c.id === item.id);
+        totalLatency += ch.latency;
+        usedCh.add(ch.id);
+        if (ch.speed < bottleneck) { bottleneck = ch.speed; bottleneckName = ch.name; }
+        hops.push({ icon: ch.icon, name: ch.name, latency: ch.latency, speed: ch.speed, type: 'link', medium: ch.medium, idx: i });
+      } else {
+        const dev = NET_DEVICES.find(d => d.id === item.id);
+        totalLatency += dev.proc;
+        hops.push({ icon: dev.icon, name: dev.name, latency: dev.proc, layer: dev.layer, type: 'device', desc: dev.desc, idx: i });
+      }
+    }
+
+    usedCh.forEach(id => {
+      if (!gameState.usedChannels.includes(id)) {
+        gameState.usedChannels.push(id);
+        saveGame();
+      }
+    });
+    if (gameState.usedChannels.length >= 5) unlockAchievement('all_channels');
+
+    const throughput = bottleneck;
+    const transferTime = (1500 * 8 / (bottleneck * 1e6) * 1000).toFixed(4);
+
+    result.innerHTML = `
+      <div class="lab-result__title">Результат передачи</div>
+      <div class="lab-stats">
+        <div class="lab-stat">
+          <div class="lab-stat__value">${totalLatency.toFixed(2)} мс</div>
+          <div class="lab-stat__label">Общая задержка</div>
+        </div>
+        <div class="lab-stat">
+          <div class="lab-stat__value">${formatSpeed(throughput)}</div>
+          <div class="lab-stat__label">Пропускная способность</div>
+        </div>
+        <div class="lab-stat">
+          <div class="lab-stat__value">${hops.filter(h => h.type === 'device').length}</div>
+          <div class="lab-stat__label">Устройств</div>
+        </div>
+        <div class="lab-stat">
+          <div class="lab-stat__value">${hops.filter(h => h.type === 'link').length}</div>
+          <div class="lab-stat__label">Каналов</div>
+        </div>
+      </div>
+      <div class="mt-16">
+        <div class="lab-result__title">Путь пакета</div>
+        ${hops.map((h, i) => `
+          <div class="nb-result-row" id="nbRes-${i}">
+            <div class="nb-result-row__icon">${h.icon}</div>
+            <div class="nb-result-row__text">
+              <strong>${h.name}</strong>
+              ${h.type === 'link' ? ` — ${formatSpeed(h.speed)}, ${h.medium === 'copper' ? 'медь' : h.medium === 'fiber' ? 'оптоволокно' : 'радио'}` : ''}
+              ${h.type === 'device' && h.layer ? ` — L${h.layer}` : ''}
+            </div>
+            <div class="nb-result-row__val">${h.latency > 0 ? '+' + h.latency + ' мс' : '—'}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card mt-16" style="font-size:.82rem;line-height:1.6">
+        <strong>Узкое место:</strong> ${bottleneckName} (${formatSpeed(bottleneck)}). Это самый медленный канал, который ограничивает общую пропускную способность маршрута.
+        Передача одного кадра Ethernet (1500 байт) через этот канал занимает ${transferTime} мс.
+        ${totalLatency > 50 ? '<br><br><strong>Высокая задержка!</strong> Для интерактивных приложений (VoIP, игры) желательна задержка < 50 мс.' : ''}
+      </div>
+    `;
+
+    document.querySelectorAll('.nb-device, .nb-link__line').forEach(el => el.classList.remove('nb-active'));
+
+    for (let i = 0; i < hops.length; i++) {
+      await sleep(300);
+      const row = document.getElementById('nbRes-' + i);
+      if (row) row.classList.add('visible');
+
+      const idx = hops[i].idx;
+      if (hops[i].type === 'device') {
+        const devEl = document.getElementById('nbDev-' + idx);
+        if (devEl) devEl.classList.add('nb-active');
+      } else {
+        const lineEl = document.getElementById('nbLine-' + idx);
+        if (lineEl) lineEl.classList.add('nb-active');
+      }
+    }
+
+    unlockAchievement('net_builder');
+    addXP(5);
   });
 
   /* ==================== DRAG & DROP ==================== */
@@ -1455,6 +1770,8 @@
     }
 
     const pct = Math.round((correct / total) * 100);
+    addXP(correct);
+    if (pct === 100 && remaining === 0) unlockAchievement('dnd_perfect');
     scoreEl.innerHTML = `
       <div class="dnd-score">
         <div class="dnd-score__value">${correct}/${total}</div>
