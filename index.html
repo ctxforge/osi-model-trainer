@@ -179,6 +179,13 @@
       <div class="lab-result" id="labResult-tcpVsUdp"></div>
     </div>
 
+    <!-- TLS/SSL -->
+    <div class="lab-content" id="lab-tls">
+      <div id="labParams-tls"></div>
+      <button class="lab-run-btn" id="labRun-tls">▶ Запустить TLS Handshake</button>
+      <div class="lab-result" id="labResult-tls"></div>
+    </div>
+
     <!-- Channel Physics -->
     <div class="lab-content" id="lab-channelPhysics">
       <div id="labParams-channelPhysics"></div>
@@ -197,14 +204,20 @@
 
   <!-- ===== TERMINAL ===== -->
   <section class="section" id="section-terminal">
-    <div class="section-desc">Изучайте сетевые команды в интерактивном терминале. Введите <strong>help</strong> для списка команд</div>
+    <div class="section-desc">Изучайте сетевые команды в интерактивном терминале. Нажмите кнопку или введите команду вручную</div>
+
+    <div class="term-quick" id="termQuick">
+      <div class="term-quick__row" id="termCmdButtons"></div>
+      <div class="term-quick__params" id="termParamsArea"></div>
+    </div>
+
     <div class="terminal" id="terminal">
       <div class="terminal__output" id="termOutput">
         <div class="term-line term-line--info">OSI Network Terminal v1.0</div>
-        <div class="term-line term-line--info">Введите <span class="term-cmd">help</span> для списка доступных команд</div>
+        <div class="term-line term-line--info">Выберите команду из панели или введите вручную</div>
       </div>
       <div class="terminal__input-row">
-        <span class="terminal__prompt">root@osi-lab:~$</span>
+        <span class="terminal__prompt">$</span>
         <input type="text" class="terminal__input" id="termInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Введите команду...">
       </div>
     </div>

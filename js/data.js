@@ -259,6 +259,15 @@ const LAB_EXPERIMENTS = {
     description: 'Постройте маршрут из реальных устройств и каналов связи, затем отправьте пакет',
     params: []
   },
+  tls: {
+    title: 'TLS / Шифрование',
+    icon: '🔐',
+    description: 'Визуализация TLS-рукопожатия, сертификатов и шифрования данных',
+    params: [
+      { id: 'tlsVersion', label: 'Версия TLS', type: 'toggle', options: ['TLS 1.2', 'TLS 1.3'], default: 1 },
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1200, step: 100, default: 500, unit: 'мс' }
+    ]
+  },
   channelPhysics: {
     title: 'Физика канала',
     icon: '📊',
