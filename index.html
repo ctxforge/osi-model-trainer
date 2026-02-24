@@ -11,6 +11,7 @@
 <body>
   <!-- Top Bar -->
   <header class="top-bar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Меню">☰</button>
     <span class="top-bar__title">OSI Trainer</span>
     <div class="top-bar__right">
       <button class="xp-badge" id="xpBadge" aria-label="Прогресс">
@@ -35,18 +36,23 @@
     <div class="nav-cards">
       <div class="nav-card" data-nav="study">
         <div class="nav-card__icon">📖</div>
-        <div class="nav-card__title">Изучение</div>
-        <div class="nav-card__desc">7 уровней OSI</div>
+        <div class="nav-card__title">Модель OSI</div>
+        <div class="nav-card__desc">7 уровней</div>
       </div>
       <div class="nav-card" data-nav="simulator">
         <div class="nav-card__icon">📦</div>
-        <div class="nav-card__title">Симулятор</div>
-        <div class="nav-card__desc">Инкапсуляция</div>
+        <div class="nav-card__title">Инкапсуляция</div>
+        <div class="nav-card__desc">Пакеты и байты</div>
       </div>
       <div class="nav-card" data-nav="lab">
         <div class="nav-card__icon">🔬</div>
         <div class="nav-card__title">Лаборатория</div>
         <div class="nav-card__desc">15 экспериментов</div>
+      </div>
+      <div class="nav-card" data-nav="siggen">
+        <div class="nav-card__icon">〰️</div>
+        <div class="nav-card__title">Физ. лаборатория</div>
+        <div class="nav-card__desc">Сигналы + Канал</div>
       </div>
       <div class="nav-card" data-nav="terminal">
         <div class="nav-card__icon">💻</div>
@@ -254,47 +260,49 @@
     </div>
   </section>
 
-  <!-- ===== SIGNAL GEN ===== -->
+  <!-- ===== PHYSICS LAB ===== -->
   <section class="section" id="section-siggen">
-    <div class="section-desc">Генератор сигналов + анализатор спектра (FFT). Параметры совместимы с MATLAB/Octave</div>
-    <div id="siggenUI"></div>
-  </section>
-
-  <!-- ===== CHANNEL ===== -->
-  <section class="section" id="section-channel">
-    <div class="section-desc">Загрузите файл или введите текст — передайте через канал с помехами — увидите что получит приёмник</div>
-
-    <div class="card">
-      <div class="study-section__title">Источник</div>
-      <input type="text" class="sim-input" id="chSrcText" placeholder="Текст для передачи..." value="">
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <button class="dnd-btn" id="chSrcFileBtn" style="flex:1;padding:8px;font-size:.72rem">📎 Загрузить файл/картинку</button>
-        <button class="dnd-btn" id="chSrcLabData" style="flex:1;padding:8px;font-size:.72rem">📋 Из лаборатории</button>
-      </div>
-      <input type="file" id="chSrcFileInput" hidden>
-      <div id="chSrcPreview"></div>
+    <div class="lab-toggle mb-12">
+      <button class="lab-toggle__btn active" id="physTabGen">〰️ Генератор + Спектр</button>
+      <button class="lab-toggle__btn" id="physTabChan">📡 Передача файла</button>
     </div>
 
-    <div class="card">
-      <div class="study-section__title">Канал связи — параметры</div>
-      <div class="lab-param">
-        <div class="lab-param__label"><span>SNR (сигнал/шум)</span><span class="lab-param__value" id="chSnrVal">20 дБ</span></div>
-        <input type="range" id="chSnrSlider" min="-5" max="40" step="1" value="20">
-      </div>
-      <div class="lab-param">
-        <div class="lab-param__label"><span>Тип шума</span></div>
-        <div class="lab-toggle" id="chNoiseType">
-          <button class="lab-toggle__btn active" data-noise="awgn">AWGN</button>
-          <button class="lab-toggle__btn" data-noise="impulse">Импульсный</button>
-          <button class="lab-toggle__btn" data-noise="fading">Замирание</button>
+    <div id="physGenPane">
+      <div class="section-desc">Генератор сигналов + канал связи + анализатор спектра (FFT). Совместимо с MATLAB/Octave. Импорт CSV.</div>
+      <div id="siggenUI"></div>
+    </div>
+
+    <div id="physChanPane" style="display:none">
+      <div class="section-desc">Загрузите файл/картинку — передайте через канал с помехами — увидите повреждённый результат рядом с оригиналом</div>
+      <div class="card">
+        <div class="study-section__title">Источник</div>
+        <input type="text" class="sim-input" id="chSrcText" placeholder="Текст для передачи..." value="">
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="dnd-btn" id="chSrcFileBtn" style="flex:1;padding:8px;font-size:.72rem">📎 Загрузить файл/картинку</button>
+          <button class="dnd-btn" id="chSrcLabData" style="flex:1;padding:8px;font-size:.72rem">📋 Из лаборатории</button>
         </div>
+        <input type="file" id="chSrcFileInput" hidden>
+        <div id="chSrcPreview"></div>
       </div>
-      <div style="font-size:.68rem;color:var(--text-secondary);margin-top:4px" id="chNoiseDesc">AWGN — белый гауссовский шум, каждый бит имеет независимую вероятность ошибки</div>
+      <div class="card">
+        <div class="study-section__title">Канал связи — параметры</div>
+        <div class="lab-param">
+          <div class="lab-param__label"><span>SNR (сигнал/шум)</span><span class="lab-param__value" id="chSnrVal">20 дБ</span></div>
+          <input type="range" id="chSnrSlider" min="-5" max="40" step="1" value="20">
+        </div>
+        <div class="lab-param">
+          <div class="lab-param__label"><span>Тип шума</span></div>
+          <div class="lab-toggle" id="chNoiseType">
+            <button class="lab-toggle__btn active" data-noise="awgn">AWGN</button>
+            <button class="lab-toggle__btn" data-noise="impulse">Импульсный</button>
+            <button class="lab-toggle__btn" data-noise="fading">Замирание</button>
+          </div>
+        </div>
+        <div style="font-size:.68rem;color:var(--text-secondary);margin-top:4px" id="chNoiseDesc">AWGN — белый гауссовский шум, каждый бит имеет независимую вероятность ошибки</div>
+      </div>
+      <button class="lab-run-btn" id="chTransmit">📡 Передать через канал</button>
+      <div id="chResult"></div>
     </div>
-
-    <button class="lab-run-btn" id="chTransmit">📡 Передать через канал</button>
-
-    <div id="chResult"></div>
   </section>
 
   <!-- ===== TERMINAL ===== -->
@@ -332,40 +340,20 @@
     <div id="dndScore"></div>
   </section>
 
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <button class="nav-btn active" data-section="home">
-      <span class="nav-icon">🏠</span>
-      <span>Главная</span>
-    </button>
-    <button class="nav-btn" data-section="study">
-      <span class="nav-icon">📖</span>
-      <span>Изучение</span>
-    </button>
-    <button class="nav-btn" data-section="simulator">
-      <span class="nav-icon">📦</span>
-      <span>Симулятор</span>
-    </button>
-    <button class="nav-btn" data-section="lab">
-      <span class="nav-icon">🔬</span>
-      <span>Лаборатория</span>
-    </button>
-    <button class="nav-btn" data-section="siggen">
-      <span class="nav-icon">〰️</span>
-      <span>Сигналы</span>
-    </button>
-    <button class="nav-btn" data-section="channel">
-      <span class="nav-icon">📡</span>
-      <span>Канал</span>
-    </button>
-    <button class="nav-btn" data-section="terminal">
-      <span class="nav-icon">💻</span>
-      <span>Терминал</span>
-    </button>
-    <button class="nav-btn" data-section="dnd">
-      <span class="nav-icon">🧩</span>
-      <span>Тренажёр</span>
-    </button>
+  <!-- Hamburger Menu -->
+  <div class="menu-overlay" id="menuOverlay"></div>
+  <nav class="side-menu" id="sideMenu">
+    <div class="side-menu__header">Навигация</div>
+    <button class="side-menu__item active" data-section="home"><span class="side-menu__icon">🏠</span><span>Главная</span></button>
+    <div class="side-menu__group">Изучение</div>
+    <button class="side-menu__item" data-section="study"><span class="side-menu__icon">📖</span><span>Модель OSI</span></button>
+    <button class="side-menu__item" data-section="simulator"><span class="side-menu__icon">📦</span><span>Инкапсуляция</span></button>
+    <button class="side-menu__item" data-section="dnd"><span class="side-menu__icon">🧩</span><span>Drag & Drop</span></button>
+    <div class="side-menu__group">Лаборатория</div>
+    <button class="side-menu__item" data-section="lab"><span class="side-menu__icon">🔬</span><span>Эксперименты</span></button>
+    <button class="side-menu__item" data-section="siggen"><span class="side-menu__icon">〰️</span><span>Физ. лаборатория</span></button>
+    <div class="side-menu__group">Инструменты</div>
+    <button class="side-menu__item" data-section="terminal"><span class="side-menu__icon">💻</span><span>Терминал</span></button>
   </nav>
 
   <script src="js/data.js"></script>

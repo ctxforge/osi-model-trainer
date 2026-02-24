@@ -117,25 +117,47 @@
   });
 
   /* ==================== NAVIGATION ==================== */
-  const navBtns = document.querySelectorAll('.nav-btn');
   const sections = document.querySelectorAll('.section');
   const navCards = document.querySelectorAll('.nav-card');
+  const sideMenu = document.getElementById('sideMenu');
+  const menuOverlay = document.getElementById('menuOverlay');
+  const menuItems = document.querySelectorAll('.side-menu__item');
 
   function navigateTo(sectionId) {
     sections.forEach(s => s.classList.remove('active'));
-    navBtns.forEach(b => b.classList.remove('active'));
+    menuItems.forEach(b => b.classList.remove('active'));
     const target = document.getElementById('section-' + sectionId);
     if (target) {
       target.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
-    navBtns.forEach(b => {
+    menuItems.forEach(b => {
       if (b.dataset.section === sectionId) b.classList.add('active');
     });
+    closeMenu();
   }
 
-  navBtns.forEach(btn => btn.addEventListener('click', () => navigateTo(btn.dataset.section)));
+  function openMenu() { sideMenu.classList.add('open'); menuOverlay.classList.add('open'); }
+  function closeMenu() { sideMenu.classList.remove('open'); menuOverlay.classList.remove('open'); }
+
+  document.getElementById('hamburgerBtn').addEventListener('click', openMenu);
+  menuOverlay.addEventListener('click', closeMenu);
+  menuItems.forEach(btn => btn.addEventListener('click', () => navigateTo(btn.dataset.section)));
   navCards.forEach(card => card.addEventListener('click', () => navigateTo(card.dataset.nav)));
+
+  // Physics lab tab switching
+  document.getElementById('physTabGen')?.addEventListener('click', () => {
+    document.getElementById('physGenPane').style.display = 'block';
+    document.getElementById('physChanPane').style.display = 'none';
+    document.getElementById('physTabGen').classList.add('active');
+    document.getElementById('physTabChan').classList.remove('active');
+  });
+  document.getElementById('physTabChan')?.addEventListener('click', () => {
+    document.getElementById('physGenPane').style.display = 'none';
+    document.getElementById('physChanPane').style.display = 'block';
+    document.getElementById('physTabGen').classList.remove('active');
+    document.getElementById('physTabChan').classList.add('active');
+  });
 
   /* ==================== OSI TOWER BUILDER ==================== */
   function buildTower(container, onClick) {
@@ -2444,6 +2466,7 @@
     const sgN = 512;
     let sgChannelId = 'none';
     let sgChDistance = 50;
+    let sgImportedSamples = null;
 
     const SG_PRESETS = [
       { id: 'none', name: '— Без канала —' },
@@ -2485,6 +2508,7 @@
     };
 
     function genSamples() {
+      if (sgImportedSamples) return sgImportedSamples;
       const samples = new Float64Array(sgN);
       sgComponents.forEach(c => {
         for (let n = 0; n < sgN; n++) {
@@ -2667,10 +2691,12 @@
         <div class="study-section__title" style="margin-top:16px">MATLAB / Octave код</div>
         <div class="sg-formula">${matlabCode}</div>
         <div class="sg-export-btns">
-          <button id="sgExportCSV">📄 Экспорт TX CSV</button>
-          <button id="sgExportRxCSV">📄 Экспорт RX CSV</button>
-          <button id="sgCopyMatlab">📋 MATLAB код</button>
+          <button id="sgExportCSV">📄 TX CSV</button>
+          <button id="sgExportRxCSV">📄 RX CSV</button>
+          <button id="sgCopyMatlab">📋 MATLAB</button>
+          <button id="sgImportCSV">📂 Импорт CSV</button>
         </div>
+        <input type="file" id="sgImportFileInput" hidden accept=".csv,.txt">
       `;
 
       const txSamples = samples;
@@ -2719,6 +2745,31 @@
 
       document.getElementById('sgCopyMatlab')?.addEventListener('click', () => {
         navigator.clipboard.writeText(matlabCode).then(() => { showToast('📋', 'MATLAB код скопирован', ''); });
+      });
+
+      document.getElementById('sgImportCSV')?.addEventListener('click', () => document.getElementById('sgImportFileInput').click());
+      document.getElementById('sgImportFileInput')?.addEventListener('change', (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split('\n').filter(l => l.trim());
+          const hasHeader = isNaN(parseFloat(lines[0].split(',')[0]));
+          const data = (hasHeader ? lines.slice(1) : lines).map(l => {
+            const cols = l.split(/[,\t;]/);
+            return parseFloat(cols[cols.length > 1 ? 1 : 0]) || 0;
+          }).slice(0, sgN);
+          if (data.length < 4) { showToast('⚠️', 'Файл слишком мал', ''); return; }
+          sgComponents = [{ type: 'sin', freq: 0, amp: 0, phase: 0, dc: 0 }];
+          const imported = new Float64Array(sgN);
+          for (let i = 0; i < sgN; i++) imported[i] = data[i % data.length] || 0;
+          sgComponents = []; // clear components, use imported directly
+          sgImportedSamples = imported;
+          showToast('📂', `Импортировано ${data.length} отсчётов`, '+3 XP');
+          addXP(3);
+          render();
+        };
+        reader.readAsText(file);
       });
     }
 
