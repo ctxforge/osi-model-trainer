@@ -1,6 +1,14 @@
 (function () {
   'use strict';
 
+  /* ==================== SHARED STATE ==================== */
+  let sgChannelId = 'none';
+  let sgChDistance = 50;
+  let sgImportedSamples = null;
+  let sgNoiseLevel = 0;
+  let sgSpectrumScale = 60;
+  let sgSpectrumWindow = 'rect';
+
   /* ==================== GAMIFICATION ==================== */
   let gameState = JSON.parse(localStorage.getItem('osi-game') || '{}');
   if (!gameState.xp) gameState.xp = 0;
@@ -2479,6 +2487,7 @@
   initDnD();
 
   /* ==================== PHYSICS LAB BENCH ==================== */
+
   (function initPhysLab() {
     const container = document.getElementById('siggenUI');
     let sgComponents = [
@@ -2486,12 +2495,6 @@
     ];
     const sgFs = 8000;
     const sgN = 512;
-    let sgChannelId = 'none';
-    let sgChDistance = 50;
-    let sgImportedSamples = null;
-    let sgNoiseLevel = 0;
-    let sgSpectrumScale = 60;
-    let sgSpectrumWindow = 'rect';
 
     const PARAM_HELP = {
       type: 'Форма базового сигнала. Синус — основа всех сигналов (теорема Фурье). Прямоугольный содержит нечётные гармоники. Шум — случайный.',
