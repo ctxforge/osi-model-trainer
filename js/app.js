@@ -1963,6 +1963,7 @@
               <div class="nb-chan-detail__item"><span class="nb-chan-detail__label">Полоса</span><span class="nb-chan-detail__val">${h.ch.bandwidthMHz >= 1000 ? (h.ch.bandwidthMHz / 1000) + ' ГГц' : h.ch.bandwidthMHz + ' МГц'}</span></div>
             </div>
             ${p.overMax ? `<div style="color:var(--l7);font-weight:700;margin-top:6px">⚠ Расстояние (${formatDist(h.dist)}) превышает макс. дальность (${formatDist(h.ch.maxDist)})</div>` : ''}
+            <div class="journey-signal" style="margin-top:6px"><canvas class="nb-sig-canvas" data-snr="${p.snr.toFixed(1)}" data-medium="${h.ch.medium}"></canvas></div>
           </div>`;
         }).join('')}
       </div>
@@ -1994,6 +1995,61 @@
         if (lineEl) lineEl.classList.add('nb-active');
       }
     }
+
+    // Draw signal canvases for each link
+    const nbMsg = document.getElementById('nbMessage')?.value || 'Hello';
+    const nbMsgBytes = Array.from(new TextEncoder().encode(nbMsg.slice(0, 2)));
+    const nbMsgBits = [];
+    nbMsgBytes.forEach(b => { for (let i = 7; i >= 0; i--) nbMsgBits.push((b >> i) & 1); });
+
+    result.querySelectorAll('.nb-sig-canvas').forEach(cv => {
+      const snr = parseFloat(cv.dataset.snr);
+      const medium = cv.dataset.medium;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = cv.getBoundingClientRect();
+      cv.width = rect.width * dpr;
+      cv.height = 60 * dpr;
+      cv.style.height = '60px';
+      const ctx = cv.getContext('2d');
+      ctx.scale(dpr, dpr);
+      const cw = rect.width, ch = 60;
+      const mid = ch / 2;
+      const bitW = cw / nbMsgBits.length;
+
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.setLineDash([3,3]); ctx.strokeStyle = '#1a203050'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(cw, mid); ctx.stroke(); ctx.setLineDash([]);
+
+      const rxAmp = Math.max(Math.min(snr / 40, 1), 0.05);
+      const noiseLevel = Math.max(0.01, 0.5 - snr / 60);
+      const color = snr > 20 ? '#2ecc71' : snr > 10 ? '#f1c40f' : '#e74c3c';
+
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
+      if (medium === 'radio') {
+        for (let x = 0; x < cw; x++) {
+          const sIdx = Math.min(Math.floor(x / bitW), nbMsgBits.length - 1);
+          const bit = nbMsgBits[sIdx];
+          const freq = bit ? 0.22 : 0.1;
+          const noise = (Math.random() - 0.5) * 2 * noiseLevel * ch * 0.3;
+          const y = mid + Math.sin(x * freq) * ch * 0.3 * rxAmp + noise;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+      } else {
+        for (let x = 0; x < cw; x++) {
+          const sIdx = Math.min(Math.floor(x / bitW), nbMsgBits.length - 1);
+          const bit = nbMsgBits[sIdx];
+          const val = bit ? 1 : -1;
+          const noise = (Math.random() - 0.5) * 2 * noiseLevel * ch * 0.3;
+          const y = mid - val * ch * 0.3 * rxAmp + noise;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = '#4a5568'; ctx.font = '8px sans-serif';
+      ctx.fillText(medium === 'radio' ? 'FSK модуляция' : medium === 'fiber' ? 'OOK (свет)' : 'NRZ напряжение', 4, 10);
+      ctx.fillText(`SNR: ${snr.toFixed(0)} дБ`, cw - 60, 10);
+    });
 
     unlockAchievement('net_builder');
     addXP(5);
@@ -3010,65 +3066,105 @@
     }
 
     function drawModulation(canvas, bits, type) {
-      const { ctx, w, h } = setupCanvas(canvas, 150);
-      const bitW = w / Math.ceil(bits.length / (MOD_TYPES[type]?.bps || 1));
-      const symbols = [];
+      const totalH = 240;
+      const { ctx, w, h } = setupCanvas(canvas, totalH);
       const bps = MOD_TYPES[type]?.bps || 1;
+      const symbols = [];
       for (let i = 0; i < bits.length; i += bps) {
         let val = 0;
         for (let j = 0; j < bps && i + j < bits.length; j++) val = val * 2 + bits[i + j];
         symbols.push(val);
       }
       const symW = w / symbols.length;
-      const mid = h / 2;
-      const amp = h * 0.38;
+      const carrierH = h * 0.28;
+      const modH = h * 0.55;
+      const carrierMid = carrierH / 2 + 16;
+      const modMid = carrierH + 28 + modH / 2;
+      const carrierAmp = carrierH * 0.38;
+      const modAmp = modH * 0.4;
+      const freqLow = 0.08, freqHigh = 0.24, freqMid = 0.15;
 
       ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 1;
-      for (let i = 0; i <= symbols.length; i++) { ctx.beginPath(); ctx.moveTo(i * symW, 0); ctx.lineTo(i * symW, h); ctx.stroke(); }
-      ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke(); ctx.setLineDash([]);
 
-      ctx.fillStyle = '#6c7a96'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      // Labels
+      ctx.fillStyle = '#4a5568'; ctx.font = 'bold 9px sans-serif';
+      ctx.fillText('Несущая (carrier)', 4, 12);
+      ctx.fillText('Модулированный сигнал', 4, carrierH + 24);
+
+      // Symbol labels
+      ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      const symColors = ['#e74c3c','#3498db','#2ecc71','#e67e22','#9b59b6','#1abc9c','#f1c40f','#e74c3c'];
       symbols.forEach((s, i) => {
         const bitStr = s.toString(2).padStart(bps, '0');
-        ctx.fillText(bitStr, i * symW + symW / 2, 12);
+        ctx.fillStyle = symColors[s % symColors.length] + '30';
+        ctx.fillRect(i * symW, carrierH + 28, symW, modH);
+        ctx.fillStyle = symColors[s % symColors.length];
+        ctx.fillText(bitStr, i * symW + symW / 2, carrierH + 24 + modH + 14);
       });
       ctx.textAlign = 'left';
 
-      // carrier (faint)
-      ctx.strokeStyle = '#1a2f3a'; ctx.lineWidth = 1; ctx.beginPath();
-      for (let x = 0; x < w; x++) { const y = mid + Math.sin(x * 0.15) * amp * 0.5; if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+      // Symbol boundary lines
+      ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 1;
+      for (let i = 0; i <= symbols.length; i++) {
+        ctx.beginPath(); ctx.moveTo(i * symW, carrierH + 26); ctx.lineTo(i * symW, carrierH + 28 + modH); ctx.stroke();
+      }
+
+      // Zero lines
+      ctx.setLineDash([3,3]); ctx.strokeStyle = '#1a203050';
+      ctx.beginPath(); ctx.moveTo(0, carrierMid); ctx.lineTo(w, carrierMid); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, modMid); ctx.lineTo(w, modMid); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Carrier wave
+      ctx.strokeStyle = '#3498db50'; ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let x = 0; x < w; x++) {
+        const y = carrierMid + Math.sin(x * freqMid) * carrierAmp;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
       ctx.stroke();
 
-      // modulated
-      ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2; ctx.beginPath();
-      const freqLow = 0.08, freqHigh = 0.22, freqMid = 0.14;
+      // What changes annotation
+      const changeLabel = type === 'ask' ? '↕ Амплитуда меняется' : type === 'fsk' ? '↔ Частота меняется' : type === 'bpsk' || type === 'qpsk' ? '⟲ Фаза меняется' : '↕⟲ Амплитуда + Фаза';
+      ctx.fillStyle = '#e67e22'; ctx.font = 'bold 9px sans-serif';
+      ctx.fillText(changeLabel, w - ctx.measureText(changeLabel).width - 4, carrierH + 24);
 
+      // Modulated signal
+      ctx.lineWidth = 2.5; ctx.beginPath();
+      let prevPhase = 0;
       for (let x = 0; x < w; x++) {
         const sIdx = Math.min(Math.floor(x / symW), symbols.length - 1);
         const val = symbols[sIdx];
-        const maxVal = Math.pow(2, bps) - 1;
+        const maxVal = Math.max(Math.pow(2, bps) - 1, 1);
         let y;
+        ctx.strokeStyle = symColors[val % symColors.length];
 
         if (type === 'ask') {
-          const a = val ? 1 : 0.15;
-          y = mid + Math.sin(x * freqMid) * amp * a;
+          const a = val ? 1 : 0.12;
+          y = modMid + Math.sin(x * freqMid) * modAmp * a;
         } else if (type === 'fsk') {
           const freq = val ? freqHigh : freqLow;
-          y = mid + Math.sin(x * freq) * amp * 0.8;
+          y = modMid + Math.sin(x * freq) * modAmp * 0.85;
         } else if (type === 'bpsk') {
           const phase = val ? 0 : Math.PI;
-          y = mid + Math.sin(x * freqMid + phase) * amp * 0.8;
+          y = modMid + Math.sin(x * freqMid + phase) * modAmp * 0.85;
         } else if (type === 'qpsk') {
           const phases = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
-          y = mid + Math.sin(x * freqMid + phases[val % 4]) * amp * 0.8;
-        } else if (type === 'qam16' || type === 'qam256') {
+          y = modMid + Math.sin(x * freqMid + phases[val % 4]) * modAmp * 0.85;
+        } else {
           const norm = val / maxVal;
-          const a = 0.3 + norm * 0.7;
+          const a = 0.2 + norm * 0.8;
           const phase = (val % 4) * Math.PI / 2;
-          y = mid + Math.sin(x * freqMid + phase) * amp * a;
+          y = modMid + Math.sin(x * freqMid + phase) * modAmp * a;
         }
-        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+
+        if (x === 0 || Math.floor((x - 1) / symW) !== sIdx) {
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.strokeStyle = symColors[val % symColors.length];
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
       }
       ctx.stroke();
     }
@@ -3122,10 +3218,10 @@
         </div>
 
         <div class="sig-canvas-wrap">
-          <canvas id="sigCanvas"></canvas>
+          <canvas id="sigCanvas" style="height:${isLine ? '120px' : '240px'}"></canvas>
           <div class="sig-canvas-label">${isLine
             ? (ch.medium === 'copper' ? '⚡ Напряжение на медном проводе ↕ / Время →' : ch.medium === 'fiber' ? '💡 Мощность света в оптоволокне ↕ / Время →' : '📶 Амплитуда радиосигнала ↕ / Время →')
-            : `📡 Модулированный сигнал (${ch.name}) ↕ / Время →`}</div>
+            : `📡 Вверху: несущая частота | Внизу: модулированный сигнал (${ch.name})`}</div>
         </div>
 
         <div class="card" style="font-size:.82rem;line-height:1.7">
