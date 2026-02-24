@@ -254,6 +254,43 @@
     </div>
   </section>
 
+  <!-- ===== CHANNEL ===== -->
+  <section class="section" id="section-channel">
+    <div class="section-desc">Загрузите файл или введите текст — передайте через канал с помехами — увидите что получит приёмник</div>
+
+    <div class="card">
+      <div class="study-section__title">Источник</div>
+      <input type="text" class="sim-input" id="chSrcText" placeholder="Текст для передачи..." value="">
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="dnd-btn" id="chSrcFileBtn" style="flex:1;padding:8px;font-size:.72rem">📎 Загрузить файл/картинку</button>
+        <button class="dnd-btn" id="chSrcLabData" style="flex:1;padding:8px;font-size:.72rem">📋 Из лаборатории</button>
+      </div>
+      <input type="file" id="chSrcFileInput" hidden>
+      <div id="chSrcPreview"></div>
+    </div>
+
+    <div class="card">
+      <div class="study-section__title">Канал связи — параметры</div>
+      <div class="lab-param">
+        <div class="lab-param__label"><span>SNR (сигнал/шум)</span><span class="lab-param__value" id="chSnrVal">20 дБ</span></div>
+        <input type="range" id="chSnrSlider" min="-5" max="40" step="1" value="20">
+      </div>
+      <div class="lab-param">
+        <div class="lab-param__label"><span>Тип шума</span></div>
+        <div class="lab-toggle" id="chNoiseType">
+          <button class="lab-toggle__btn active" data-noise="awgn">AWGN</button>
+          <button class="lab-toggle__btn" data-noise="impulse">Импульсный</button>
+          <button class="lab-toggle__btn" data-noise="fading">Замирание</button>
+        </div>
+      </div>
+      <div style="font-size:.68rem;color:var(--text-secondary);margin-top:4px" id="chNoiseDesc">AWGN — белый гауссовский шум, каждый бит имеет независимую вероятность ошибки</div>
+    </div>
+
+    <button class="lab-run-btn" id="chTransmit">📡 Передать через канал</button>
+
+    <div id="chResult"></div>
+  </section>
+
   <!-- ===== TERMINAL ===== -->
   <section class="section" id="section-terminal">
     <div class="section-desc">Изучайте сетевые команды в интерактивном терминале. Нажмите кнопку или введите команду вручную</div>
@@ -306,6 +343,10 @@
     <button class="nav-btn" data-section="lab">
       <span class="nav-icon">🔬</span>
       <span>Лаборатория</span>
+    </button>
+    <button class="nav-btn" data-section="channel">
+      <span class="nav-icon">📡</span>
+      <span>Канал</span>
     </button>
     <button class="nav-btn" data-section="terminal">
       <span class="nav-icon">💻</span>

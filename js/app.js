@@ -2434,6 +2434,210 @@
 
   initDnD();
 
+  /* ==================== CHANNEL SIMULATOR ==================== */
+  let chSrcBytes = null;
+  let chSrcImgData = null;
+  let chSrcFileName = null;
+  let chSrcType = 'text';
+  let chNoiseMode = 'awgn';
+  const noiseDescs = {
+    awgn: 'AWGN — белый гауссовский шум. Каждый бит имеет независимую вероятность ошибки, определяемую SNR.',
+    impulse: 'Импульсный шум — короткие всплески ошибок (пачки 4-16 бит подряд). Молния, коммутация, эл. двигатели.',
+    fading: 'Замирание (fading) — периодическое ослабление сигнала. Многолучевое распространение, движение приёмника.'
+  };
+
+  document.getElementById('chSnrSlider').addEventListener('input', (e) => {
+    document.getElementById('chSnrVal').textContent = e.target.value + ' дБ';
+  });
+
+  document.querySelectorAll('#chNoiseType .lab-toggle__btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#chNoiseType .lab-toggle__btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      chNoiseMode = btn.dataset.noise;
+      document.getElementById('chNoiseDesc').textContent = noiseDescs[chNoiseMode];
+    });
+  });
+
+  document.getElementById('chSrcFileBtn').addEventListener('click', () => document.getElementById('chSrcFileInput').click());
+  document.getElementById('chSrcLabData').addEventListener('click', () => {
+    chSrcBytes = labData.bytes.slice();
+    chSrcImgData = labData.imgPreview;
+    chSrcFileName = labData.fileName || labData.text;
+    chSrcType = labData.type;
+    document.getElementById('chSrcText').value = labData.text;
+    const p = document.getElementById('chSrcPreview');
+    p.innerHTML = chSrcImgData ? `<img src="${chSrcImgData}" style="max-width:100%;max-height:80px;border-radius:6px;margin-top:6px">` : `<div style="font-size:.72rem;color:var(--l4);margin-top:4px">Загружено ${chSrcBytes.length} байт</div>`;
+  });
+
+  document.getElementById('chSrcText').addEventListener('input', (e) => {
+    chSrcBytes = Array.from(new TextEncoder().encode(e.target.value));
+    chSrcImgData = null; chSrcFileName = null; chSrcType = 'text';
+    document.getElementById('chSrcPreview').innerHTML = '';
+  });
+
+  document.getElementById('chSrcFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file || file.size > 50 * 1024 * 1024) return;
+    chSrcFileName = file.name;
+    chSrcType = file.type.startsWith('image/') ? 'image' : 'file';
+    if (file.type.startsWith('image/')) {
+      const r = new FileReader();
+      r.onload = () => { chSrcImgData = r.result; document.getElementById('chSrcPreview').innerHTML = `<img src="${r.result}" style="max-width:100%;max-height:80px;border-radius:6px;margin-top:6px"><div style="font-size:.72rem;color:var(--text-secondary);margin-top:2px">${file.name}</div>`; };
+      r.readAsDataURL(file);
+    } else { chSrcImgData = null; }
+    const r2 = new FileReader();
+    r2.onload = () => { chSrcBytes = Array.from(new Uint8Array(r2.result)); document.getElementById('chSrcText').value = file.name; };
+    r2.readAsArrayBuffer(file);
+  });
+
+  document.getElementById('chTransmit').addEventListener('click', () => {
+    if (!chSrcBytes || chSrcBytes.length === 0) {
+      const txt = document.getElementById('chSrcText').value || 'Hello';
+      chSrcBytes = Array.from(new TextEncoder().encode(txt));
+      chSrcType = 'text';
+    }
+
+    const snr = parseInt(document.getElementById('chSnrSlider').value);
+    const txBytes = chSrcBytes.slice(0, 4096);
+    const txBits = [];
+    txBytes.forEach(b => { for (let i = 7; i >= 0; i--) txBits.push((b >> i) & 1); });
+
+    // Apply noise
+    let ber;
+    if (snr > 30) ber = 1e-10;
+    else if (snr > 20) ber = 1e-7;
+    else if (snr > 15) ber = 1e-4;
+    else if (snr > 10) ber = 5e-3;
+    else if (snr > 5) ber = 5e-2;
+    else if (snr > 0) ber = 0.15;
+    else ber = 0.35;
+
+    const rxBits = txBits.slice();
+    let errCount = 0;
+    const errPositions = [];
+
+    if (chNoiseMode === 'awgn') {
+      for (let i = 0; i < rxBits.length; i++) {
+        if (Math.random() < ber) { rxBits[i] ^= 1; errCount++; errPositions.push(i); }
+      }
+    } else if (chNoiseMode === 'impulse') {
+      for (let i = 0; i < rxBits.length; i++) {
+        if (Math.random() < ber * 0.3) {
+          const burstLen = 4 + Math.floor(Math.random() * 12);
+          for (let j = 0; j < burstLen && i + j < rxBits.length; j++) {
+            rxBits[i + j] ^= 1; errCount++; errPositions.push(i + j);
+          }
+          i += burstLen;
+        }
+      }
+    } else {
+      for (let i = 0; i < rxBits.length; i++) {
+        const fade = Math.sin(i / 50) * 0.5 + 0.5;
+        const effectiveBer = ber * (1 + fade * 3);
+        if (Math.random() < effectiveBer) { rxBits[i] ^= 1; errCount++; errPositions.push(i); }
+      }
+    }
+
+    // Reconstruct bytes
+    const rxBytes = [];
+    for (let i = 0; i < rxBits.length; i += 8) {
+      let byte = 0;
+      for (let j = 0; j < 8 && i + j < rxBits.length; j++) byte = (byte << 1) | rxBits[i + j];
+      rxBytes.push(byte);
+    }
+
+    const actualBer = txBits.length > 0 ? (errCount / txBits.length) : 0;
+
+    // Build damaged image if possible
+    let rxImgHtml = '';
+    if (chSrcType === 'image' && chSrcImgData) {
+      const origBytes = atob(chSrcImgData.split(',')[1]);
+      const mime = chSrcImgData.split(';')[0].split(':')[1];
+      const arr = new Uint8Array(origBytes.length);
+      for (let i = 0; i < origBytes.length; i++) arr[i] = origBytes.charCodeAt(i);
+      const headerSafe = Math.min(20, arr.length);
+      for (let i = headerSafe; i < Math.min(arr.length, txBytes.length); i++) arr[i] = rxBytes[i] !== undefined ? rxBytes[i] : arr[i];
+      try {
+        const blob = new Blob([arr], { type: mime });
+        const url = URL.createObjectURL(blob);
+        rxImgHtml = `<img src="${url}" class="ch-compare__img" onerror="this.style.display='none';this.nextSibling.style.display='block'" alt=""><div style="display:none;font-size:.75rem;color:var(--l7);padding:8px">Файл повреждён слишком сильно для отображения</div>`;
+      } catch(e) { rxImgHtml = '<div style="font-size:.75rem;color:var(--l7)">Ошибка реконструкции</div>'; }
+    }
+
+    // Bits comparison (first 256 bits)
+    const showBits = Math.min(txBits.length, 256);
+    let bitsHtml = '';
+    for (let i = 0; i < showBits; i++) {
+      const isErr = errPositions.includes(i);
+      bitsHtml += `<span class="bit-${isErr ? 'err' : 'ok'}">${rxBits[i]}</span>`;
+      if ((i + 1) % 8 === 0) bitsHtml += ' ';
+    }
+    if (txBits.length > 256) bitsHtml += ' …';
+
+    // Hex comparison (first 32 bytes)
+    const showBytes = Math.min(txBytes.length, 32);
+    let hexCompHtml = '';
+    for (let i = 0; i < showBytes; i++) {
+      const isErr = txBytes[i] !== rxBytes[i];
+      hexCompHtml += `<div class="ch-hex-byte ch-hex-byte--${isErr ? 'err' : 'ok'}">${txBytes[i].toString(16).toUpperCase().padStart(2, '0')}${isErr ? '→' + rxBytes[i].toString(16).toUpperCase().padStart(2, '0') : ''}</div>`;
+    }
+
+    const rxText = chSrcType === 'text' ? new TextDecoder('utf-8', { fatal: false }).decode(new Uint8Array(rxBytes)) : null;
+
+    const result = document.getElementById('chResult');
+    result.innerHTML = `
+      <div class="lab-stats mt-16">
+        <div class="lab-stat"><div class="lab-stat__value">${txBits.length.toLocaleString()}</div><div class="lab-stat__label">Бит передано</div></div>
+        <div class="lab-stat"><div class="lab-stat__value" style="color:${errCount > 0 ? 'var(--l7)' : 'var(--l4)'}">${errCount}</div><div class="lab-stat__label">Бит повреждено</div></div>
+        <div class="lab-stat"><div class="lab-stat__value">${(actualBer * 100).toFixed(actualBer > 0.01 ? 1 : 4)}%</div><div class="lab-stat__label">BER</div></div>
+        <div class="lab-stat"><div class="lab-stat__value">${txBytes.length}</div><div class="lab-stat__label">Байт</div></div>
+      </div>
+
+      ${chSrcType === 'image' && chSrcImgData ? `
+        <div class="lab-result__title mt-16">Оригинал vs Полученное</div>
+        <div class="ch-compare">
+          <div class="ch-compare__side" style="border-color:var(--l4)">
+            <div class="ch-compare__title" style="color:var(--l4)">📤 Отправлено</div>
+            <img src="${chSrcImgData}" class="ch-compare__img">
+          </div>
+          <div class="ch-compare__side" style="border-color:${errCount > 0 ? 'var(--l7)' : 'var(--l4)'}">
+            <div class="ch-compare__title" style="color:${errCount > 0 ? 'var(--l7)' : 'var(--l4)'}">📥 Получено ${errCount > 0 ? '(повреждено)' : '(OK)'}</div>
+            ${rxImgHtml}
+          </div>
+        </div>
+      ` : ''}
+
+      ${rxText !== null ? `
+        <div class="lab-result__title mt-16">Текст: оригинал vs полученный</div>
+        <div class="ch-compare">
+          <div class="ch-compare__side" style="border-color:var(--l4)">
+            <div class="ch-compare__title" style="color:var(--l4)">📤 Отправлено</div>
+            <div class="ch-compare__text">${document.getElementById('chSrcText').value || ''}</div>
+          </div>
+          <div class="ch-compare__side" style="border-color:${errCount > 0 ? 'var(--l7)' : 'var(--l4)'}">
+            <div class="ch-compare__title" style="color:${errCount > 0 ? 'var(--l7)' : 'var(--l4)'}">📥 Получено</div>
+            <div class="ch-compare__text">${rxText}</div>
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="lab-result__title mt-16">Биты (повреждённые <span style="color:var(--l7)">красным</span>)</div>
+      <div class="ch-bits-compare">${bitsHtml}</div>
+
+      <div class="lab-result__title">Байты TX vs RX (первые ${showBytes})</div>
+      <div class="ch-hex-compare">${hexCompHtml}</div>
+
+      <div class="card mt-12" style="font-size:.78rem;line-height:1.6">
+        <strong>Канал:</strong> SNR = ${snr} дБ, шум: ${chNoiseMode === 'awgn' ? 'AWGN (равномерный)' : chNoiseMode === 'impulse' ? 'импульсный (пачки ошибок)' : 'замирание (периодическое)'}.<br>
+        <strong>Результат:</strong> из ${txBits.length.toLocaleString()} бит повреждено ${errCount} (BER = ${(actualBer * 100).toFixed(4)}%).
+        ${errCount === 0 ? ' Идеальная передача!' : errCount < 10 ? ' Минимальные повреждения.' : errCount < 100 ? ' Заметные повреждения.' : ' Серьёзное повреждение данных!'}
+        ${chSrcType === 'image' && errCount > 0 ? '<br>Артефакты на изображении — результат повреждённых байтов.' : ''}
+      </div>
+    `;
+    addXP(5);
+  });
+
   /* ==================== FILE UPLOAD ==================== */
   const fileDrop = document.getElementById('fileDrop');
   const fileInput = document.getElementById('fileInput');
