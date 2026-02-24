@@ -2665,6 +2665,113 @@ body {
 
 .nb-osi-action strong { color: var(--text); }
 
+/* ========== Signal Generator ========== */
+.sg-component {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.sg-component__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sg-component__title { font-size: .8rem; font-weight: 700; }
+
+.sg-component__remove {
+  background: none; border: none; color: var(--text-secondary);
+  font-size: 1rem; cursor: pointer; padding: 2px 6px;
+}
+
+.sg-param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sg-param label {
+  display: block;
+  font-size: .65rem;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.sg-param input, .sg-param select {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: .78rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  outline: none;
+}
+
+.sg-param input:focus, .sg-param select:focus { border-color: var(--accent); }
+
+.sg-canvas-wrap {
+  background: #0a0e14;
+  border: 1px solid #1a1f2e;
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  margin: 10px 0;
+}
+
+.sg-canvas-wrap canvas {
+  width: 100%;
+  display: block;
+}
+
+.sg-canvas-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: .6rem;
+  color: #4a5568;
+  margin-top: 4px;
+}
+
+.sg-formula {
+  background: #0a0e14;
+  border: 1px solid #1a1f2e;
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .72rem;
+  color: #2ecc71;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 8px 0;
+}
+
+.sg-export-btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sg-export-btns button {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.sg-export-btns button:active { transform: scale(.95); }
+
 /* ========== Channel Simulator ========== */
 .ch-compare {
   display: grid;

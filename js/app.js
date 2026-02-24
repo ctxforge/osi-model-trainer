@@ -2434,6 +2434,228 @@
 
   initDnD();
 
+  /* ==================== SIGNAL GENERATOR + SPECTRUM ==================== */
+  (function initSigGen() {
+    const container = document.getElementById('siggenUI');
+    let sgComponents = [
+      { type: 'sin', freq: 100, amp: 1, phase: 0, dc: 0 }
+    ];
+    const sgFs = 8000;
+    const sgN = 512;
+
+    const WAVE_TYPES = {
+      sin: 'Синус', cos: 'Косинус', square: 'Прямоугольный',
+      sawtooth: 'Пила', triangle: 'Треугольный', noise: 'Белый шум'
+    };
+
+    function genSamples() {
+      const samples = new Float64Array(sgN);
+      sgComponents.forEach(c => {
+        for (let n = 0; n < sgN; n++) {
+          const t = n / sgFs;
+          const w = 2 * Math.PI * c.freq;
+          let v = 0;
+          if (c.type === 'sin') v = Math.sin(w * t + c.phase * Math.PI / 180);
+          else if (c.type === 'cos') v = Math.cos(w * t + c.phase * Math.PI / 180);
+          else if (c.type === 'square') v = Math.sin(w * t + c.phase * Math.PI / 180) >= 0 ? 1 : -1;
+          else if (c.type === 'sawtooth') v = 2 * ((c.freq * t + c.phase / 360) % 1) - 1;
+          else if (c.type === 'triangle') { const p = (c.freq * t + c.phase / 360) % 1; v = p < 0.5 ? 4 * p - 1 : 3 - 4 * p; }
+          else if (c.type === 'noise') v = (Math.random() - 0.5) * 2;
+          samples[n] += v * c.amp + c.dc;
+        }
+      });
+      return samples;
+    }
+
+    function fft(re, im) {
+      const n = re.length;
+      if (n <= 1) return;
+      const hre = new Float64Array(n / 2), him = new Float64Array(n / 2);
+      const gre = new Float64Array(n / 2), gim = new Float64Array(n / 2);
+      for (let i = 0; i < n / 2; i++) {
+        hre[i] = re[2 * i]; him[i] = im[2 * i];
+        gre[i] = re[2 * i + 1]; gim[i] = im[2 * i + 1];
+      }
+      fft(hre, him); fft(gre, gim);
+      for (let k = 0; k < n / 2; k++) {
+        const angle = -2 * Math.PI * k / n;
+        const wr = Math.cos(angle), wi = Math.sin(angle);
+        const tr = wr * gre[k] - wi * gim[k];
+        const ti = wr * gim[k] + wi * gre[k];
+        re[k] = hre[k] + tr; im[k] = him[k] + ti;
+        re[k + n / 2] = hre[k] - tr; im[k + n / 2] = him[k] - ti;
+      }
+    }
+
+    function drawTimeDomain(canvas, samples) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr; canvas.height = 140 * dpr;
+      canvas.style.height = '140px';
+      const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+      const w = rect.width, h = 140, mid = h / 2;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke(); ctx.setLineDash([]);
+      for (let v = -1; v <= 1; v += 0.5) { if (v === 0) continue; ctx.strokeStyle = '#1a203040'; ctx.beginPath(); ctx.moveTo(0, mid - v * mid * 0.8); ctx.lineTo(w, mid - v * mid * 0.8); ctx.stroke(); }
+
+      let maxA = 0;
+      for (let i = 0; i < samples.length; i++) if (Math.abs(samples[i]) > maxA) maxA = Math.abs(samples[i]);
+      if (maxA === 0) maxA = 1;
+
+      ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 1.5; ctx.beginPath();
+      const show = Math.min(samples.length, 256);
+      for (let i = 0; i < show; i++) {
+        const x = (i / show) * w;
+        const y = mid - (samples[i] / maxA) * mid * 0.85;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = '#4a5568'; ctx.font = '9px sans-serif';
+      ctx.fillText(`${(maxA).toFixed(2)}`, 2, 12);
+      ctx.fillText(`-${(maxA).toFixed(2)}`, 2, h - 4);
+    }
+
+    function drawSpectrum(canvas, samples) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr; canvas.height = 140 * dpr;
+      canvas.style.height = '140px';
+      const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+      const w = rect.width, h = 140;
+      ctx.clearRect(0, 0, w, h);
+
+      const re = new Float64Array(sgN);
+      const im = new Float64Array(sgN);
+      for (let i = 0; i < sgN; i++) re[i] = samples[i] || 0;
+      fft(re, im);
+
+      const mag = new Float64Array(sgN / 2);
+      let maxM = 0;
+      for (let i = 0; i < sgN / 2; i++) {
+        mag[i] = Math.sqrt(re[i] * re[i] + im[i] * im[i]) / sgN * 2;
+        if (mag[i] > maxM) maxM = mag[i];
+      }
+      if (maxM === 0) maxM = 1;
+
+      ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 1;
+      for (let db = 0; db >= -60; db -= 20) {
+        const y = h * (1 - (db + 60) / 60) * 0.9 + h * 0.05;
+        ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#4a5568'; ctx.font = '8px sans-serif'; ctx.fillText(db + 'dB', 2, y - 2);
+      }
+
+      ctx.fillStyle = '#e67e2260';
+      ctx.strokeStyle = '#e67e22';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const barW = w / (sgN / 2);
+      for (let i = 0; i < sgN / 2; i++) {
+        const dbVal = mag[i] > 0 ? 20 * Math.log10(mag[i] / maxM) : -60;
+        const barH = Math.max((dbVal + 60) / 60 * h * 0.9, 0);
+        const x = i * barW;
+        const y = h * 0.95 - barH;
+        ctx.fillRect(x, y, Math.max(barW - 0.5, 1), barH);
+      }
+
+      ctx.fillStyle = '#4a5568'; ctx.font = '8px sans-serif';
+      const freqs = [0, sgFs / 8, sgFs / 4, sgFs * 3 / 8, sgFs / 2];
+      freqs.forEach((f, i) => { ctx.fillText(f + 'Hz', (i / (freqs.length - 1)) * w, h - 2); });
+    }
+
+    function render() {
+      const samples = genSamples();
+      let matlabCode = `Fs = ${sgFs};\nt = (0:${sgN - 1})/Fs;\n`;
+      const parts = [];
+      sgComponents.forEach((c, i) => {
+        const varName = `s${i + 1}`;
+        if (c.type === 'sin') matlabCode += `${varName} = ${c.amp}*sin(2*pi*${c.freq}*t + ${c.phase}*pi/180) + ${c.dc};\n`;
+        else if (c.type === 'cos') matlabCode += `${varName} = ${c.amp}*cos(2*pi*${c.freq}*t + ${c.phase}*pi/180) + ${c.dc};\n`;
+        else if (c.type === 'square') matlabCode += `${varName} = ${c.amp}*square(2*pi*${c.freq}*t + ${c.phase}*pi/180) + ${c.dc};\n`;
+        else if (c.type === 'sawtooth') matlabCode += `${varName} = ${c.amp}*sawtooth(2*pi*${c.freq}*t + ${c.phase}*pi/180) + ${c.dc};\n`;
+        else if (c.type === 'triangle') matlabCode += `${varName} = ${c.amp}*sawtooth(2*pi*${c.freq}*t + ${c.phase}*pi/180, 0.5) + ${c.dc};\n`;
+        else matlabCode += `${varName} = ${c.amp}*randn(1, length(t)) + ${c.dc};\n`;
+        parts.push(varName);
+      });
+      matlabCode += `x = ${parts.join(' + ')};\nplot(t, x); xlabel('Time (s)'); ylabel('Amplitude');\nfigure; plot(Fs/length(x)*(0:length(x)/2-1), abs(fft(x))/length(x)*2); xlabel('Freq (Hz)');`;
+
+      container.innerHTML = `
+        <div class="study-section__title">Компоненты сигнала</div>
+        ${sgComponents.map((c, i) => `
+          <div class="sg-component">
+            <div class="sg-component__header">
+              <span class="sg-component__title">#${i + 1}: ${WAVE_TYPES[c.type]}</span>
+              ${sgComponents.length > 1 ? `<button class="sg-component__remove" data-rm="${i}">✕</button>` : ''}
+            </div>
+            <div class="sg-param-grid">
+              <div class="sg-param"><label>Форма</label><select data-ci="${i}" data-p="type">${Object.entries(WAVE_TYPES).map(([k, v]) => `<option value="${k}"${k === c.type ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+              <div class="sg-param"><label>Частота (Гц)</label><input type="number" data-ci="${i}" data-p="freq" value="${c.freq}" min="1" max="3900" step="10"></div>
+              <div class="sg-param"><label>Амплитуда</label><input type="number" data-ci="${i}" data-p="amp" value="${c.amp}" min="0" max="10" step="0.1"></div>
+              <div class="sg-param"><label>Фаза (°)</label><input type="number" data-ci="${i}" data-p="phase" value="${c.phase}" min="0" max="360" step="15"></div>
+            </div>
+          </div>
+        `).join('')}
+        <button class="dnd-btn" id="sgAddComp" style="width:100%;padding:8px;font-size:.75rem;margin-bottom:8px"${sgComponents.length >= 4 ? ' disabled' : ''}>+ Добавить компоненту (до 4)</button>
+
+        <div class="sg-canvas-wrap">
+          <canvas id="sgTimeDomain"></canvas>
+          <div class="sg-canvas-label"><span>Время →</span><span>Fs = ${sgFs} Гц, N = ${sgN}</span></div>
+        </div>
+        <div class="sg-canvas-wrap">
+          <canvas id="sgSpectrum"></canvas>
+          <div class="sg-canvas-label"><span>Частота (Гц) →</span><span>Спектр (FFT, ${sgN} точек)</span></div>
+        </div>
+
+        <div class="study-section__title">MATLAB / Octave код</div>
+        <div class="sg-formula">${matlabCode}</div>
+        <div class="sg-export-btns">
+          <button id="sgExportCSV">📄 Экспорт CSV</button>
+          <button id="sgCopyMatlab">📋 Копировать MATLAB</button>
+        </div>
+      `;
+
+      drawTimeDomain(document.getElementById('sgTimeDomain'), samples);
+      drawSpectrum(document.getElementById('sgSpectrum'), samples);
+
+      container.querySelectorAll('[data-ci]').forEach(el => {
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
+          const ci = parseInt(el.dataset.ci);
+          const p = el.dataset.p;
+          sgComponents[ci][p] = el.tagName === 'SELECT' ? el.value : parseFloat(el.value) || 0;
+          render();
+        });
+      });
+
+      container.querySelectorAll('[data-rm]').forEach(btn => {
+        btn.addEventListener('click', () => { sgComponents.splice(parseInt(btn.dataset.rm), 1); render(); });
+      });
+
+      document.getElementById('sgAddComp')?.addEventListener('click', () => {
+        if (sgComponents.length < 4) { sgComponents.push({ type: 'sin', freq: 200 * (sgComponents.length + 1), amp: 0.5, phase: 0, dc: 0 }); render(); }
+      });
+
+      document.getElementById('sgExportCSV')?.addEventListener('click', () => {
+        let csv = 'time,amplitude\n';
+        for (let i = 0; i < sgN; i++) csv += `${(i / sgFs).toFixed(6)},${samples[i].toFixed(6)}\n`;
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'signal.csv'; a.click();
+        addXP(3);
+      });
+
+      document.getElementById('sgCopyMatlab')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(matlabCode).then(() => { showToast('📋', 'MATLAB код скопирован', ''); });
+      });
+    }
+
+    const obs = new MutationObserver(() => {
+      if (document.getElementById('section-siggen')?.classList.contains('active') && !container.children.length) render();
+    });
+    obs.observe(document.getElementById('section-siggen'), { attributes: true, attributeFilter: ['class'] });
+    setTimeout(() => { if (document.getElementById('section-siggen')?.classList.contains('active')) render(); }, 200);
+  })();
+
   /* ==================== CHANNEL SIMULATOR ==================== */
   let chSrcBytes = null;
   let chSrcImgData = null;
