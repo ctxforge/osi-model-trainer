@@ -934,66 +934,75 @@
   document.getElementById('labRun-packetTransmission').addEventListener('click', () => {
     const s = labState.packetTransmission;
     const isTCP = s.protocol === 0;
-    const totalPackets = 10;
-    const packets = [];
-    let delivered = 0;
-    let lost = 0;
-    let retransmitted = 0;
+    const mss = 1460;
+    const dataBytes = getLabBytes();
+    const dataSize = labData.size;
+    const totalSegments = Math.max(Math.ceil(dataSize / mss), 1);
+    const segments = [];
+    let seqBase = 1000 + Math.floor(Math.random() * 5000);
+    let delivered = 0, lost = 0, retransmitted = 0;
 
-    for (let i = 0; i < totalPackets; i++) {
+    for (let i = 0; i < totalSegments; i++) {
+      const offset = i * mss;
+      const segSize = Math.min(mss, dataSize - offset);
+      const segBytes = dataBytes.slice(offset, offset + segSize);
+      const hexPreview = segBytes.slice(0, 12).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+      const seq = seqBase + offset;
       const isLost = Math.random() * 100 < s.packetLoss;
+
       if (isLost) {
         lost++;
-        packets.push({ id: i + 1, status: 'lost', label: `Пакет #${i + 1} — потерян` });
+        segments.push({ id: i + 1, status: 'lost', seq, size: segSize, hex: hexPreview, offset });
         if (isTCP) {
           retransmitted++;
-          packets.push({ id: i + 1, status: 'retransmit', label: `Пакет #${i + 1} — повторная передача (TCP)` });
+          segments.push({ id: i + 1, status: 'retransmit', seq, size: segSize, hex: hexPreview, offset });
           delivered++;
         }
       } else {
         delivered++;
-        packets.push({ id: i + 1, status: 'ok', label: `Пакет #${i + 1} — доставлен` });
+        segments.push({ id: i + 1, status: 'ok', seq, size: segSize, hex: hexPreview, offset });
+      }
+      if (isTCP) {
+        segments.push({ id: i + 1, status: 'ack', seq: seq + segSize, size: 0, hex: '', offset });
       }
     }
 
-    const totalTime = (totalPackets * (s.latency / 2) + retransmitted * s.latency).toFixed(0);
-    const throughput = (delivered * 1000 / (s.bandwidth * 1024)).toFixed(2);
-
+    const totalTime = (totalSegments * (s.latency / 2) + retransmitted * s.latency).toFixed(0);
     const result = document.getElementById('labResult-packetTransmission');
+
     result.innerHTML = `
-      <div class="lab-result__title">Результат передачи (${isTCP ? 'TCP' : 'UDP'})</div>
+      <div class="lab-result__title">Передача «${labData.type === 'file' ? labData.fileName : labData.text.slice(0, 20)}» (${isTCP ? 'TCP' : 'UDP'})</div>
       <div class="lab-stats">
-        <div class="lab-stat">
-          <div class="lab-stat__value">${delivered}</div>
-          <div class="lab-stat__label">Доставлено</div>
-        </div>
-        <div class="lab-stat">
-          <div class="lab-stat__value">${lost}</div>
-          <div class="lab-stat__label">Потеряно</div>
-        </div>
-        <div class="lab-stat">
-          <div class="lab-stat__value">${retransmitted}</div>
-          <div class="lab-stat__label">Повторов</div>
-        </div>
-        <div class="lab-stat">
-          <div class="lab-stat__value">${totalTime} мс</div>
-          <div class="lab-stat__label">Общее время</div>
-        </div>
+        <div class="lab-stat"><div class="lab-stat__value">${dataSize}</div><div class="lab-stat__label">Байт данных</div></div>
+        <div class="lab-stat"><div class="lab-stat__value">${totalSegments}</div><div class="lab-stat__label">Сегментов</div></div>
+        <div class="lab-stat"><div class="lab-stat__value">${delivered}/${totalSegments}</div><div class="lab-stat__label">Доставлено</div></div>
+        <div class="lab-stat"><div class="lab-stat__value">${totalTime} мс</div><div class="lab-stat__label">Время</div></div>
       </div>
       <div class="lab-packets">
-        ${packets.map(p => `
-          <div class="lab-packet" style="animation: slideIn .3s ease ${packets.indexOf(p) * 0.05}s both">
-            <div class="lab-packet__status lab-packet__status--${p.status}"></div>
-            <div class="lab-packet__label">${p.label}</div>
-          </div>
-        `).join('')}
+        ${segments.map((seg, idx) => {
+          if (seg.status === 'ack') {
+            return `<div class="lab-packet" style="animation:slideIn .3s ease ${idx * 0.04}s both;border-left:3px solid var(--l3)">
+              <div class="lab-packet__status lab-packet__status--ok"></div>
+              <div class="lab-packet__label" style="color:var(--text-secondary);font-style:italic">← ACK ${seg.seq}</div>
+            </div>`;
+          }
+          const stLabel = seg.status === 'ok' ? '✓ Доставлен' : seg.status === 'lost' ? '✗ Потерян' : '↻ Повтор';
+          const stColor = seg.status === 'ok' ? 'var(--l4)' : seg.status === 'lost' ? 'var(--l7)' : 'var(--l5)';
+          return `<div class="lab-packet" style="animation:slideIn .3s ease ${idx * 0.04}s both;border-left:3px solid ${stColor}">
+            <div class="lab-packet__status lab-packet__status--${seg.status}"></div>
+            <div class="lab-packet__label">
+              <strong>Seg #${seg.id}</strong> ${stLabel}<br>
+              <span style="font-size:.65rem;color:var(--text-secondary)">Seq=${seg.seq} Len=${seg.size}Б [${seg.offset}:${seg.offset + seg.size}]</span><br>
+              <span style="font-size:.62rem;font-family:monospace;color:var(--accent)">${seg.hex}${seg.size > 12 ? ' …' : ''}</span>
+            </div>
+            <div class="lab-packet__size">${seg.size} Б</div>
+          </div>`;
+        }).join('')}
       </div>
       <div class="card mt-16" style="font-size:.82rem;line-height:1.6">
-        <strong>${isTCP ? 'TCP' : 'UDP'}:</strong>
-        ${isTCP
-          ? `Все ${totalPackets} пакетов гарантированно доставлены благодаря механизму повторной передачи. Потеряно ${lost}, повторно отправлено ${retransmitted}. Задержка увеличивается при потерях.`
-          : `Из ${totalPackets} пакетов доставлено ${delivered}. Потеряно ${lost} без повторной передачи. UDP не гарантирует доставку, но работает быстрее.`
-        }
+        <strong>Нарезка:</strong> Ваше сообщение (${dataSize} байт) разрезано на ${totalSegments} TCP-сегментов по ${mss} байт (MSS). 
+        Каждый сегмент получает Sequence Number = номер первого байта в потоке.
+        ${isTCP ? `<br><strong>TCP:</strong> Потеряно ${lost}, повторено ${retransmitted}. Каждый сегмент подтверждается ACK.` : `<br><strong>UDP:</strong> Потеряно ${lost} навсегда. Нет ACK, нет повторов.`}
       </div>
     `;
   });
@@ -1581,79 +1590,75 @@
       return { totalDb: Math.max(totalDb, 0), speedFactor };
     }
 
+    let chPhyAnimId = null;
+
     function drawSignal(canvas, txAmp, rxAmp, noiseAmp, color) {
+      if (chPhyAnimId) cancelAnimationFrame(chPhyAnimId);
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
+      const ctx0 = canvas.getContext('2d');
+      ctx0.scale(dpr, dpr);
       const w = rect.width, h = rect.height;
+      const midTx = h * 0.28, midRx = h * 0.72;
 
-      ctx.clearRect(0, 0, w, h);
+      const bits = getLabBits(4);
 
-      const midTx = h * 0.28;
-      const midRx = h * 0.72;
+      function frame(now) {
+        const offset = ((now || 0) / 60) % (w);
+        const ctx = ctx0;
+        ctx.clearRect(0, 0, w, h);
 
-      ctx.strokeStyle = '#2a2e3d';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath(); ctx.moveTo(0, h * 0.5); ctx.lineTo(w, h * 0.5); ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = '#6c7a96';
-      ctx.font = '10px sans-serif';
-      ctx.fillText('TX (передано)', 4, 14);
-      ctx.fillText('RX (получено)', 4, h * 0.5 + 14);
-
-      const rawText = document.getElementById('chPhyMsg')?.value || 'Hi';
-      const rawBytes = simUploadedBytes && simUploadedBytes.length > 0 ? simUploadedBytes.slice(0, 2) : Array.from(new TextEncoder().encode(rawText.slice(0, 2)));
-      const bits = [];
-      rawBytes.forEach(b => { for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); });
-      const bitWidth = w / bits.length;
-
-      ctx.beginPath();
-      ctx.strokeStyle = '#2ecc71';
-      ctx.lineWidth = 2;
-      for (let x = 0; x < w; x++) {
-        const bitIdx = Math.floor(x / bitWidth) % bits.length;
-        const inBit = (x % bitWidth) / bitWidth;
-        let val = bits[bitIdx] ? 1 : -1;
-        const edge = 0.08;
-        if (inBit < edge) val *= inBit / edge;
-        else if (inBit > 1 - edge) val *= (1 - inBit) / edge;
-        const y = midTx - val * txAmp * (h * 0.2);
-        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
-      for (let x = 0; x < w; x++) {
-        const bitIdx = Math.floor(x / bitWidth) % bits.length;
-        const inBit = (x % bitWidth) / bitWidth;
-        let val = bits[bitIdx] ? 1 : -1;
-        const edge = 0.08;
-        if (inBit < edge) val *= inBit / edge;
-        else if (inBit > 1 - edge) val *= (1 - inBit) / edge;
-        const signal = val * rxAmp * (h * 0.2);
-        const noise = (Math.random() - 0.5) * 2 * noiseAmp * (h * 0.2);
-        const y = midRx - signal - noise;
-        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      if (rxAmp > 0.05) {
-        ctx.strokeStyle = '#e74c3c44';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 3]);
-        ctx.beginPath(); ctx.moveTo(0, midRx); ctx.lineTo(w, midRx); ctx.stroke();
+        ctx.strokeStyle = '#2a2e3d'; ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(0, h * 0.5); ctx.lineTo(w, h * 0.5); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = '#e74c3c88';
-        ctx.font = '9px sans-serif';
-        ctx.fillText('порог', w - 34, midRx - 3);
+        ctx.fillStyle = '#6c7a96'; ctx.font = '10px sans-serif';
+        ctx.fillText('TX (передано)', 4, 14);
+        ctx.fillText('RX (получено)', 4, h * 0.5 + 14);
+
+        const bitWidth = w / bits.length;
+
+        ctx.beginPath(); ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2;
+        for (let x = 0; x < w; x++) {
+          const rx = x + offset;
+          const bitIdx = ((Math.floor(rx / bitWidth) % bits.length) + bits.length) % bits.length;
+          const inBit = (rx % bitWidth) / bitWidth;
+          let val = bits[bitIdx] ? 1 : -1;
+          const edge = 0.08;
+          if (inBit < edge) val *= inBit / edge;
+          const y = midTx - val * txAmp * (h * 0.2);
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+        for (let x = 0; x < w; x++) {
+          const rx = x + offset;
+          const bitIdx = ((Math.floor(rx / bitWidth) % bits.length) + bits.length) % bits.length;
+          const inBit = (rx % bitWidth) / bitWidth;
+          let val = bits[bitIdx] ? 1 : -1;
+          const edge = 0.08;
+          if (inBit < edge) val *= inBit / edge;
+          const signal = val * rxAmp * (h * 0.2);
+          const noise = (Math.random() - 0.5) * 2 * noiseAmp * (h * 0.2);
+          const y = midRx - signal - noise;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        if (rxAmp > 0.05) {
+          ctx.strokeStyle = '#e74c3c44'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+          ctx.beginPath(); ctx.moveTo(0, midRx); ctx.lineTo(w, midRx); ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        ctx.fillStyle = '#2ecc71'; ctx.beginPath(); ctx.arc(w * 0.85, midTx, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(w * 0.85, midRx, 3, 0, Math.PI * 2); ctx.fill();
+
+        chPhyAnimId = requestAnimationFrame(frame);
       }
+      chPhyAnimId = requestAnimationFrame(frame);
     }
 
     function render() {
@@ -3114,6 +3119,7 @@
   (function initSignalsLab() {
     const container = document.getElementById('signalsUI');
     let sigText = '';
+    let sigAnimId = null;
     let sigEncoding = 'nrz';
     let sigModulation = 'ask';
     let sigView = 'line';
@@ -3438,8 +3444,58 @@
       `;
 
       const canvas = document.getElementById('sigCanvas');
-      if (isLine) drawLineCode(canvas, sigBits, sigEncoding);
-      else drawModulation(canvas, sigBits, sigModulation);
+      if (sigAnimId) cancelAnimationFrame(sigAnimId);
+
+      if (isLine) {
+        const allBits = getLabBits(8);
+        function animLine(now) {
+          const dpr = window.devicePixelRatio || 1;
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width * dpr;
+          canvas.height = 120 * dpr;
+          canvas.style.height = '120px';
+          const ctx = canvas.getContext('2d');
+          ctx.scale(dpr, dpr);
+          const w = rect.width, h = 120;
+          const offset = ((now || 0) / 80) % (w * 0.5);
+          const mid = h / 2, amp = h * 0.35;
+          ctx.clearRect(0, 0, w, h);
+          ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 1;
+          const bitW = w / allBits.length;
+          for (let i = 0; i <= allBits.length; i++) {
+            const x = i * bitW - offset % bitW;
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+          }
+          ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = '#6c7a96'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+          allBits.forEach((b, i) => { const x = i * bitW + bitW / 2 - offset % bitW; if (x > -bitW && x < w + bitW) ctx.fillText(b, x, 12); });
+          ctx.textAlign = 'left';
+          ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2.5; ctx.beginPath();
+          let prev = 0, amiP = 1;
+          for (let px = 0; px < w; px++) {
+            const realX = px + offset;
+            const bi = ((Math.floor(realX / bitW) % allBits.length) + allBits.length) % allBits.length;
+            const b = allBits[bi];
+            const inBit = (realX % bitW) / bitW;
+            let val = 0;
+            if (sigEncoding === 'nrz') val = b ? 1 : -1;
+            else if (sigEncoding === 'manchester') { val = b ? (inBit < 0.5 ? -1 : 1) : (inBit < 0.5 ? 1 : -1); }
+            else if (sigEncoding === 'ami') { if (b) { val = amiP; amiP *= (inBit > 0.9 ? -1 : 1); } }
+            else if (sigEncoding === 'nrzi') { if (b) prev = prev ? 0 : 1; val = prev ? 1 : -1; }
+            else val = b ? 1 : -1;
+            const edge = 0.06;
+            if (inBit < edge) val *= inBit / edge;
+            const y = mid - val * amp;
+            if (px === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+          }
+          ctx.stroke();
+          ctx.fillStyle = '#2ecc71'; ctx.beginPath(); ctx.arc(w * 0.8, mid, 3, 0, Math.PI * 2); ctx.fill();
+          sigAnimId = requestAnimationFrame(animLine);
+        }
+        sigAnimId = requestAnimationFrame(animLine);
+      } else {
+        drawModulation(canvas, sigBits, sigModulation);
+      }
 
       container.querySelector('#sigChannelSelect').addEventListener('change', (e) => {
         sigChannel = e.target.value;
