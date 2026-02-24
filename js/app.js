@@ -284,6 +284,9 @@
 
   /* ==================== SIMULATOR ==================== */
   let simProto = 'tcp';
+  let simUploadedFile = null;
+  let simUploadedBytes = null;
+  let simUploadedImg = null;
 
   document.querySelectorAll('#simProtoToggle .lab-toggle__btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -373,9 +376,17 @@
       return;
     }
 
-    const httpReq = `GET / HTTP/1.1\r\nHost: ${dstIp}\r\nContent-Length: ${message.length}\r\n\r\n${message}`;
-    const appBytes = Array.from(new TextEncoder().encode(httpReq));
-    const msgRawBytes = Array.from(new TextEncoder().encode(message));
+    const useFile = simUploadedFile && simUploadedBytes && simUploadedBytes.length > 0;
+    const fileBytes = useFile ? simUploadedBytes.slice(0, 512) : null;
+    const contentType = useFile ? simUploadedFile.type : 'text/plain';
+    const contentLen = useFile ? simUploadedFile.size : message.length;
+    const bodyForHttp = useFile ? `[binary data: ${simUploadedFile.name}]` : message;
+
+    const httpReq = `POST /upload HTTP/1.1\r\nHost: ${dstIp}\r\nContent-Type: ${contentType}\r\nContent-Length: ${contentLen}\r\n\r\n${bodyForHttp}`;
+    const appBytes = useFile
+      ? [...Array.from(new TextEncoder().encode(`POST /upload HTTP/1.1\r\nHost: ${dstIp}\r\nContent-Type: ${contentType}\r\nContent-Length: ${contentLen}\r\n\r\n`)), ...fileBytes]
+      : Array.from(new TextEncoder().encode(httpReq));
+    const msgRawBytes = useFile ? fileBytes : Array.from(new TextEncoder().encode(message));
 
     // L4: TCP (20 bytes) or UDP (8 bytes)
     let l4Header, l4Fields, l4Name, pduName;
@@ -517,14 +528,17 @@
         pdu: 'Данные', totalSize: appBytes.length,
         diagramSegs: [{ label: `Данные HTTP (${appBytes.length} Б)`, pct: 100, color: getL(7).color }],
         body: `
-          <div class="pdu-note">Приложение формирует HTTP-запрос с вашим сообщением</div>
+          <div class="pdu-note">${useFile ? 'Приложение формирует HTTP-запрос для передачи файла' : 'Приложение формирует HTTP-запрос с вашим сообщением'}</div>
+          ${useFile && simUploadedImg ? `<img src="${simUploadedImg}" style="max-width:100%;max-height:80px;border-radius:6px;margin-bottom:8px;display:block">` : ''}
           <div class="pdu-appdata">${httpReq.replace(/\r\n/g, '\n').replace(/</g, '&lt;')}</div>
           <table class="pdu-fields mt-12">
-            <tr><td>Метод</td><td>GET /</td></tr>
+            <tr><td>Метод</td><td>POST /upload</td></tr>
             <tr><td>Host</td><td>${dstIp}</td></tr>
-            <tr><td>Content-Length</td><td>${message.length}</td></tr>
-            <tr><td>Тело</td><td>${message}</td></tr>
-          </table>`,
+            <tr><td>Content-Type</td><td>${contentType}</td></tr>
+            <tr><td>Content-Length</td><td>${contentLen.toLocaleString()} байт</td></tr>
+            ${useFile ? `<tr><td>Файл</td><td>${simUploadedFile.name}</td></tr>` : `<tr><td>Тело</td><td>${message}</td></tr>`}
+          </table>
+          ${useFile ? `<div class="pdu-note">Всего пакетов для передачи файла: ${Math.ceil(contentLen / 1460)} TCP-сегментов (показан первый)</div>` : ''}`,
         hex: appBytes
       },
       {
@@ -532,9 +546,10 @@
         pdu: 'Данные', totalSize: appBytes.length,
         diagramSegs: [{ label: `UTF-8 данные (${appBytes.length} Б)`, pct: 100, color: getL(6).color }],
         body: `
-          <div class="pdu-note">Данные кодируются в UTF-8. Каждый символ сообщения в байтах:</div>
+          <div class="pdu-note">${useFile ? `Файл ${simUploadedFile.name} — бинарные данные (${contentType}). Первые ${Math.min(msgRawBytes.length, 16)} байт:` : 'Данные кодируются в UTF-8. Каждый символ сообщения в байтах:'}</div>
           <table class="pdu-fields">
-            ${msgRawBytes.map((b, i) => `<tr><td>'${message[i] || '?'}'</td><td>0x${toHex(b)} (${b}) → ${b.toString(2).padStart(8, '0')}</td></tr>`).join('')}
+            ${msgRawBytes.slice(0, 16).map((b, i) => `<tr><td>${useFile ? 'Байт ' + i : "'" + (message[i] || '?') + "'"}</td><td>0x${toHex(b)} (${b}) → ${b.toString(2).padStart(8, '0')}</td></tr>`).join('')}
+            ${msgRawBytes.length > 16 ? `<tr><td colspan="2" style="color:var(--text-secondary);text-align:center">… ещё ${msgRawBytes.length - 16} байт</td></tr>` : ''}
           </table>`,
         hex: appBytes
       },
@@ -2198,19 +2213,25 @@
       return;
     }
 
+    simUploadedFile = file;
+
     if (file.type.startsWith('image/')) {
       const imgReader = new FileReader();
       imgReader.onload = () => {
+        simUploadedImg = imgReader.result;
         const imgEl = document.createElement('div');
         imgEl.innerHTML = `<img src="${imgReader.result}" style="max-width:100%;max-height:100px;border-radius:8px;margin:8px 0;display:block">`;
         document.getElementById('fileResult').prepend(imgEl);
       };
       imgReader.readAsDataURL(file);
+    } else {
+      simUploadedImg = null;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       const bytes = new Uint8Array(reader.result);
+      simUploadedBytes = Array.from(bytes);
       const preview = bytes.slice(0, 128);
       let hexLines = '';
       for (let off = 0; off < preview.length; off += 16) {
