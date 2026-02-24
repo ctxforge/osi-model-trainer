@@ -2724,20 +2724,54 @@
 
   const TERM_COMMANDS = {
     help() {
-      termLine('Доступные команды:', 'header');
-      const cmds = [
-        ['ping &lt;host&gt;', 'ICMP эхо-запрос к узлу'],
-        ['traceroute &lt;host&gt;', 'Трассировка маршрута до узла'],
-        ['nslookup &lt;host&gt;', 'DNS-запрос имени'],
-        ['ifconfig', 'Показать сетевые интерфейсы'],
-        ['netstat', 'Показать активные соединения'],
-        ['arp', 'Показать ARP-таблицу'],
-        ['route', 'Показать таблицу маршрутизации'],
-        ['curl &lt;url&gt;', 'HTTP HEAD-запрос'],
-        ['whois &lt;domain&gt;', 'Информация о домене'],
-        ['clear', 'Очистить экран']
+      termLine('═══ Диагностика и мониторинг ═══', 'header');
+      const diag = [
+        ['ping &lt;host&gt;', 'ICMP эхо — проверка доступности'],
+        ['traceroute &lt;host&gt;', 'Трассировка маршрута (хопы)'],
+        ['mtr &lt;host&gt;', 'ping + traceroute в реальном времени'],
+        ['tcpdump [-i iface] [-c N]', 'Перехват сетевых пакетов'],
+        ['nmap &lt;host&gt;', 'Сканирование портов и сервисов'],
       ];
-      cmds.forEach(c => termLine(`  <span class="term-cmd">${c[0].padEnd(25)}</span> ${c[1]}`));
+      diag.forEach(c => termLine(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      termLine('');
+      termLine('═══ DNS и домены ═══', 'header');
+      const dns = [
+        ['nslookup &lt;host&gt;', 'DNS-запрос (A, MX, NS записи)'],
+        ['whois &lt;domain&gt;', 'Регистрационные данные домена'],
+      ];
+      dns.forEach(c => termLine(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      termLine('');
+      termLine('═══ Интерфейсы и маршруты ═══', 'header');
+      const iface = [
+        ['ifconfig', 'Сетевые интерфейсы (IP, MAC, MTU)'],
+        ['ip addr | route | neigh | link', 'Современная замена ifconfig/route/arp'],
+        ['ethtool &lt;iface&gt;', 'Параметры Ethernet (скорость, дуплекс)'],
+        ['iwconfig', 'Параметры Wi-Fi (ESSID, сигнал)'],
+        ['route', 'Таблица маршрутизации'],
+        ['arp', 'ARP-таблица (IP → MAC)'],
+        ['hostname', 'Имя машины и FQDN'],
+      ];
+      iface.forEach(c => termLine(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      termLine('');
+      termLine('═══ Соединения и безопасность ═══', 'header');
+      const conn = [
+        ['ss', 'Socket Statistics (соединения, порты)'],
+        ['netstat', 'Активные соединения (устаревший)'],
+        ['iptables -L', 'Правила файрвола'],
+        ['telnet &lt;host&gt; &lt;port&gt;', 'Проверка TCP-порта'],
+        ['ssh &lt;user@host&gt;', 'Удалённое подключение (SSH)'],
+      ];
+      conn.forEach(c => termLine(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      termLine('');
+      termLine('═══ HTTP и файлы ═══', 'header');
+      const http = [
+        ['curl &lt;url&gt;', 'HTTP-запрос (заголовки ответа)'],
+        ['wget &lt;url&gt;', 'Скачать файл'],
+      ];
+      http.forEach(c => termLine(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      termLine('');
+      termLine('  <span class="term-cmd">clear                         </span> Очистить экран');
+      termLine('  <span class="term-cmd">help                          </span> Эта справка');
       addXP(2);
     },
 
@@ -2874,12 +2908,221 @@
     }
   };
 
+  TERM_COMMANDS.hostname = function() {
+    termLine('osi-lab.local');
+    termLine('');
+    termLine('Hostname:  osi-lab');
+    termLine('FQDN:     osi-lab.local');
+    termLine('IP:       192.168.1.100');
+    addXP(1);
+  };
+
+  TERM_COMMANDS.ss = function(args) {
+    termLine('State      Recv-Q  Send-Q  Local Address:Port    Peer Address:Port', 'header');
+    SIM_NET.connections.forEach(c => {
+      const st = c.state || 'UNCONN';
+      const rq = st === 'ESTABLISHED' ? Math.floor(Math.random() * 100) : 0;
+      termLine(`<span class="${st === 'ESTABLISHED' ? 'term-ok' : 'term-time'}">${st.padEnd(11)}</span>${String(rq).padEnd(8)}0       ${c.local.padEnd(23)}${c.remote}`);
+    });
+    addXP(2);
+  };
+
+  TERM_COMMANDS.tcpdump = async function(args) {
+    const iface = args.includes('-i') ? args[args.indexOf('-i') + 1] || 'eth0' : 'eth0';
+    const count = args.includes('-c') ? parseInt(args[args.indexOf('-c') + 1]) || 5 : 5;
+    termLine(`tcpdump: listening on ${iface}, link-type EN10MB (Ethernet), capture size 262144 bytes`);
+    termScroll();
+    const protos = ['TCP','UDP','ICMP','TCP','TCP','UDP','TCP','ARP'];
+    const ports = [80,443,53,22,8080,3000,5432,0];
+    for (let i = 0; i < Math.min(count, 8); i++) {
+      await sleep(400 + Math.random() * 300);
+      const now = new Date();
+      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}.${String(Math.floor(Math.random()*999)).padStart(3,'0')}`;
+      const proto = protos[i % protos.length];
+      const srcP = 49000 + Math.floor(Math.random() * 16000);
+      const dstP = ports[i % ports.length] || 443;
+      const len = 40 + Math.floor(Math.random() * 1400);
+      if (proto === 'ARP') {
+        termLine(`<span class="term-time">${ts}</span> ARP, Request who-has 192.168.1.1 tell <span class="term-ip">192.168.1.100</span>, length 28`);
+      } else if (proto === 'ICMP') {
+        termLine(`<span class="term-time">${ts}</span> IP <span class="term-ip">192.168.1.100</span> > 8.8.8.8: ICMP echo request, id ${1000+i}, seq ${i+1}, length 64`);
+      } else {
+        const flags = proto === 'TCP' ? ['[S]','[S.]','[.]','[P.]','[F.]'][Math.floor(Math.random()*5)] : '';
+        const src = `<span class="term-ip">192.168.1.100</span>.${srcP}`;
+        const dst = `<span class="term-ip">${93+i*10}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${1+Math.floor(Math.random()*254)}</span>.${dstP}`;
+        termLine(`<span class="term-time">${ts}</span> IP ${src} > ${dst}: ${proto} ${flags} seq ${1000+i*1460}:${1000+(i+1)*1460}, ack ${5000+i*100}, win 65535, length ${len}`);
+      }
+      termScroll();
+    }
+    termLine(`\n${count} packets captured`);
+    addXP(3);
+  };
+
+  TERM_COMMANDS.nmap = async function(args) {
+    const host = args[0];
+    if (!host) { termLine('Использование: nmap &lt;host&gt;', 'error'); return; }
+    const resolved = resolveHost(host);
+    termLine(`Starting Nmap 7.94 ( https://nmap.org )`);
+    termLine(`Nmap scan report for ${host} (${resolved.ip})`);
+    termLine(`Host is up (<span class="term-time">${(0.005 + Math.random() * 0.03).toFixed(3)}s</span> latency).\n`);
+    await sleep(800);
+    termLine('PORT      STATE    SERVICE         VERSION', 'header');
+    const openPorts = [
+      ['22/tcp','open','ssh','OpenSSH 8.9'],
+      ['53/tcp','open','domain','BIND 9.18'],
+      ['80/tcp','open','http','nginx 1.24.0'],
+      ['443/tcp','open','ssl/http','nginx 1.24.0'],
+      ['3306/tcp','filtered','mysql',''],
+      ['5432/tcp','closed','postgresql',''],
+      ['8080/tcp','open','http-proxy','Squid 5.7'],
+      ['8443/tcp','open','ssl/http','Apache 2.4']
+    ];
+    for (const p of openPorts) {
+      await sleep(200);
+      const stColor = p[1] === 'open' ? 'term-ok' : p[1] === 'filtered' ? 'term-time' : 'term-fail';
+      termLine(`${p[0].padEnd(10)}<span class="${stColor}">${p[1].padEnd(9)}</span>${p[2].padEnd(16)}${p[3]}`);
+      termScroll();
+    }
+    termLine(`\nNmap done: 1 IP address (1 host up) scanned in <span class="term-time">${(2 + Math.random() * 3).toFixed(2)}</span> seconds`);
+    addXP(3);
+  };
+
+  TERM_COMMANDS.iptables = function(args) {
+    if (args[0] === '-L' || args.length === 0) {
+      termLine('Chain INPUT (policy ACCEPT)', 'header');
+      termLine('target     prot  source          destination');
+      termLine('<span class="term-ok">ACCEPT</span>     tcp   0.0.0.0/0       0.0.0.0/0       tcp dpt:22');
+      termLine('<span class="term-ok">ACCEPT</span>     tcp   0.0.0.0/0       0.0.0.0/0       tcp dpt:80');
+      termLine('<span class="term-ok">ACCEPT</span>     tcp   0.0.0.0/0       0.0.0.0/0       tcp dpt:443');
+      termLine('<span class="term-fail">DROP</span>       tcp   0.0.0.0/0       0.0.0.0/0       tcp dpt:3306');
+      termLine('<span class="term-ok">ACCEPT</span>     icmp  0.0.0.0/0       0.0.0.0/0');
+      termLine('');
+      termLine('Chain FORWARD (policy DROP)', 'header');
+      termLine('target     prot  source          destination');
+      termLine('');
+      termLine('Chain OUTPUT (policy ACCEPT)', 'header');
+      termLine('target     prot  source          destination');
+      termLine('<span class="term-ok">ACCEPT</span>     all   0.0.0.0/0       0.0.0.0/0');
+    } else {
+      termLine(`iptables: правило ${args.join(' ')} добавлено (симуляция)`, 'info');
+    }
+    addXP(2);
+  };
+
+  TERM_COMMANDS.telnet = async function(args) {
+    const host = args[0] || 'localhost';
+    const port = args[1] || '80';
+    const resolved = resolveHost(host);
+    termLine(`Trying <span class="term-ip">${resolved.ip}</span>...`);
+    await sleep(600);
+    if (['80','443','22','8080'].includes(port)) {
+      termLine(`Connected to ${host}.`);
+      termLine(`Escape character is '^]'.`);
+      if (port === '80') termLine('<span class="term-info">HTTP/1.1 200 OK</span>');
+      else if (port === '22') termLine('<span class="term-info">SSH-2.0-OpenSSH_8.9</span>');
+    } else {
+      termLine(`<span class="term-fail">telnet: Unable to connect to remote host: Connection refused</span>`);
+    }
+    addXP(2);
+  };
+
+  TERM_COMMANDS.nc = TERM_COMMANDS.telnet;
+  TERM_COMMANDS.netcat = TERM_COMMANDS.telnet;
+
+  TERM_COMMANDS.mtr = async function(args) {
+    const host = args[0];
+    if (!host) { termLine('Использование: mtr &lt;host&gt;', 'error'); return; }
+    const resolved = resolveHost(host);
+    termLine(`mtr to ${host} (${resolved.ip})`, 'header');
+    termLine('Host                          Loss%  Snt   Last   Avg  Best  Wrst', 'header');
+    for (let i = 0; i < resolved.hops + 1; i++) {
+      await sleep(300);
+      const rIp = i === resolved.hops ? resolved.ip : `${10+i*12}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${1+Math.floor(Math.random()*254)}`;
+      const rName = i === resolved.hops ? host : `hop-${i+1}.net`;
+      const base = (i+1) * 2.5 + Math.random() * 3;
+      const loss = Math.random() < 0.1 ? (Math.random()*5).toFixed(1) : '0.0';
+      termLine(`${String(i+1).padStart(2)}. ${(rName+' ('+rIp+')').padEnd(36)} <span class="${parseFloat(loss) > 0 ? 'term-fail' : 'term-ok'}">${loss.padStart(5)}%</span>   10  <span class="term-time">${base.toFixed(1).padStart(5)}  ${(base+1).toFixed(1).padStart(5)}  ${(base-1).toFixed(1).padStart(5)}  ${(base+5).toFixed(1).padStart(5)}</span>`);
+      termScroll();
+    }
+    addXP(3);
+  };
+
+  TERM_COMMANDS.ethtool = function(args) {
+    const iface = args[0] || 'eth0';
+    const ifData = SIM_NET.interfaces.find(i => i.name === iface);
+    if (!ifData) { termLine(`ethtool: ${iface}: нет такого интерфейса`, 'error'); return; }
+    termLine(`Settings for ${iface}:`, 'header');
+    termLine(`        Speed: ${iface === 'lo' ? '10000Mb/s' : '1000Mb/s'}`);
+    termLine(`        Duplex: Full`);
+    termLine(`        Auto-negotiation: on`);
+    termLine(`        Port: Twisted Pair`);
+    termLine(`        Link detected: <span class="term-ok">yes</span>`);
+    termLine(`        Supported link modes:   10baseT/Half 10baseT/Full`);
+    termLine(`                                100baseT/Half 100baseT/Full`);
+    termLine(`                                1000baseT/Full`);
+    termLine(`        Supports Wake-on: g`);
+    termLine(`        Wake-on: d`);
+    termLine(`        Current message level: 0x00000007 (7)`);
+    termLine(`        Driver: e1000e`);
+    termLine(`        Firmware-version: 3.25`);
+    addXP(2);
+  };
+
+  TERM_COMMANDS.iwconfig = function(args) {
+    termLine('wlan0     IEEE 802.11  ESSID:"OSI-Lab-5G"', 'header');
+    termLine('          Mode:Managed  Frequency:5.18 GHz  Access Point: 00:1A:2B:3C:4D:5E');
+    termLine('          Bit Rate=866.7 Mb/s   Tx-Power=20 dBm');
+    termLine('          Retry short limit:7   RTS thr:off   Fragment thr:off');
+    termLine('          Power Management:on');
+    termLine('          Link Quality=<span class="term-ok">68/70</span>  Signal level=<span class="term-ok">-42 dBm</span>');
+    termLine('          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0');
+    termLine('          Tx excessive retries:3  Invalid misc:0   Missed beacon:0');
+    termLine('');
+    termLine('eth0      no wireless extensions.');
+    termLine('lo        no wireless extensions.');
+    addXP(2);
+  };
+
+  TERM_COMMANDS.wget = async function(args) {
+    const url = args[0] || 'http://example.com/index.html';
+    const host = url.replace(/^https?:\/\//, '').split('/')[0];
+    const file = url.split('/').pop() || 'index.html';
+    termLine(`--${new Date().toISOString().replace('T',' ').slice(0,19)}--  ${url}`);
+    termLine(`Resolving ${host}... <span class="term-ip">${resolveHost(host).ip}</span>`);
+    termLine(`Connecting to ${host}... connected.`);
+    termLine(`HTTP request sent, awaiting response... <span class="term-ok">200 OK</span>`);
+    termLine(`Length: 12543 (12K) [text/html]`);
+    termLine(`Saving to: '${file}'`);
+    await sleep(400);
+    termLine('');
+    termLine(`${file}            100%[===================>]  12.25K  --.-KB/s    in 0.001s`);
+    termLine(`\n<span class="term-ok">'${file}' saved [12543/12543]</span>`);
+    addXP(2);
+  };
+
+  TERM_COMMANDS.ssh = function(args) {
+    const target = args[0] || 'user@server';
+    const host = target.includes('@') ? target.split('@')[1] : target;
+    const resolved = resolveHost(host);
+    termLine(`ssh: connect to host ${host} port 22 (${resolved.ip})`);
+    termLine('Host key fingerprint: SHA256:' + Array.from({length:32}, () => Math.floor(Math.random()*16).toString(16)).join(''));
+    termLine('<span class="term-ok">Authentication successful (publickey).</span>');
+    termLine(`Welcome to ${host} (Ubuntu 22.04.3 LTS)`);
+    termLine(`Last login: ${new Date(Date.now() - 86400000).toUTCString()}`);
+    addXP(2);
+  };
+
   TERM_COMMANDS.tracert = TERM_COMMANDS.traceroute;
   TERM_COMMANDS.dig = TERM_COMMANDS.nslookup;
+  TERM_COMMANDS.host = TERM_COMMANDS.nslookup;
   TERM_COMMANDS['ip'] = function(args) {
     if (args[0] === 'addr' || args[0] === 'a') TERM_COMMANDS.ifconfig();
     else if (args[0] === 'route' || args[0] === 'r') TERM_COMMANDS.route();
-    else termLine('Использование: ip addr | ip route', 'error');
+    else if (args[0] === 'neigh' || args[0] === 'n') TERM_COMMANDS.arp();
+    else if (args[0] === 'link' || args[0] === 'l') {
+      SIM_NET.interfaces.forEach(i => termLine(`${i.name}: <${i.status},BROADCAST,MULTICAST> mtu ${i.mtu} link/ether ${i.mac}`));
+    }
+    else termLine('Использование: ip addr | ip route | ip neigh | ip link', 'error');
   };
 
   async function executeCommand(input) {
@@ -2933,33 +3176,69 @@
 
   /* Terminal quick-command panel */
   const TERM_CMD_INFO = [
-    { cmd: 'ping', label: 'ping', desc: 'Отправляет ICMP Echo Request и измеряет время ответа (RTT). Проверяет доступность узла.',
+    { cmd: 'ping', label: 'ping', desc: 'ICMP Echo Request — проверяет доступность узла, измеряет RTT (Round Trip Time) и потери.',
       params: [{ label: 'Хост', id: 'host', type: 'select', options: ['google.com','ya.ru','github.com','8.8.8.8','example.com','cloudflare.com'] }],
-      flags: '<code>-c N</code> кол-во пакетов &nbsp; <code>-i N</code> интервал &nbsp; <code>-t N</code> TTL &nbsp; <code>-s N</code> размер пакета',
+      flags: '<code>-c N</code> кол-во пакетов &nbsp; <code>-i N</code> интервал (сек) &nbsp; <code>-t N</code> TTL &nbsp; <code>-s N</code> размер пакета &nbsp; <code>-W N</code> таймаут',
       build: (p) => `ping ${p.host}` },
-    { cmd: 'traceroute', label: 'traceroute', desc: 'Показывает маршрут пакета до узла — каждый промежуточный маршрутизатор (хоп) и задержку.',
+    { cmd: 'traceroute', label: 'traceroute', desc: 'Трассировка маршрута — показывает каждый хоп (маршрутизатор) от вас до узла назначения с задержками.',
       params: [{ label: 'Хост', id: 'host', type: 'select', options: ['google.com','ya.ru','github.com','8.8.8.8','example.com'] }],
-      flags: '<code>-m N</code> макс. хопов &nbsp; <code>-w N</code> таймаут &nbsp; <code>-I</code> использовать ICMP',
+      flags: '<code>-m N</code> макс. хопов &nbsp; <code>-w N</code> таймаут &nbsp; <code>-I</code> ICMP вместо UDP &nbsp; <code>-T</code> TCP SYN &nbsp; <code>-p N</code> порт',
       build: (p) => `traceroute ${p.host}` },
-    { cmd: 'nslookup', label: 'nslookup', desc: 'DNS-запрос: преобразует доменное имя в IP-адрес через указанный DNS-сервер.',
+    { cmd: 'mtr', label: 'mtr', desc: 'Комбинация ping + traceroute в реальном времени. Показывает потери и задержку на каждом хопе.',
+      params: [{ label: 'Хост', id: 'host', type: 'select', options: ['google.com','ya.ru','github.com','8.8.8.8'] }],
+      flags: '<code>-r</code> отчёт &nbsp; <code>-c N</code> кол-во циклов &nbsp; <code>-n</code> без DNS &nbsp; <code>-T</code> TCP вместо ICMP',
+      build: (p) => `mtr ${p.host}` },
+    { cmd: 'nslookup', label: 'nslookup', desc: 'DNS-запрос — преобразует доменное имя в IP через DNS-сервер. Показывает A, MX, NS записи.',
       params: [{ label: 'Домен', id: 'host', type: 'select', options: ['google.com','ya.ru','github.com','example.com','cloudflare.com'] }],
-      flags: '<code>-type=MX</code> почтовые записи &nbsp; <code>-type=NS</code> серверы имён &nbsp; <code>-type=AAAA</code> IPv6',
+      flags: '<code>-type=A</code> IPv4 &nbsp; <code>-type=AAAA</code> IPv6 &nbsp; <code>-type=MX</code> почта &nbsp; <code>-type=NS</code> DNS-серверы &nbsp; <code>-type=TXT</code> SPF/DKIM',
       build: (p) => `nslookup ${p.host}` },
-    { cmd: 'curl', label: 'curl', desc: 'HTTP-клиент. Отправляет запрос и показывает заголовки ответа сервера.',
+    { cmd: 'tcpdump', label: 'tcpdump', desc: 'Перехват пакетов — главный инструмент анализа трафика. Показывает каждый пакет в реальном времени.',
+      params: [{ label: 'Интерфейс', id: 'iface', type: 'select', options: ['eth0','wlan0','any'] }],
+      flags: '<code>-i eth0</code> интерфейс &nbsp; <code>-c N</code> кол-во пакетов &nbsp; <code>-n</code> без DNS &nbsp; <code>-v/-vv</code> подробность &nbsp; <code>-w file.pcap</code> запись в файл &nbsp; <code>port 80</code> фильтр по порту &nbsp; <code>host IP</code> фильтр по IP &nbsp; <code>tcp/udp/icmp</code> фильтр по протоколу',
+      build: (p) => `tcpdump -i ${p.iface} -c 5` },
+    { cmd: 'nmap', label: 'nmap', desc: 'Сканер портов и сервисов — определяет открытые порты, ОС и версии ПО на удалённом хосте.',
+      params: [{ label: 'Хост', id: 'host', type: 'select', options: ['example.com','github.com','192.168.1.1','localhost'] }],
+      flags: '<code>-sS</code> SYN-скан (stealth) &nbsp; <code>-sV</code> версии сервисов &nbsp; <code>-O</code> определение ОС &nbsp; <code>-p 1-1000</code> диапазон портов &nbsp; <code>-A</code> агрессивный скан &nbsp; <code>-sU</code> UDP-скан &nbsp; <code>-Pn</code> без ping',
+      build: (p) => `nmap ${p.host}` },
+    { cmd: 'curl', label: 'curl', desc: 'HTTP-клиент — отправляет запросы к веб-серверам. Показывает заголовки, тело ответа, тайминги.',
       params: [{ label: 'URL', id: 'host', type: 'input', placeholder: 'example.com' }],
-      flags: '<code>-I</code> только заголовки &nbsp; <code>-v</code> подробно &nbsp; <code>-X POST</code> метод &nbsp; <code>-H</code> заголовок',
+      flags: '<code>-I</code> только заголовки &nbsp; <code>-v</code> подробно (TLS) &nbsp; <code>-X POST</code> метод &nbsp; <code>-H "Key: Val"</code> заголовок &nbsp; <code>-d "data"</code> тело &nbsp; <code>-o file</code> сохранить &nbsp; <code>-L</code> следовать редиректам &nbsp; <code>-k</code> игнорировать SSL',
       build: (p) => `curl ${p.host || 'example.com'}` },
-    { cmd: 'ifconfig', label: 'ifconfig', desc: 'Показывает сетевые интерфейсы: IP, MAC-адрес, MTU, счётчики пакетов.',
-      params: [], flags: '<code>eth0 up/down</code> включить/выключить &nbsp; <code>eth0 192.168.1.1</code> назначить IP', build: () => 'ifconfig' },
-    { cmd: 'netstat', label: 'netstat', desc: 'Показывает активные сетевые соединения, порты и их состояния.',
-      params: [], flags: '<code>-t</code> TCP &nbsp; <code>-u</code> UDP &nbsp; <code>-l</code> только LISTEN &nbsp; <code>-p</code> PID процесса &nbsp; <code>-n</code> без DNS', build: () => 'netstat' },
-    { cmd: 'arp', label: 'arp', desc: 'ARP-таблица: соответствие IP-адресов и MAC-адресов в локальной сети.',
-      params: [], flags: '<code>-d IP</code> удалить запись &nbsp; <code>-s IP MAC</code> добавить статическую', build: () => 'arp' },
-    { cmd: 'route', label: 'route', desc: 'Таблица маршрутизации: куда отправляются пакеты для разных сетей назначения.',
-      params: [], flags: '<code>add -net</code> добавить маршрут &nbsp; <code>del -net</code> удалить &nbsp; <code>-n</code> без DNS', build: () => 'route' },
-    { cmd: 'whois', label: 'whois', desc: 'Информация о владельце домена: регистратор, даты, DNS-серверы.',
+    { cmd: 'wget', label: 'wget', desc: 'Загрузчик файлов — скачивает файлы по HTTP/HTTPS/FTP. Поддерживает докачку и рекурсию.',
+      params: [{ label: 'URL', id: 'host', type: 'input', placeholder: 'http://example.com/file.tar.gz' }],
+      flags: '<code>-O file</code> имя файла &nbsp; <code>-c</code> докачка &nbsp; <code>-r</code> рекурсивно &nbsp; <code>-q</code> тихо &nbsp; <code>--limit-rate=1m</code> ограничить скорость',
+      build: (p) => `wget ${p.host || 'http://example.com/index.html'}` },
+    { cmd: 'ifconfig', label: 'ifconfig', desc: 'Конфигурация сетевых интерфейсов — IP, MAC, MTU, счётчики RX/TX. Устаревает, замена: ip addr.',
+      params: [], flags: '<code>eth0 up/down</code> вкл/выкл &nbsp; <code>eth0 192.168.1.1 netmask 255.255.255.0</code> назначить IP &nbsp; <code>eth0 mtu 9000</code> jumbo frames', build: () => 'ifconfig' },
+    { cmd: 'ss', label: 'ss', desc: 'Socket Statistics — современная замена netstat. Показывает TCP/UDP соединения, состояния, очереди.',
+      params: [], flags: '<code>-t</code> TCP &nbsp; <code>-u</code> UDP &nbsp; <code>-l</code> LISTEN &nbsp; <code>-p</code> процесс &nbsp; <code>-n</code> без DNS &nbsp; <code>-s</code> статистика &nbsp; <code>-e</code> расширенная инфо &nbsp; <code>state established</code> фильтр', build: () => 'ss' },
+    { cmd: 'netstat', label: 'netstat', desc: 'Активные соединения, порты и состояния. Устаревает, замена: ss.',
+      params: [], flags: '<code>-t</code> TCP &nbsp; <code>-u</code> UDP &nbsp; <code>-l</code> LISTEN &nbsp; <code>-p</code> PID &nbsp; <code>-n</code> без DNS &nbsp; <code>-r</code> маршруты &nbsp; <code>-i</code> интерфейсы &nbsp; <code>-s</code> статистика', build: () => 'netstat' },
+    { cmd: 'iptables', label: 'iptables', desc: 'Файрвол Linux — управление правилами фильтрации пакетов. Цепочки: INPUT, OUTPUT, FORWARD.',
+      params: [], flags: '<code>-L</code> список правил &nbsp; <code>-A INPUT -p tcp --dport 22 -j ACCEPT</code> разрешить SSH &nbsp; <code>-A INPUT -j DROP</code> запретить всё &nbsp; <code>-D INPUT N</code> удалить правило &nbsp; <code>-F</code> очистить все', build: () => 'iptables -L' },
+    { cmd: 'arp', label: 'arp', desc: 'ARP-таблица — соответствие IP → MAC в локальной сети. Используется для L2-адресации.',
+      params: [], flags: '<code>-a</code> показать все &nbsp; <code>-d IP</code> удалить &nbsp; <code>-s IP MAC</code> статическая запись', build: () => 'arp' },
+    { cmd: 'route', label: 'route', desc: 'Таблица маршрутизации — определяет через какой шлюз/интерфейс отправлять пакеты.',
+      params: [], flags: '<code>-n</code> без DNS &nbsp; <code>add default gw 192.168.1.1</code> шлюз по умолчанию &nbsp; <code>add -net 10.0.0.0/8 gw 192.168.1.254</code> маршрут', build: () => 'route' },
+    { cmd: 'ethtool', label: 'ethtool', desc: 'Параметры Ethernet — скорость, дуплекс, автосогласование, драйвер, Wake-on-LAN.',
+      params: [{ label: 'Интерфейс', id: 'iface', type: 'select', options: ['eth0','wlan0','lo'] }],
+      flags: '<code>-s eth0 speed 100 duplex full</code> установить &nbsp; <code>-S eth0</code> статистика &nbsp; <code>-i eth0</code> драйвер &nbsp; <code>-k eth0</code> offload', build: (p) => `ethtool ${p.iface}` },
+    { cmd: 'iwconfig', label: 'iwconfig', desc: 'Параметры Wi-Fi — ESSID, частота, скорость, мощность, качество сигнала (Signal Level).',
+      params: [], flags: '<code>wlan0 essid "Net"</code> подключиться &nbsp; <code>wlan0 txpower 15</code> мощность &nbsp; <code>wlan0 rate 54M</code> скорость', build: () => 'iwconfig' },
+    { cmd: 'telnet', label: 'telnet', desc: 'Проверка TCP-соединения к порту. Используется для диагностики доступности сервисов.',
+      params: [
+        { label: 'Хост', id: 'host', type: 'select', options: ['example.com','localhost','192.168.1.1'] },
+        { label: 'Порт', id: 'port', type: 'select', options: ['80','443','22','3306','5432','8080'] }
+      ],
+      flags: '', build: (p) => `telnet ${p.host} ${p.port}` },
+    { cmd: 'ssh', label: 'ssh', desc: 'Защищённое удалённое подключение — шифрованная оболочка через TCP:22.',
+      params: [{ label: 'Цель', id: 'host', type: 'input', placeholder: 'user@server.com' }],
+      flags: '<code>-p N</code> порт &nbsp; <code>-i key</code> ключ &nbsp; <code>-L 8080:localhost:80</code> туннель &nbsp; <code>-D 1080</code> SOCKS-прокси &nbsp; <code>-v</code> подробно', build: (p) => `ssh ${p.host || 'user@server.com'}` },
+    { cmd: 'whois', label: 'whois', desc: 'Регистрационные данные домена — владелец, регистратор, DNS-серверы, срок действия.',
       params: [{ label: 'Домен', id: 'host', type: 'select', options: ['google.com','ya.ru','github.com','example.com'] }],
-      flags: '', build: (p) => `whois ${p.host}` }
+      flags: '', build: (p) => `whois ${p.host}` },
+    { cmd: 'hostname', label: 'hostname', desc: 'Имя текущей машины, FQDN и IP-адрес.',
+      params: [], flags: '<code>-f</code> FQDN &nbsp; <code>-I</code> все IP &nbsp; <code>-d</code> домен', build: () => 'hostname' }
   ];
 
   let activeTermCmd = null;
