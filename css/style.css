@@ -1265,6 +1265,399 @@ body {
   font-size: .85rem;
 }
 
+/* ========== Sequence Diagram (TCP Handshake) ========== */
+.seq-diagram {
+  position: relative;
+  padding: 0 0 8px;
+}
+
+.seq-cols {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.seq-col {
+  text-align: center;
+  font-size: .82rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.seq-lines {
+  position: relative;
+  min-height: 20px;
+}
+
+.seq-lines::before,
+.seq-lines::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.seq-lines::before { left: 50px; }
+.seq-lines::after { right: 50px; }
+
+.seq-step {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  opacity: 0;
+  transition: opacity .4s ease;
+  position: relative;
+}
+
+.seq-step.visible { opacity: 1; }
+
+.seq-arrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  margin: 0 54px;
+  position: relative;
+  height: 30px;
+}
+
+.seq-arrow__line {
+  flex: 1;
+  height: 2px;
+  position: relative;
+}
+
+.seq-arrow__line::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+.seq-arrow--right .seq-arrow__line::after {
+  right: 0;
+  border-left: 8px solid;
+  border-left-color: inherit;
+}
+
+.seq-arrow--left .seq-arrow__line::after {
+  left: 0;
+  border-right: 8px solid;
+  border-right-color: inherit;
+}
+
+.seq-arrow__label {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-card);
+}
+
+.seq-arrow__detail {
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .6rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.seq-desc {
+  margin-top: 4px;
+  padding: 8px 12px;
+  font-size: .78rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border-radius: var(--radius-xs);
+  border-left: 3px solid var(--accent);
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+.seq-desc.visible { opacity: 1; }
+
+/* ========== Scenario Steps ========== */
+.scenario-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.scenario-step {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all .4s ease;
+  position: relative;
+}
+
+.scenario-step.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scenario-step__timeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.scenario-step__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.scenario-step__line {
+  width: 2px;
+  flex: 1;
+  background: var(--border);
+  margin-top: 4px;
+}
+
+.scenario-step:last-child .scenario-step__line { display: none; }
+
+.scenario-step__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.scenario-step__title {
+  font-size: .85rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.scenario-step__text {
+  font-size: .78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.scenario-step__layers {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.scenario-step__layer-tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: .6rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ========== Device Comparison ========== */
+.device-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.device-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition);
+}
+
+.device-tab:active { transform: scale(.96); }
+.device-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.device-network {
+  position: relative;
+  padding: 16px 0;
+}
+
+.device-nodes {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 12px;
+}
+
+.device-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.device-node__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  transition: all .4s ease;
+}
+
+.device-node__label {
+  font-size: .68rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.device-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 0;
+}
+
+.device-center__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border: 2px solid var(--accent);
+  background: var(--accent-glow);
+  transition: all .4s ease;
+}
+
+.device-center__label {
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.device-links {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 20px;
+}
+
+.device-link {
+  width: 2px;
+  height: 24px;
+  background: var(--border);
+  transition: background .4s ease;
+}
+
+.device-link.active { background: var(--l4); box-shadow: 0 0 6px rgba(46,204,113,.3); }
+.device-link.inactive { background: var(--border); opacity: .3; }
+
+.device-packet-label {
+  font-size: .6rem;
+  color: var(--accent);
+  text-align: center;
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.device-packet-label.visible { opacity: 1; }
+
+/* ========== TCP vs UDP Side-by-side ========== */
+.versus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.versus-col {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.versus-col__header {
+  padding: 10px;
+  text-align: center;
+  font-size: .85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.versus-col__body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 200px;
+}
+
+.versus-pkt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  border-radius: var(--radius-xs);
+  font-size: .65rem;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all .35s ease;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.versus-pkt.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.versus-pkt__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.versus-pkt--ok .versus-pkt__dot { background: var(--l4); }
+.versus-pkt--lost .versus-pkt__dot { background: var(--l7); }
+.versus-pkt--lost { opacity: .5; text-decoration: line-through; }
+.versus-pkt--lost.visible { opacity: .5; }
+.versus-pkt--ack .versus-pkt__dot { background: var(--l3); }
+.versus-pkt--ack { font-style: italic; color: var(--text-secondary); }
+.versus-pkt--retransmit .versus-pkt__dot { background: var(--l5); }
+
+.versus-summary {
+  margin-top: 12px;
+}
+
 /* ========== Animations ========== */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -1287,9 +1680,6 @@ body {
 @media (min-width: 768px) {
   .section { max-width: 720px; padding: 24px; }
   .hero__title { font-size: 2.4rem; }
-
-  .sim-visual { min-height: 420px; }
-  .sim-packet { width: 100px; }
 
   .nav-cards { grid-template-columns: repeat(4, 1fr); }
 

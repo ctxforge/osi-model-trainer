@@ -223,6 +223,35 @@ const LAB_EXPERIMENTS = {
       { id: 'ip', label: 'IP-адрес', type: 'ip', default: '192.168.1.100' },
       { id: 'cidr', label: 'Маска (CIDR)', type: 'range', min: 8, max: 30, step: 1, default: 24, unit: '' }
     ]
+  },
+  tcpHandshake: {
+    title: 'TCP Handshake',
+    icon: '🤝',
+    description: 'Наблюдайте трёхстороннее рукопожатие, передачу данных и завершение TCP-соединения',
+    params: [
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1500, step: 100, default: 600, unit: 'мс' }
+    ]
+  },
+  scenario: {
+    title: 'Открытие сайта',
+    icon: '🌐',
+    description: 'Пошаговый сценарий: что происходит, когда вы вводите адрес в браузере',
+    params: []
+  },
+  devices: {
+    title: 'Hub / Switch / Router',
+    icon: '🔌',
+    description: 'Сравните, как хаб, коммутатор и маршрутизатор обрабатывают кадры',
+    params: []
+  },
+  tcpVsUdp: {
+    title: 'TCP vs UDP',
+    icon: '⚔️',
+    description: 'Параллельное сравнение TCP и UDP при передаче данных с потерями',
+    params: [
+      { id: 'packetLoss', label: 'Потеря пакетов', type: 'range', min: 0, max: 60, step: 5, default: 20, unit: '%' },
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 150, max: 1000, step: 50, default: 350, unit: 'мс' }
+    ]
   }
 };
 

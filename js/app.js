@@ -960,6 +960,312 @@
     `;
   });
 
+  /* ==================== LAB: TCP HANDSHAKE ==================== */
+  document.getElementById('labRun-tcpHandshake').addEventListener('click', async () => {
+    const speed = labState.tcpHandshake ? labState.tcpHandshake.speed : 600;
+    const result = document.getElementById('labResult-tcpHandshake');
+
+    const clientSeq = 1000 + Math.floor(Math.random() * 9000);
+    const serverSeq = 5000 + Math.floor(Math.random() * 9000);
+
+    const steps = [
+      { dir: 'right', label: 'SYN', detail: `Seq=${clientSeq}`, color: '#3498db',
+        desc: 'Клиент отправляет SYN — запрос на установку соединения. Указывает начальный Sequence Number.' },
+      { dir: 'left', label: 'SYN-ACK', detail: `Seq=${serverSeq}, Ack=${clientSeq + 1}`, color: '#2ecc71',
+        desc: 'Сервер подтверждает (ACK) и отправляет свой SYN. Указывает свой Sequence Number и подтверждает клиентский +1.' },
+      { dir: 'right', label: 'ACK', detail: `Seq=${clientSeq + 1}, Ack=${serverSeq + 1}`, color: '#1abc9c',
+        desc: 'Клиент подтверждает SYN сервера. Соединение установлено (ESTABLISHED). Трёхстороннее рукопожатие завершено.' },
+      { dir: 'right', label: 'PSH+ACK [Data]', detail: `Seq=${clientSeq + 1}, Len=11`, color: '#e67e22',
+        desc: 'Клиент отправляет данные (HTTP-запрос). Флаг PSH указывает серверу передать данные приложению немедленно.' },
+      { dir: 'left', label: 'ACK', detail: `Ack=${clientSeq + 12}`, color: '#2ecc71',
+        desc: 'Сервер подтверждает получение данных. Acknowledgment = Seq клиента + длина данных.' },
+      { dir: 'left', label: 'PSH+ACK [Data]', detail: `Seq=${serverSeq + 1}, Len=42`, color: '#e67e22',
+        desc: 'Сервер отправляет ответ (HTTP 200 OK с данными).' },
+      { dir: 'right', label: 'ACK', detail: `Ack=${serverSeq + 43}`, color: '#1abc9c',
+        desc: 'Клиент подтверждает получение ответа.' },
+      { dir: 'right', label: 'FIN+ACK', detail: `Seq=${clientSeq + 12}`, color: '#e74c3c',
+        desc: 'Клиент инициирует завершение соединения — отправляет FIN.' },
+      { dir: 'left', label: 'FIN+ACK', detail: `Seq=${serverSeq + 43}, Ack=${clientSeq + 13}`, color: '#e74c3c',
+        desc: 'Сервер подтверждает FIN клиента и отправляет свой FIN.' },
+      { dir: 'right', label: 'ACK', detail: `Ack=${serverSeq + 44}`, color: '#9b59b6',
+        desc: 'Клиент подтверждает FIN сервера. Соединение закрыто (CLOSED).' }
+    ];
+
+    result.innerHTML = `
+      <div class="seq-diagram">
+        <div class="seq-cols">
+          <div class="seq-col">💻 Клиент</div>
+          <div class="seq-col">🖥️ Сервер</div>
+        </div>
+        <div class="seq-lines" id="seqLines">
+          ${steps.map((s, i) => `
+            <div class="seq-step" id="seqStep-${i}">
+              <div class="seq-arrow seq-arrow--${s.dir}">
+                <div class="seq-arrow__line" style="background:${s.color};border-color:${s.color}"></div>
+                <div class="seq-arrow__label" style="color:${s.color}">${s.label}</div>
+                <div class="seq-arrow__detail">${s.detail}</div>
+              </div>
+            </div>
+            <div class="seq-desc" id="seqDesc-${i}">${s.desc}</div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    for (let i = 0; i < steps.length; i++) {
+      await sleep(speed);
+      const step = document.getElementById('seqStep-' + i);
+      const desc = document.getElementById('seqDesc-' + i);
+      if (step) step.classList.add('visible');
+      if (desc) desc.classList.add('visible');
+    }
+  });
+
+  /* ==================== LAB: SCENARIO ==================== */
+  document.getElementById('labRun-scenario').addEventListener('click', async () => {
+    const result = document.getElementById('labResult-scenario');
+
+    const scenarioSteps = [
+      { title: 'Ввод URL в адресную строку', text: 'Пользователь вводит https://example.com в браузер и нажимает Enter.',
+        layers: [7], color: '#e74c3c', icon: '⌨️' },
+      { title: 'DNS-запрос', text: 'Браузер отправляет DNS-запрос (UDP:53) для определения IP-адреса example.com. DNS-сервер отвечает: 93.184.216.34.',
+        layers: [7, 4, 3, 2, 1], color: '#3498db', icon: '🔍' },
+      { title: 'ARP-запрос (если нужен)', text: 'Если MAC-адрес шлюза не в ARP-кэше, отправляется ARP-broadcast: «Кто имеет IP 192.168.1.1?». Шлюз отвечает своим MAC.',
+        layers: [2, 3], color: '#1abc9c', icon: '📡' },
+      { title: 'TCP SYN → Сервер', text: 'Браузер инициирует TCP-соединение: отправляет SYN-сегмент на 93.184.216.34:443. Пакет проходит через маршрутизаторы.',
+        layers: [4, 3, 2, 1], color: '#2ecc71', icon: '🤝' },
+      { title: 'TCP SYN-ACK ← Сервер', text: 'Сервер отвечает SYN-ACK. Подтверждает запрос клиента и предлагает свой Sequence Number.',
+        layers: [4, 3, 2, 1], color: '#2ecc71', icon: '✅' },
+      { title: 'TCP ACK → Сервер', text: 'Клиент отправляет ACK. Трёхстороннее рукопожатие завершено — TCP-соединение установлено.',
+        layers: [4], color: '#2ecc71', icon: '🔗' },
+      { title: 'TLS Handshake', text: 'Клиент и сервер обмениваются ключами шифрования (Client Hello → Server Hello → Certificate → Key Exchange). Устанавливается защищённый канал.',
+        layers: [6, 5], color: '#e67e22', icon: '🔐' },
+      { title: 'HTTP GET → Сервер', text: 'Браузер отправляет зашифрованный HTTP-запрос: GET / HTTP/1.1. Данные шифруются на уровне представления и передаются через TCP.',
+        layers: [7, 6, 5, 4, 3, 2, 1], color: '#e74c3c', icon: '📤' },
+      { title: 'HTTP 200 OK ← Сервер', text: 'Сервер отвечает HTTP 200 OK с HTML-страницей. Данные дешифруются и передаются браузеру.',
+        layers: [7, 6, 5, 4, 3, 2, 1], color: '#e74c3c', icon: '📥' },
+      { title: 'Рендеринг страницы', text: 'Браузер разбирает HTML, загружает CSS/JS/изображения (повторяя цикл DNS → TCP → HTTP для каждого ресурса) и отображает страницу.',
+        layers: [7], color: '#9b59b6', icon: '🖼️' }
+    ];
+
+    result.innerHTML = `
+      <div class="lab-result__title">Что происходит при открытии https://example.com</div>
+      <div class="scenario-steps">
+        ${scenarioSteps.map((s, i) => `
+          <div class="scenario-step" id="scenarioStep-${i}">
+            <div class="scenario-step__timeline">
+              <div class="scenario-step__dot" style="background:${s.color}">${s.icon}</div>
+              <div class="scenario-step__line"></div>
+            </div>
+            <div class="scenario-step__content">
+              <div class="scenario-step__title">${s.title}</div>
+              <div class="scenario-step__text">${s.text}</div>
+              <div class="scenario-step__layers">
+                ${s.layers.map(l => {
+                  const layer = OSI_LAYERS.find(ol => ol.number === l);
+                  return `<span class="scenario-step__layer-tag" style="background:${layer.color}">L${l} ${layer.name}</span>`;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    for (let i = 0; i < scenarioSteps.length; i++) {
+      await sleep(500);
+      const el = document.getElementById('scenarioStep-' + i);
+      if (el) el.classList.add('visible');
+    }
+  });
+
+  /* ==================== LAB: HUB vs SWITCH vs ROUTER ==================== */
+  (function initDevicesLab() {
+    const result = document.getElementById('labResult-devices');
+
+    const devicesInfo = {
+      hub: {
+        name: 'Хаб (Hub)', layer: 1, icon: '🔌',
+        description: 'Хаб работает на L1 (физический). Он не анализирует адреса — просто повторяет электрический сигнал на ВСЕ порты, кроме входящего. Все устройства получают кадр, даже если он предназначен не им.',
+        behavior: [true, true, true]
+      },
+      switch_: {
+        name: 'Коммутатор (Switch)', layer: 2, icon: '🔀',
+        description: 'Коммутатор работает на L2 (канальный). Он читает MAC-адрес назначения в кадре и отправляет его ТОЛЬКО на нужный порт. Ведёт MAC-таблицу: какой MAC на каком порту.',
+        behavior: [false, false, true]
+      },
+      router: {
+        name: 'Маршрутизатор (Router)', layer: 3, icon: '🌐',
+        description: 'Маршрутизатор работает на L3 (сетевой). Он анализирует IP-адрес назначения и перенаправляет пакет в нужную подсеть. Меняет MAC-заголовок (L2) при пересылке, но IP остаётся прежним.',
+        behavior: [false, false, true]
+      }
+    };
+
+    let activeDevice = 'hub';
+
+    function renderDevices() {
+      const dev = devicesInfo[activeDevice];
+      const layerData = OSI_LAYERS.find(l => l.number === dev.layer);
+
+      result.innerHTML = `
+        <div class="device-tabs">
+          ${Object.entries(devicesInfo).map(([key, d]) => `
+            <button class="device-tab${key === activeDevice ? ' active' : ''}" data-dev="${key}">
+              ${d.icon} ${d.name.split(' ')[0]}
+            </button>
+          `).join('')}
+        </div>
+        <div class="device-network">
+          <div class="device-nodes">
+            <div class="device-node" id="devNode-0">
+              <div class="device-node__icon" style="${dev.behavior[0] ? 'border-color:var(--l4);box-shadow:0 0 8px rgba(46,204,113,.3)' : ''}">💻</div>
+              <div class="device-node__label">PC-A<br><span style="font-size:.55rem;color:var(--text-secondary)">192.168.1.10</span></div>
+            </div>
+            <div class="device-node" id="devNode-1">
+              <div class="device-node__icon" style="${dev.behavior[1] ? 'border-color:var(--l4);box-shadow:0 0 8px rgba(46,204,113,.3)' : ''}">💻</div>
+              <div class="device-node__label">PC-B<br><span style="font-size:.55rem;color:var(--text-secondary)">192.168.1.20</span></div>
+            </div>
+            <div class="device-node" id="devNode-2">
+              <div class="device-node__icon" style="border-color:var(--l4);box-shadow:0 0 8px rgba(46,204,113,.3)">💻</div>
+              <div class="device-node__label">PC-C<br><span style="font-size:.55rem;color:var(--text-secondary)">192.168.1.30</span></div>
+            </div>
+          </div>
+          <div class="device-links">
+            <div class="device-link ${dev.behavior[0] ? 'active' : 'inactive'}"></div>
+            <div class="device-link ${dev.behavior[1] ? 'active' : 'inactive'}"></div>
+            <div class="device-link active"></div>
+          </div>
+          <div class="device-center">
+            <div class="device-center__icon">${dev.icon}</div>
+            <div class="device-center__label">${dev.name}</div>
+            <span style="font-size:.7rem;color:${layerData.color};font-weight:700">L${dev.layer} — ${layerData.name}</span>
+          </div>
+          <div style="text-align:center;font-size:.75rem;color:var(--text-secondary);margin-top:8px">
+            PC-A отправляет кадр → PC-C (${activeDevice === 'hub' ? 'получают ВСЕ' : 'получает ТОЛЬКО PC-C'})
+          </div>
+        </div>
+        <div class="card mt-12" style="font-size:.82rem;line-height:1.6">
+          ${dev.description}
+        </div>
+        <table class="pdu-fields mt-12">
+          <tr><td>Уровень OSI</td><td>L${dev.layer} — ${layerData.name}</td></tr>
+          <tr><td>Анализирует</td><td>${dev.layer === 1 ? 'Ничего (электрический сигнал)' : dev.layer === 2 ? 'MAC-адрес назначения' : 'IP-адрес назначения'}</td></tr>
+          <tr><td>Доменов коллизий</td><td>${dev.layer === 1 ? '1 (общий)' : 'По одному на порт'}</td></tr>
+          <tr><td>Широковещательный домен</td><td>${dev.layer <= 2 ? '1 (общий)' : 'Разделяет'}</td></tr>
+          <tr><td>Скорость обработки</td><td>${dev.layer === 1 ? 'Мгновенно (без анализа)' : dev.layer === 2 ? 'Быстро (аппаратные ASIC)' : 'Медленнее (анализ IP + таблица маршрутов)'}</td></tr>
+        </table>
+      `;
+
+      result.querySelectorAll('.device-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          activeDevice = tab.dataset.dev;
+          renderDevices();
+        });
+      });
+    }
+
+    renderDevices();
+  })();
+
+  /* ==================== LAB: TCP vs UDP ==================== */
+  document.getElementById('labRun-tcpVsUdp').addEventListener('click', async () => {
+    const s = labState.tcpVsUdp || { packetLoss: 20, speed: 350 };
+    const loss = s.packetLoss;
+    const speed = s.speed;
+    const totalPkts = 8;
+    const result = document.getElementById('labResult-tcpVsUdp');
+
+    const fate = [];
+    for (let i = 0; i < totalPkts; i++) {
+      fate.push(Math.random() * 100 < loss);
+    }
+
+    const tcpEvents = [];
+    const udpEvents = [];
+
+    for (let i = 0; i < totalPkts; i++) {
+      if (fate[i]) {
+        tcpEvents.push({ type: 'lost', label: `Пакет #${i + 1} — потерян` });
+        tcpEvents.push({ type: 'retransmit', label: `Пакет #${i + 1} — повтор` });
+        tcpEvents.push({ type: 'ack', label: `ACK #${i + 1}` });
+        udpEvents.push({ type: 'lost', label: `Пакет #${i + 1} — потерян` });
+      } else {
+        tcpEvents.push({ type: 'ok', label: `Пакет #${i + 1}` });
+        tcpEvents.push({ type: 'ack', label: `ACK #${i + 1}` });
+        udpEvents.push({ type: 'ok', label: `Пакет #${i + 1}` });
+      }
+    }
+
+    const tcpDelivered = totalPkts;
+    const udpDelivered = fate.filter(f => !f).length;
+    const udpLost = totalPkts - udpDelivered;
+    const tcpRetransmits = fate.filter(f => f).length;
+
+    result.innerHTML = `
+      <div class="lab-result__title">Параллельная передача ${totalPkts} пакетов (потери: ${loss}%)</div>
+      <div class="versus-grid">
+        <div class="versus-col">
+          <div class="versus-col__header" style="background:var(--l4)">TCP</div>
+          <div class="versus-col__body" id="vsTcpBody">
+            ${tcpEvents.map((e, i) => `<div class="versus-pkt versus-pkt--${e.type}" id="vsTcp-${i}"><div class="versus-pkt__dot"></div>${e.label}</div>`).join('')}
+          </div>
+        </div>
+        <div class="versus-col">
+          <div class="versus-col__header" style="background:var(--l7)">UDP</div>
+          <div class="versus-col__body" id="vsUdpBody">
+            ${udpEvents.map((e, i) => `<div class="versus-pkt versus-pkt--${e.type}" id="vsUdp-${i}"><div class="versus-pkt__dot"></div>${e.label}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="versus-summary">
+        <div class="lab-stats">
+          <div class="lab-stat">
+            <div class="lab-stat__value" style="color:var(--l4)">${tcpDelivered}/${totalPkts}</div>
+            <div class="lab-stat__label">TCP доставлено</div>
+          </div>
+          <div class="lab-stat">
+            <div class="lab-stat__value" style="color:var(--l7)">${udpDelivered}/${totalPkts}</div>
+            <div class="lab-stat__label">UDP доставлено</div>
+          </div>
+          <div class="lab-stat">
+            <div class="lab-stat__value">${tcpRetransmits}</div>
+            <div class="lab-stat__label">TCP повторов</div>
+          </div>
+          <div class="lab-stat">
+            <div class="lab-stat__value">${udpLost}</div>
+            <div class="lab-stat__label">UDP потеряно</div>
+          </div>
+        </div>
+        <div class="card mt-12" style="font-size:.82rem;line-height:1.6">
+          <strong>TCP:</strong> Гарантировал доставку всех ${totalPkts} пакетов${tcpRetransmits > 0 ? `, выполнив ${tcpRetransmits} повторных передач` : ''}. Каждый пакет подтверждается (ACK). Надёжно, но медленнее.<br><br>
+          <strong>UDP:</strong> Доставил ${udpDelivered} из ${totalPkts}. ${udpLost > 0 ? `Потерял ${udpLost} пакетов безвозвратно.` : 'Все пакеты дошли (повезло).'} Без подтверждений и повторов — быстро, но ненадёжно. Используется для видео, VoIP, игр.
+        </div>
+      </div>
+    `;
+
+    let ti = 0, ui = 0;
+    const maxLen = Math.max(tcpEvents.length, udpEvents.length);
+    for (let step = 0; step < maxLen; step++) {
+      await sleep(speed);
+      if (ti < tcpEvents.length) {
+        const el = document.getElementById('vsTcp-' + ti);
+        if (el) el.classList.add('visible');
+        ti++;
+      }
+      if (ui < udpEvents.length) {
+        const el = document.getElementById('vsUdp-' + ui);
+        if (el) el.classList.add('visible');
+        ui++;
+      }
+    }
+    while (ti < tcpEvents.length) {
+      await sleep(speed);
+      const el = document.getElementById('vsTcp-' + ti);
+      if (el) el.classList.add('visible');
+      ti++;
+    }
+  });
+
   /* ==================== DRAG & DROP ==================== */
   let dndCurrentItems = [];
   let draggedItem = null;
