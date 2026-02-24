@@ -2442,6 +2442,42 @@
     ];
     const sgFs = 8000;
     const sgN = 512;
+    let sgChannelId = 'none';
+    let sgChDistance = 50;
+
+    const SG_PRESETS = [
+      { id: 'none', name: '— Без канала —' },
+      ...CHANNEL_TYPES.map(c => ({ id: c.id, name: `${c.icon} ${c.name}` }))
+    ];
+
+    function applyChannel(samples, chId, dist) {
+      if (chId === 'none') return { rx: samples.slice(), snr: 999, atten: 0, bw: sgFs / 2 };
+      const ch = CHANNEL_TYPES.find(c => c.id === chId);
+      if (!ch) return { rx: samples.slice(), snr: 999, atten: 0, bw: sgFs / 2 };
+      const distUnit = ch.medium === 'fiber' ? dist / 1000 : dist / 100;
+      const atten = ch.attenuation * distUnit;
+      const snr = Math.max(ch.snrBase - atten, -5);
+      const gain = Math.pow(10, -atten / 20);
+      const noiseStd = gain / Math.max(Math.pow(10, snr / 20), 0.01);
+      const bw = Math.min(ch.bandwidthMHz * 1e6, sgFs / 2);
+      const bwNorm = bw / (sgFs / 2);
+      const rx = new Float64Array(samples.length);
+      for (let i = 0; i < samples.length; i++) {
+        rx[i] = samples[i] * gain + (Math.random() - 0.5) * 2 * noiseStd * 0.3;
+      }
+      if (bwNorm < 1) {
+        const cutoff = Math.floor(samples.length * bwNorm / 2);
+        const re = new Float64Array(sgN), im = new Float64Array(sgN);
+        for (let i = 0; i < sgN; i++) re[i] = rx[i];
+        fft(re, im);
+        for (let i = cutoff; i < sgN - cutoff; i++) { re[i] = 0; im[i] = 0; }
+        const re2 = new Float64Array(sgN), im2 = new Float64Array(sgN);
+        for (let i = 0; i < sgN; i++) { re2[i] = re[i]; im2[i] = -im[i]; }
+        fft(re2, im2);
+        for (let i = 0; i < sgN; i++) rx[i] = re2[i] / sgN;
+      }
+      return { rx, snr, atten, bw, ch };
+    }
 
     const WAVE_TYPES = {
       sin: 'Синус', cos: 'Косинус', square: 'Прямоугольный',
@@ -2599,25 +2635,52 @@
         `).join('')}
         <button class="dnd-btn" id="sgAddComp" style="width:100%;padding:8px;font-size:.75rem;margin-bottom:8px"${sgComponents.length >= 4 ? ' disabled' : ''}>+ Добавить компоненту (до 4)</button>
 
+        <div class="study-section__title">📤 Передатчик (TX)</div>
         <div class="sg-canvas-wrap">
           <canvas id="sgTimeDomain"></canvas>
           <div class="sg-canvas-label"><span>Время →</span><span>Fs = ${sgFs} Гц, N = ${sgN}</span></div>
         </div>
         <div class="sg-canvas-wrap">
           <canvas id="sgSpectrum"></canvas>
-          <div class="sg-canvas-label"><span>Частота (Гц) →</span><span>Спектр (FFT, ${sgN} точек)</span></div>
+          <div class="sg-canvas-label"><span>Частота (Гц) →</span><span>TX Спектр</span></div>
         </div>
 
-        <div class="study-section__title">MATLAB / Octave код</div>
+        <div class="study-section__title" style="margin-top:16px">📡 Канал связи</div>
+        <div class="sg-param-grid" style="margin-bottom:8px">
+          <div class="sg-param"><label>Тип канала</label><select id="sgChannelSel">${SG_PRESETS.map(p => `<option value="${p.id}"${p.id === sgChannelId ? ' selected' : ''}>${p.name}</option>`).join('')}</select></div>
+          <div class="sg-param"><label>Расстояние</label><input type="number" id="sgChDist" value="${sgChDistance}" min="1" max="100000" step="10"></div>
+        </div>
+        ${sgChannelId !== 'none' ? `<div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">
+          ${(() => { const r = applyChannel(samples, sgChannelId, sgChDistance); return `Затухание: ${r.atten.toFixed(1)} дБ | SNR: ${r.snr.toFixed(1)} дБ | Полоса: ${r.bw >= 1e6 ? (r.bw/1e6).toFixed(0) + ' МГц' : (r.bw/1e3).toFixed(0) + ' кГц'} | Среда: ${r.ch?.medium === 'copper' ? 'медь' : r.ch?.medium === 'fiber' ? 'оптика' : 'радио'}`; })()}
+        </div>` : '<div style="font-size:.72rem;color:var(--text-secondary);margin-bottom:8px">Выберите канал — увидите как он искажает сигнал</div>'}
+
+        <div class="study-section__title">📥 Приёмник (RX)</div>
+        <div class="sg-canvas-wrap">
+          <canvas id="sgRxTime"></canvas>
+          <div class="sg-canvas-label"><span>Время →</span><span>Принятый сигнал</span></div>
+        </div>
+        <div class="sg-canvas-wrap">
+          <canvas id="sgRxSpectrum"></canvas>
+          <div class="sg-canvas-label"><span>Частота (Гц) →</span><span>RX Спектр</span></div>
+        </div>
+
+        <div class="study-section__title" style="margin-top:16px">MATLAB / Octave код</div>
         <div class="sg-formula">${matlabCode}</div>
         <div class="sg-export-btns">
-          <button id="sgExportCSV">📄 Экспорт CSV</button>
-          <button id="sgCopyMatlab">📋 Копировать MATLAB</button>
+          <button id="sgExportCSV">📄 Экспорт TX CSV</button>
+          <button id="sgExportRxCSV">📄 Экспорт RX CSV</button>
+          <button id="sgCopyMatlab">📋 MATLAB код</button>
         </div>
       `;
 
-      drawTimeDomain(document.getElementById('sgTimeDomain'), samples);
-      drawSpectrum(document.getElementById('sgSpectrum'), samples);
+      const txSamples = samples;
+      const chResult = applyChannel(samples, sgChannelId, sgChDistance);
+      const rxSamples = chResult.rx;
+
+      drawTimeDomain(document.getElementById('sgTimeDomain'), txSamples);
+      drawSpectrum(document.getElementById('sgSpectrum'), txSamples);
+      drawTimeDomain(document.getElementById('sgRxTime'), rxSamples);
+      drawSpectrum(document.getElementById('sgRxSpectrum'), rxSamples);
 
       container.querySelectorAll('[data-ci]').forEach(el => {
         el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
@@ -2636,12 +2699,22 @@
         if (sgComponents.length < 4) { sgComponents.push({ type: 'sin', freq: 200 * (sgComponents.length + 1), amp: 0.5, phase: 0, dc: 0 }); render(); }
       });
 
+      document.getElementById('sgChannelSel')?.addEventListener('change', (e) => { sgChannelId = e.target.value; render(); });
+      document.getElementById('sgChDist')?.addEventListener('input', (e) => { sgChDistance = parseInt(e.target.value) || 50; render(); });
+
       document.getElementById('sgExportCSV')?.addEventListener('click', () => {
-        let csv = 'time,amplitude\n';
-        for (let i = 0; i < sgN; i++) csv += `${(i / sgFs).toFixed(6)},${samples[i].toFixed(6)}\n`;
+        let csv = 'time,tx_amplitude\n';
+        for (let i = 0; i < sgN; i++) csv += `${(i / sgFs).toFixed(6)},${txSamples[i].toFixed(6)}\n`;
         const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'signal.csv'; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'signal_tx.csv'; a.click();
         addXP(3);
+      });
+
+      document.getElementById('sgExportRxCSV')?.addEventListener('click', () => {
+        let csv = 'time,rx_amplitude\n';
+        for (let i = 0; i < sgN; i++) csv += `${(i / sgFs).toFixed(6)},${rxSamples[i].toFixed(6)}\n`;
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'signal_rx.csv'; a.click();
       });
 
       document.getElementById('sgCopyMatlab')?.addEventListener('click', () => {
