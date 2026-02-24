@@ -722,6 +722,13 @@
   };
   labData.size = labData.bytes.length;
 
+  const labDataListeners = [];
+  function onLabDataChange(fn) { labDataListeners.push(fn); }
+
+  function notifyLabDataChange() {
+    labDataListeners.forEach(fn => { try { fn(); } catch(e) {} });
+  }
+
   function updateLabData() {
     const sizeEl = document.getElementById('labDataSize');
     const previewEl = document.getElementById('labDataPreview');
@@ -750,6 +757,7 @@
     simUploadedBytes = labData.bytes;
     simUploadedFile = labData.fileName ? { name: labData.fileName, type: labData.fileType, size: labData.size } : null;
     simUploadedImg = labData.imgPreview;
+    notifyLabDataChange();
   }
 
   document.getElementById('labDataText').addEventListener('input', (e) => {
@@ -1813,6 +1821,7 @@
     setTimeout(() => {
       if (document.getElementById('lab-channelPhysics')?.classList.contains('active')) render();
     }, 100);
+    onLabDataChange(() => { if (document.getElementById('lab-channelPhysics')?.classList.contains('active')) render(); });
   })();
 
   /* ==================== NETWORK PATH BUILDER ==================== */
@@ -2749,7 +2758,10 @@
         how: 'Браузер :443 | Почта :993 | SSH :22 | DNS :53 — все через один кабель' }
     };
 
+    let muxAnimId = null;
+
     function drawMux(canvas) {
+      if (muxAnimId) cancelAnimationFrame(muxAnimId);
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
@@ -2758,9 +2770,13 @@
       const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
       const w = rect.width, h = 200;
-      ctx.clearRect(0, 0, w, h);
-
       const n = muxDevCount;
+
+      let startTime = performance.now();
+
+      function frame(now) {
+        const t = (now - startTime) / 1000;
+        ctx.clearRect(0, 0, w, h);
 
       if (muxType === 'tdm') {
         ctx.fillStyle = '#6c7a96'; ctx.font = '9px sans-serif';
@@ -2853,6 +2869,22 @@
           ctx.fillText(p.proto, w - 30, y + rowH / 2 + 4);
         });
       }
+
+      // Animated time cursor for TDM/CSMA/FDM
+      if (muxType !== 'ports') {
+        const cursorX = ((t * 40) % w);
+        ctx.strokeStyle = '#2ecc71';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath(); ctx.moveTo(cursorX, 16); ctx.lineTo(cursorX, h - 4); ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#2ecc71';
+        ctx.beginPath(); ctx.arc(cursorX, 16, 4, 0, Math.PI * 2); ctx.fill();
+      }
+
+      muxAnimId = requestAnimationFrame(frame);
+      }
+      muxAnimId = requestAnimationFrame(frame);
     }
 
     function render() {
@@ -2882,7 +2914,7 @@
         </div>` : ''}
       `;
       drawMux(document.getElementById('muxCanvas'));
-      container.querySelectorAll('[data-mux]').forEach(t => t.addEventListener('click', () => { muxType = t.dataset.mux; render(); }));
+      container.querySelectorAll('[data-mux]').forEach(t => t.addEventListener('click', () => { if (muxAnimId) cancelAnimationFrame(muxAnimId); muxType = t.dataset.mux; render(); }));
       document.getElementById('muxAddDev')?.addEventListener('click', () => { if (muxDevCount < 6) { muxDevCount++; render(); } });
       document.getElementById('muxRemDev')?.addEventListener('click', () => { if (muxDevCount > 2) { muxDevCount--; render(); } });
     }
@@ -2890,6 +2922,7 @@
     const obs = new MutationObserver(() => { if (document.getElementById('lab-multiplexing')?.classList.contains('active') && !container.children.length) render(); });
     obs.observe(document.getElementById('lab-multiplexing'), { attributes: true, attributeFilter: ['class'] });
     setTimeout(() => { if (document.getElementById('lab-multiplexing')?.classList.contains('active')) render(); }, 100);
+    onLabDataChange(() => { if (document.getElementById('lab-multiplexing')?.classList.contains('active')) render(); });
   })();
 
   /* ==================== LAB: ENCRYPTION ==================== */
@@ -3074,13 +3107,13 @@
     const obs = new MutationObserver(() => { if (document.getElementById('lab-encryption')?.classList.contains('active') && !container.children.length) render(); });
     obs.observe(document.getElementById('lab-encryption'), { attributes: true, attributeFilter: ['class'] });
     setTimeout(() => { if (document.getElementById('lab-encryption')?.classList.contains('active')) render(); }, 100);
+    onLabDataChange(() => { encText = ''; if (document.getElementById('lab-encryption')?.classList.contains('active')) render(); });
   })();
 
   /* ==================== LAB: SIGNALS L1 ==================== */
   (function initSignalsLab() {
     const container = document.getElementById('signalsUI');
     let sigText = '';
-    let sigBits = [];
     let sigEncoding = 'nrz';
     let sigModulation = 'ask';
     let sigView = 'line';
@@ -3336,8 +3369,8 @@
       const isLine = sigView === 'line';
       const enc = isLine ? LINE_CODES[sigEncoding] : MOD_TYPES[sigModulation];
       const ch = CHANNEL_TYPES.find(c => c.id === sigChannel);
-      sigText = sigText || getLabText();
-      sigBits = sigBits.length ? sigBits : getLabBits(4);
+      sigText = getLabText();
+      const sigBits = getLabBits(4);
       const useFile = labData.type === 'file';
       const breakdown = labData.bytes.slice(0, 4).map((b, i) => ({
         char: useFile ? '0x' + b.toString(16).toUpperCase().padStart(2, '0') : (labData.text[i] || '?'),
@@ -3358,7 +3391,7 @@
           </table>
         </div>
 
-        <div class="sig-section-title">Биты на линии (нажмите для переключения)</div>
+        <div class="sig-section-title">Биты на линии (из вашего сообщения — ${sigBits.length} бит = ${Math.ceil(sigBits.length/8)} байт)</div>
         <div class="sig-bits" id="sigBitsRow">
           ${sigBits.map((b, i) => `<div class="sig-bit sig-bit--${b}" data-idx="${i}">${b}</div>`).join('')}
         </div>
@@ -3413,14 +3446,6 @@
         render();
       });
 
-      container.querySelectorAll('.sig-bit').forEach(el => {
-        el.addEventListener('click', () => {
-          const idx = parseInt(el.dataset.idx);
-          sigBits[idx] = sigBits[idx] ? 0 : 1;
-          render();
-        });
-      });
-
       document.getElementById('sigViewLine')?.addEventListener('click', () => { sigView = 'line'; render(); });
       document.getElementById('sigViewMod')?.addEventListener('click', () => { sigView = 'mod'; render(); });
 
@@ -3438,6 +3463,10 @@
     });
     observer.observe(document.getElementById('lab-signals'), { attributes: true, attributeFilter: ['class'] });
     setTimeout(() => { if (document.getElementById('lab-signals')?.classList.contains('active')) render(); }, 100);
+
+    onLabDataChange(() => {
+      if (document.getElementById('lab-signals')?.classList.contains('active')) render();
+    });
   })();
 
   /* ==================== LAB: TLS / ENCRYPTION ==================== */
