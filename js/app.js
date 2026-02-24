@@ -695,6 +695,112 @@
     addXP(5);
   });
 
+  /* ==================== LAB DATA SOURCE ==================== */
+  const labData = {
+    type: 'text',
+    text: 'Привет, OSI!',
+    bytes: Array.from(new TextEncoder().encode('Привет, OSI!')),
+    fileName: null,
+    fileType: null,
+    imgPreview: null,
+    size: 0
+  };
+  labData.size = labData.bytes.length;
+
+  function updateLabData() {
+    const sizeEl = document.getElementById('labDataSize');
+    const previewEl = document.getElementById('labDataPreview');
+    if (!sizeEl) return;
+
+    const s = labData.size;
+    sizeEl.textContent = s >= 1048576 ? (s / 1048576).toFixed(1) + ' МБ' : s >= 1024 ? (s / 1024).toFixed(1) + ' КБ' : s + ' Б';
+
+    const hexPreview = labData.bytes.slice(0, 24).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+    let preview = `<div class="lab-data-panel__hex">${hexPreview}${labData.bytes.length > 24 ? ' …' : ''}</div>`;
+
+    if (labData.type === 'file' && labData.imgPreview) {
+      preview = `<div class="lab-data-panel__preview">
+        <img src="${labData.imgPreview}">
+        <div class="lab-data-panel__preview-info">${labData.fileName}<br>${labData.fileType}</div>
+      </div>` + preview;
+    } else if (labData.type === 'file') {
+      preview = `<div class="lab-data-panel__preview">
+        <span style="font-size:1.3rem">📄</span>
+        <div class="lab-data-panel__preview-info">${labData.fileName}<br>${labData.fileType}</div>
+      </div>` + preview;
+    }
+
+    previewEl.innerHTML = preview;
+
+    simUploadedBytes = labData.bytes;
+    simUploadedFile = labData.fileName ? { name: labData.fileName, type: labData.fileType, size: labData.size } : null;
+    simUploadedImg = labData.imgPreview;
+  }
+
+  document.getElementById('labDataText').addEventListener('input', (e) => {
+    labData.type = 'text';
+    labData.text = e.target.value;
+    labData.bytes = Array.from(new TextEncoder().encode(e.target.value));
+    labData.size = labData.bytes.length;
+    labData.fileName = null; labData.fileType = null; labData.imgPreview = null;
+    updateLabData();
+  });
+
+  document.getElementById('labDataFileBtn').addEventListener('click', () => {
+    document.getElementById('labDataFileInput').click();
+  });
+
+  document.getElementById('labDataFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file || file.size > 50 * 1024 * 1024) return;
+    labData.type = 'file';
+    labData.fileName = file.name;
+    labData.fileType = file.type;
+    labData.size = file.size;
+
+    if (file.type.startsWith('image/')) {
+      const imgR = new FileReader();
+      imgR.onload = () => { labData.imgPreview = imgR.result; updateLabData(); };
+      imgR.readAsDataURL(file);
+    } else {
+      labData.imgPreview = null;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      labData.bytes = Array.from(new Uint8Array(reader.result)).slice(0, 65536);
+      labData.text = labData.fileName;
+      document.getElementById('labDataText').value = labData.fileName;
+      updateLabData();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  document.getElementById('labDataRandom').addEventListener('click', () => {
+    const len = 64 + Math.floor(Math.random() * 200);
+    const bytes = [];
+    for (let i = 0; i < len; i++) bytes.push(Math.floor(Math.random() * 256));
+    labData.type = 'random';
+    labData.text = `[${len} случайных байт]`;
+    labData.bytes = bytes;
+    labData.size = len;
+    labData.fileName = null; labData.fileType = null; labData.imgPreview = null;
+    document.getElementById('labDataText').value = labData.text;
+    updateLabData();
+  });
+
+  updateLabData();
+
+  function getLabBits(maxBytes) {
+    const b = labData.bytes.slice(0, maxBytes || 4);
+    const bits = [];
+    b.forEach(byte => { for (let i = 7; i >= 0; i--) bits.push((byte >> i) & 1); });
+    return bits;
+  }
+
+  function getLabText() { return labData.text || 'Hello'; }
+  function getLabBytes() { return labData.bytes; }
+
   /* ==================== LAB ==================== */
   const labState = {};
 
@@ -2042,8 +2148,8 @@
     }
 
     // Draw signal canvases for each link
-    const nbMsg = document.getElementById('nbMessage')?.value || 'Hello';
-    const nbMsgBytes = Array.from(new TextEncoder().encode(nbMsg.slice(0, 2)));
+    const nbMsg = document.getElementById('nbMessage')?.value || getLabText();
+    const nbMsgBytes = labData.bytes.length > 0 ? labData.bytes.slice(0, 2) : Array.from(new TextEncoder().encode(nbMsg.slice(0, 2)));
     const nbMsgBits = [];
     nbMsgBytes.forEach(b => { for (let i = 7; i >= 0; i--) nbMsgBits.push((b >> i) & 1); });
 
@@ -2498,11 +2604,11 @@
     }
 
     document.getElementById('journeyRun').addEventListener('click', async () => {
-      const msg = document.getElementById('journeyMsg').value || 'Hello';
+      const msg = document.getElementById('journeyMsg').value || getLabText();
       const result = document.getElementById('journeyResult');
-      const hasFile = journeyFile && journeyFile.size > 0;
-      const dataSize = hasFile ? journeyFile.size : new TextEncoder().encode(msg).length;
-      const dataDesc = hasFile ? `${journeyFile.name} (${(dataSize/1024).toFixed(1)} КБ)` : `"${msg}"`;
+      const hasFile = labData.type === 'file';
+      const dataSize = labData.size || new TextEncoder().encode(msg).length;
+      const dataDesc = hasFile ? `${labData.fileName} (${(dataSize/1024).toFixed(1)} КБ)` : `"${msg}"`;
       const mtu = 1500;
       const segments = Math.ceil(dataSize / (mtu - 40));
       const srcPort = 49000 + Math.floor(Math.random() * 16000);
@@ -2580,7 +2686,7 @@
       <div class="journey-received" id="jReceived" style="display:none">
         <div class="journey-received__icon">✅</div>
         <div class="journey-received__msg">${hasFile && journeyImgData ? '' : (hasFile ? '📄 ' + journeyFile.name : msg)}</div>
-        ${hasFile && journeyImgData ? `<img src="${journeyImgData}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:8px">` : ''}
+        ${hasFile && labData.imgPreview ? `<img src="${labData.imgPreview}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:8px">` : ''}
         <div style="font-size:.72rem;color:var(--text-secondary);margin-top:6px">Доставлено за ${segments} сегментов через 7 уровней OSI</div>
       </div></div>`;
 
@@ -2779,7 +2885,7 @@
   (function initEncryptLab() {
     const container = document.getElementById('encryptUI');
     let encType = 'xor';
-    let encText = 'Hello';
+    let encText = '';
     let encKey = 'Key';
     let caesarShift = 3;
 
@@ -2942,7 +3048,8 @@
         <div class="sig-tabs">
           ${Object.entries(ENC_TYPES).map(([k, v]) => `<button class="sig-tab${k === encType ? ' active' : ''}" data-enc="${k}">${v.name.split('(')[0].trim()}</button>`).join('')}
         </div>
-        <input type="text" class="enc-input" id="encTextInput" value="${encText}" placeholder="Введите текст для шифрования...">
+        <div class="sig-section-title">Источник: ${labData.type === 'file' ? '📎 ' + labData.fileName : labData.type === 'random' ? '🎲 Случайные данные' : '✏️ Текст'} (${labData.size} Б)</div>
+        <input type="text" class="enc-input" id="encTextInput" value="${encText || getLabText()}" placeholder="Или введите текст...">
         ${resultHTML}
         <div class="card mt-12" style="font-size:.82rem;line-height:1.7"><strong>${et.name}</strong><br>${et.desc}</div>
       `;
@@ -2961,8 +3068,8 @@
   /* ==================== LAB: SIGNALS L1 ==================== */
   (function initSignalsLab() {
     const container = document.getElementById('signalsUI');
-    let sigText = 'Hi';
-    let sigBits = [0,1,0,0,1,0,0,0, 0,1,1,0,1,0,0,1]; // 'Hi' in binary
+    let sigText = '';
+    let sigBits = [];
     let sigEncoding = 'nrz';
     let sigModulation = 'ask';
     let sigView = 'line';
@@ -3218,17 +3325,17 @@
       const isLine = sigView === 'line';
       const enc = isLine ? LINE_CODES[sigEncoding] : MOD_TYPES[sigModulation];
       const ch = CHANNEL_TYPES.find(c => c.id === sigChannel);
-      const useFile = simUploadedFile && simUploadedBytes && simUploadedBytes.length > 0;
-      const breakdown = useFile ? simUploadedBytes.slice(0, 4).map((b, i) => ({
-        char: '0x' + b.toString(16).toUpperCase().padStart(2, '0'),
+      sigText = sigText || getLabText();
+      sigBits = sigBits.length ? sigBits : getLabBits(4);
+      const useFile = labData.type === 'file';
+      const breakdown = labData.bytes.slice(0, 4).map((b, i) => ({
+        char: useFile ? '0x' + b.toString(16).toUpperCase().padStart(2, '0') : (labData.text[i] || '?'),
         dec: b, hex: b.toString(16).toUpperCase().padStart(2, '0'),
         bin: b.toString(2).padStart(8, '0')
-      })) : bytesBreakdown(sigText);
+      }));
 
       container.innerHTML = `
-        <div class="sig-section-title">Источник данных</div>
-        <input type="text" class="enc-input" id="sigTextInput" value="${sigText}" placeholder="Введите текст...">
-        ${useFile ? `<div style="font-size:.72rem;color:var(--l4);margin:-6px 0 8px">📎 Используются байты файла: ${simUploadedFile.name}</div>` : ''}
+        <div class="sig-section-title">Источник: ${labData.type === 'file' ? '📎 ' + labData.fileName : labData.type === 'random' ? '🎲 Случайные данные' : '✏️ ' + labData.text} (${labData.size} Б)</div>
 
         <div class="sig-section-title">Байты → Биты (первые ${breakdown.length} символа)</div>
         <div class="enc-step" style="overflow-x:auto">
@@ -3289,12 +3396,6 @@
       const canvas = document.getElementById('sigCanvas');
       if (isLine) drawLineCode(canvas, sigBits, sigEncoding);
       else drawModulation(canvas, sigBits, sigModulation);
-
-      container.querySelector('#sigTextInput').addEventListener('input', (e) => {
-        sigText = e.target.value;
-        sigBits = textToBits(sigText || 'A');
-        render();
-      });
 
       container.querySelector('#sigChannelSelect').addEventListener('change', (e) => {
         sigChannel = e.target.value;

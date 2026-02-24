@@ -897,6 +897,62 @@ body {
   margin-bottom: 10px;
 }
 
+/* ========== Lab Data Panel ========== */
+.lab-data-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.lab-data-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.lab-data-panel__size {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.lab-data-panel__preview {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lab-data-panel__preview img {
+  max-width: 60px;
+  max-height: 40px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.lab-data-panel__preview-info {
+  font-size: .72rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.lab-data-panel__hex {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .6rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 4px 6px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xs);
+}
+
 /* ========== LAB Section ========== */
 .lab-tabs {
   display: flex;
