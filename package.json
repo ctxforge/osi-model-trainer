@@ -1,0 +1,48 @@
+{
+  "name": "osi-model-trainer",
+  "version": "1.0.0",
+  "description": "OSI Model Trainer — интерактивная платформа изучения сетевых технологий",
+  "author": "OSI Trainer Team",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build": "electron-builder --mac --win"
+  },
+  "build": {
+    "appId": "com.osi-trainer.app",
+    "productName": "OSI Model Trainer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "css",
+      "js",
+      "electron"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "electron/icon.icns",
+      "target": ["dmg"]
+    },
+    "win": {
+      "icon": "electron/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
