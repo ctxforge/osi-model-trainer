@@ -202,3 +202,843 @@
 
 .ch-hex-byte--ok { background: var(--bg-surface); color: var(--text-secondary); }
 .ch-hex-byte--err { background: #e74c3c25; color: #e74c3c; }
+
+/* ===== Signal Missions ===== */
+.sg-missions-details { border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+.sg-missions-summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  font-weight: 700;
+  font-size: .85rem;
+  list-style: none;
+  user-select: none;
+}
+.sg-missions-summary::before { content: '▶ '; color: var(--l4); font-size: .7rem; }
+details[open] .sg-missions-summary::before { content: '▼ '; }
+.sg-missions-list { padding: 8px; background: var(--bg-secondary); display: flex; flex-direction: column; gap: 8px; }
+.sg-mission {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.sg-mission--pass { border-color: rgba(46,204,113,.4); background: rgba(46,204,113,.04); }
+.sg-mission--fail { border-color: rgba(231,76,60,.3); background: rgba(231,76,60,.04); }
+.sg-mission__header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.sg-mission__status { font-size: 1rem; }
+.sg-mission__title { flex: 1; font-weight: 700; font-size: .82rem; }
+.sg-mission__xp { font-size: .72rem; color: var(--l4); background: rgba(52,152,219,.12); padding: 2px 7px; border-radius: 10px; }
+.sg-mission__desc { font-size: .78rem; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.5; }
+.sg-mission__hint { font-size: .75rem; color: var(--l6); padding: 6px 8px; background: rgba(241,196,15,.08); border-radius: 5px; margin-bottom: 6px; }
+.sg-mission__insight { font-size: .78rem; color: var(--l4); padding: 6px 8px; background: rgba(52,152,219,.08); border-radius: 5px; margin-bottom: 4px; }
+.sg-mission__btn {
+  padding: 4px 12px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-secondary);
+  color: var(--text); font-size: .75rem; cursor: pointer;
+}
+.sg-mission__btn:hover { border-color: var(--l4); color: var(--l4); }
+
+/* ========== Professional Instrument Chassis ========== */
+.sg-instrument, .sa-instrument, .sc-instrument, .ni-rack {
+  background: linear-gradient(180deg, #1a1e2e 0%, #0d1117 100%);
+  border: 2px solid #2a2e3e;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.sg-instrument__top-bar, .sa-instrument__top-bar, .sc-instrument__header, .ni-rack__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: linear-gradient(180deg, #262a3a 0%, #1a1e2e 100%);
+  border-bottom: 1px solid #333;
+}
+
+.sg-instrument__brand, .sa-instrument__brand, .sc-instrument__brand, .ni-rack__title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.sg-instrument__model, .sa-instrument__model, .sc-instrument__subtitle, .ni-rack__subtitle {
+  font-size: .65rem;
+  color: #666;
+  margin-left: auto;
+}
+
+/* ---- Channel Tabs ---- */
+.sg-instrument__ch-tabs { display: flex; gap: 4px; margin-left: 12px; }
+.sg-ch-tab {
+  padding: 4px 12px;
+  background: #1a1e2e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #888;
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sg-ch-tab--active { background: #2a3a2a; border-color: #2ecc71; color: #2ecc71; }
+.sg-ch-tab:nth-child(2).sg-ch-tab--active { background: #3a3a1a; border-color: #f1c40f; color: #f1c40f; }
+
+/* ---- Instrument Display (CRT/LCD style) ---- */
+.sg-instrument__display, .sa-instrument__display {
+  background: #050a12;
+  border: 2px solid #1a2030;
+  border-radius: 4px;
+  margin: 8px 10px;
+  padding: 4px;
+  position: relative;
+}
+
+.sg-instrument__display-header, .sa-instrument__display-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 8px;
+  font-size: .65rem;
+}
+
+.sg-display-ch-label { font-weight: 700; color: #2ecc71; }
+.sg-display-status { font-weight: 700; }
+
+.sg-display-canvas, .sa-display-canvas {
+  width: 100%;
+  display: block;
+  border-radius: 2px;
+}
+
+.sg-display-readout, .sa-display-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: .65rem;
+  color: #8a9ab5;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.sg-readout-item b { color: #aabbcc; }
+
+/* ---- Controls Area ---- */
+.sg-instrument__controls, .sa-instrument__controls {
+  padding: 8px 10px;
+}
+
+.sg-controls-row, .sa-controls-row, .sc-config-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.sg-control-group, .sa-control-group, .sc-config-field {
+  flex: 1;
+  min-width: 100px;
+}
+
+.sg-control-group__title, .sa-control-group__title {
+  font-size: .62rem;
+  font-weight: 600;
+  color: #8899aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+  cursor: help;
+}
+
+/* ---- Numeric Inputs (encoder style) ---- */
+.sg-num-input, .sa-num-input {
+  width: 100%;
+  padding: 6px 8px;
+  background: #0a0e14;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #2ecc71;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .78rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.sg-num-input:focus, .sa-num-input:focus { border-color: #2ecc71; box-shadow: 0 0 6px rgba(46,204,113,0.3); }
+.sg-num-input--lg { font-size: .9rem; }
+.sg-num-input--wide { width: 100%; }
+
+.sa-select {
+  width: 100%;
+  padding: 5px 8px;
+  background: #0a0e14;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #aabbcc;
+  font-size: .72rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.sa-select:focus { border-color: #3498db; }
+
+/* ---- Waveform Buttons ---- */
+.sg-waveform-btns { display: flex; gap: 3px; flex-wrap: wrap; }
+.sg-wf-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 8px;
+  background: #0a0e14;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #8899aa;
+  font-size: .58rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 42px;
+}
+.sg-wf-btn__icon { font-size: .9rem; line-height: 1; }
+.sg-wf-btn__name { font-size: .55rem; margin-top: 1px; }
+.sg-wf-btn--active { background: #1a2a1a; border-color: #2ecc71; color: #2ecc71; }
+.sg-wf-btn:hover { border-color: #4a5a6a; }
+
+/* ---- Unit Buttons ---- */
+.sg-unit-btns, .sa-trace-btns { display: flex; gap: 2px; }
+.sg-unit-btn, .sa-unit-btn {
+  padding: 4px 8px;
+  background: #0a0e14;
+  border: 1px solid #2a3040;
+  border-radius: 3px;
+  color: #8899aa;
+  font-size: .65rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sg-unit-btn--active, .sa-unit-btn--active { background: #1a2a3a; border-color: #3498db; color: #3498db; }
+
+/* ---- Frequency Row ---- */
+.sg-freq-row { display: flex; gap: 4px; align-items: center; }
+.sg-freq-row .sg-num-input { flex: 1; }
+
+/* ---- Function Keys ---- */
+.sg-fkeys { display: flex; gap: 3px; margin: 8px 0; }
+.sg-fkey {
+  flex: 1;
+  padding: 6px 4px;
+  background: #1a1e2e;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #8899aa;
+  font-size: .62rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.sg-fkey--active { background: #2a2a1a; border-color: #f1c40f; color: #f1c40f; }
+.sg-fkey:hover { border-color: #4a5a6a; }
+
+/* ---- Panels ---- */
+.sg-panel, .sa-panel {
+  background: rgba(10,14,20,0.5);
+  border: 1px solid #1a2030;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.sg-panel__title, .sa-panel__title {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #aabbcc;
+  margin-bottom: 6px;
+}
+
+.sg-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .72rem;
+  color: #8899aa;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+/* ---- Buttons ---- */
+.sg-btn, .sa-btn {
+  padding: 6px 12px;
+  background: #1a1e2e;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #aabbcc;
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sg-btn:hover, .sa-btn:hover { border-color: #4a5a6a; }
+.sg-btn--sm, .sa-btn--sm { padding: 3px 8px; font-size: .65rem; }
+.sg-btn--run, .sa-btn--run { background: #1a2a1a; border-color: #2ecc71; color: #2ecc71; }
+.sg-btn--stop, .sa-btn--stop { background: #2a1a1a; border-color: #e74c3c; color: #e74c3c; }
+
+.sg-controls-row--output { justify-content: center; gap: 12px; margin-top: 8px; }
+
+/* ---- Arbitrary Canvas ---- */
+.sg-arb-canvas-wrap {
+  background: #0a0e14;
+  border: 1px solid #1a2030;
+  border-radius: 4px;
+  padding: 4px;
+}
+.sg-arb-canvas-wrap canvas { width: 100%; display: block; cursor: crosshair; }
+
+/* ---- Presets Grid ---- */
+.sg-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 4px;
+}
+.sg-preset-btn {
+  padding: 6px 8px;
+  background: #0a0e14;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #8899aa;
+  font-size: .68rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.sg-preset-btn:hover { border-color: #3498db; color: #3498db; }
+
+/* ========== Spectrum Analyzer ========== */
+.sa-view-tabs { display: flex; gap: 3px; margin-left: auto; }
+.sa-view-tab {
+  padding: 4px 10px;
+  background: #1a1e2e;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #888;
+  font-size: .65rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sa-view-tab--active { border-color: #3498db; color: #3498db; background: #1a2a3a; }
+
+.sa-marker-table {
+  padding: 4px 8px;
+  font-size: .62rem;
+}
+.sa-mtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.sa-mtable th, .sa-mtable td {
+  padding: 2px 6px;
+  text-align: left;
+  border-bottom: 1px solid #1a2030;
+}
+.sa-mtable th { color: #666; font-size: .58rem; }
+
+.sa-marker-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.sa-marker-btn {
+  padding: 3px 8px;
+  background: #0a0e14;
+  border: 1px solid #2a3040;
+  border-radius: 3px;
+  color: #888;
+  font-size: .65rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sa-marker-btn--active { border-color: #f1c40f; color: #f1c40f; }
+
+.sa-controls-row--actions { justify-content: center; gap: 8px; margin-top: 8px; }
+
+/* ========== Signal Chain ========== */
+.sc-config {
+  padding: 10px;
+}
+.sc-config-field label {
+  display: block;
+  font-size: .62rem;
+  color: #8899aa;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  cursor: help;
+}
+
+.sc-chain { padding: 10px; }
+.sc-chain-flow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.sc-stage {
+  flex-shrink: 0;
+  background: #0a0e14;
+  border: 2px solid #2a3040;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 80px;
+}
+.sc-stage:hover { border-color: #4a5a6a; transform: translateY(-2px); }
+.sc-stage--active { border-color: #3498db; background: #0a1a2a; }
+.sc-stage--error { border-color: #e74c3c; }
+.sc-stage__icon { font-size: 1.2rem; }
+.sc-stage__name { font-size: .68rem; font-weight: 700; color: #ccc; margin-top: 2px; }
+.sc-stage__desc { font-size: .55rem; color: #666; margin-top: 2px; }
+.sc-stage-arrow { color: #444; font-size: 1.2rem; flex-shrink: 0; }
+
+.sc-chain-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  font-size: .78rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: rgba(10,14,20,0.5);
+  border-radius: 4px;
+  margin-top: 8px;
+}
+.sc-ok-text { color: #2ecc71; font-weight: 700; }
+.sc-error-text { color: #e74c3c; font-weight: 700; }
+.sc-ber { margin-left: auto; font-size: .65rem; color: #888; }
+
+/* ---- Stage Detail ---- */
+.sc-detail { padding: 0 10px; }
+.sc-detail-panel {
+  background: #0a0e14;
+  border: 1px solid #1a2030;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 8px;
+}
+.sc-detail-panel h3 { font-size: .82rem; color: #ddd; margin: 0 0 8px; }
+.sc-explain {
+  font-size: .72rem;
+  color: #8899aa;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  cursor: help;
+}
+
+.sc-data-box {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  font-size: .72rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.sc-data-label { color: #666; font-weight: 600; font-size: .62rem; }
+.sc-hex { color: #3498db; word-break: break-all; }
+.sc-bits { color: #2ecc71; word-break: break-all; }
+.sc-byte-group { cursor: help; }
+.sc-byte-group:hover { background: rgba(46,204,113,0.15); border-radius: 2px; }
+
+.sc-graph-pair { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.sc-graph { margin-bottom: 4px; }
+.sc-graph-label {
+  font-size: .62rem;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  cursor: help;
+}
+.sc-graph canvas { width: 100%; display: block; border-radius: 4px; }
+
+.sc-channel-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.sc-stat {
+  flex: 1;
+  min-width: 120px;
+  background: #0d1117;
+  border: 1px solid #1a2030;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: help;
+}
+.sc-stat__label { font-size: .62rem; color: #666; text-transform: uppercase; }
+.sc-stat__value { font-size: 1rem; font-weight: 700; color: #ddd; }
+.sc-stat__note { font-size: .58rem; color: #555; }
+
+.sc-bit-compare { margin: 8px 0; }
+.sc-bits-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: .55rem;
+}
+.sc-bit {
+  width: 12px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1px;
+  cursor: help;
+}
+.sc-bit--ok { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.sc-bit--err { background: rgba(231,76,60,0.25); color: #e74c3c; font-weight: 700; }
+
+.sc-result-compare {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+.sc-result-side { text-align: center; }
+.sc-result-label { font-size: .62rem; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+.sc-result-text { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.sc-result-hex { font-family: monospace; font-size: .65rem; color: #888; }
+.sc-hex-err { color: #e74c3c; font-weight: 700; }
+.sc-result-arrow { font-size: 1.5rem; color: #444; }
+
+.sc-ber-display {
+  text-align: center;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+.sc-ber-display--ok { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3); }
+.sc-ber-display--error { background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3); }
+.sc-ber-label { font-size: .72rem; color: #888; }
+.sc-ber-value { font-size: 1.2rem; font-weight: 700; margin: 0 8px; }
+.sc-ber-display--ok .sc-ber-value { color: #2ecc71; }
+.sc-ber-display--error .sc-ber-value { color: #e74c3c; }
+.sc-ber-detail { font-size: .65rem; color: #888; }
+
+/* ---- Diagnostic Panel ---- */
+.sc-diagnostic {
+  margin: 0 10px 10px;
+  background: rgba(231,76,60,0.05);
+  border: 1px solid rgba(231,76,60,0.2);
+  border-radius: 6px;
+  padding: 12px;
+}
+.sc-diag-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #e74c3c;
+  margin-bottom: 8px;
+}
+.sc-diag-cause {
+  font-size: .72rem;
+  color: #ccc;
+  margin-bottom: 10px;
+  padding: 6px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+.sc-diag-recs-title {
+  font-size: .68rem;
+  color: #888;
+  margin-bottom: 6px;
+}
+.sc-diag-rec-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: rgba(46,204,113,0.05);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 4px;
+  color: #2ecc71;
+  font-size: .72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sc-diag-rec-btn:hover { background: rgba(46,204,113,0.15); }
+.sc-diag-tip {
+  font-size: .68rem;
+  color: #888;
+  margin-top: 10px;
+  padding: 6px;
+  background: rgba(241,196,15,0.05);
+  border-radius: 4px;
+}
+
+/* ========== Network Instruments ========== */
+.ni-instrument-selector {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px;
+  overflow-x: auto;
+}
+.ni-inst-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  background: #0a0e14;
+  border: 1px solid #2a3040;
+  border-radius: 6px;
+  color: #888;
+  font-size: .65rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 80px;
+  text-align: center;
+}
+.ni-inst-btn:hover { border-color: #4a5a6a; }
+.ni-inst-btn--active { border-color: #3498db; color: #3498db; background: #0a1a2a; }
+.ni-inst-btn__icon { font-size: 1.3rem; margin-bottom: 2px; }
+.ni-inst-btn__name { font-size: .58rem; font-weight: 600; }
+
+.ni-connection-status {
+  padding: 4px 10px;
+  font-size: .65rem;
+  color: #666;
+  border-bottom: 1px solid #1a2030;
+}
+
+.ni-result { padding: 10px; }
+.ni-placeholder { text-align: center; color: #666; font-size: .75rem; padding: 30px; }
+
+/* ---- Protocol Analyzer ---- */
+.ni-proto-analyzer { font-size: .72rem; }
+.ni-pa-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ni-pa-title { font-weight: 700; color: #ddd; }
+.ni-pa-table { max-height: 250px; overflow-y: auto; }
+.ni-packet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .65rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.ni-packet-table th {
+  padding: 4px 6px;
+  text-align: left;
+  border-bottom: 2px solid #2a3040;
+  color: #888;
+  font-size: .58rem;
+  position: sticky;
+  top: 0;
+  background: #0d1117;
+  cursor: help;
+}
+.ni-packet-table td { padding: 3px 6px; border-bottom: 1px solid #1a2030; }
+.ni-pkt-row { cursor: pointer; transition: background 0.1s; }
+.ni-pkt-row:hover { background: rgba(52,152,219,0.1); }
+
+.ni-pkt-detail { margin-top: 8px; }
+.ni-pkt-detail__title { font-weight: 700; font-size: .78rem; color: #ddd; margin-bottom: 8px; }
+.ni-pkt-layer {
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background: rgba(10,14,20,0.5);
+  border-radius: 4px;
+}
+.ni-pkt-layer__name { font-size: .68rem; font-weight: 700; margin-bottom: 4px; }
+.ni-pkt-field {
+  display: grid;
+  grid-template-columns: 100px 120px 1fr;
+  gap: 4px;
+  font-size: .62rem;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  cursor: help;
+}
+.ni-pkt-field__name { color: #888; font-weight: 600; }
+.ni-pkt-field__value { color: #ddd; font-family: 'SF Mono', 'Fira Code', monospace; }
+.ni-pkt-field__explain { color: #556; font-size: .58rem; font-style: italic; }
+
+/* ---- Cable Tester ---- */
+.ni-cable-tester { font-size: .72rem; }
+.ni-ct-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.ni-ct-title { font-weight: 700; color: #ddd; }
+.ni-ct-verdict { padding: 4px 12px; border-radius: 4px; font-weight: 700; font-size: .78rem; }
+.ni-ct-pass { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+.ni-ct-fail { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+
+.ni-ct-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ni-ct-section { background: #0a0e14; border: 1px solid #1a2030; border-radius: 6px; padding: 8px; }
+.ni-ct-section__title { font-size: .65rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 6px; cursor: help; }
+.ni-ct-table { width: 100%; border-collapse: collapse; font-size: .62rem; }
+.ni-ct-table th { padding: 3px 4px; text-align: left; color: #666; border-bottom: 1px solid #1a2030; cursor: help; }
+.ni-ct-table td { padding: 3px 4px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.ni-ct-ok { color: #2ecc71; font-weight: 700; }
+.ni-ct-fail-cell { color: #e74c3c; font-weight: 700; }
+.ni-ct-fail-text { color: #e74c3c; }
+.ni-ct-value { font-size: 1.2rem; font-weight: 700; color: #ddd; }
+
+.ni-ct-metrics { display: flex; gap: 8px; flex-wrap: wrap; }
+.ni-ct-metric {
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  padding: 6px;
+  background: #0d1117;
+  border-radius: 4px;
+  cursor: help;
+}
+.ni-ct-metric__label { font-size: .58rem; color: #666; text-transform: uppercase; }
+.ni-ct-metric__value { font-size: .82rem; font-weight: 700; color: #2ecc71; }
+.ni-ct-metric__req { font-size: .52rem; color: #555; }
+
+/* ---- Network Monitor ---- */
+.ni-net-monitor { font-size: .72rem; }
+.ni-nm-header { margin-bottom: 8px; }
+.ni-nm-title { font-weight: 700; color: #ddd; }
+.ni-nm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ni-nm-section {
+  background: #0a0e14;
+  border: 1px solid #1a2030;
+  border-radius: 6px;
+  padding: 8px;
+}
+.ni-nm-section__title { font-size: .65rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 6px; cursor: help; }
+
+.ni-nm-link { position: relative; padding: 4px 8px; margin-bottom: 3px; background: #0d1117; border-radius: 3px; overflow: hidden; }
+.ni-nm-link__bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  opacity: 0.2;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.ni-nm-link__name { position: relative; font-weight: 600; font-size: .65rem; }
+.ni-nm-link__stats { position: relative; font-size: .55rem; color: #666; float: right; }
+
+.ni-nm-talker {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: .65rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.ni-nm-alert {
+  font-size: .65rem;
+  color: #e74c3c;
+  padding: 3px 0;
+}
+
+/* ---- Signal Meter ---- */
+.ni-signal-meter { font-size: .72rem; }
+.ni-sm-header { margin-bottom: 8px; }
+.ni-sm-title { font-weight: 700; color: #ddd; }
+.ni-sm-display { display: flex; gap: 16px; align-items: center; margin-bottom: 10px; }
+.ni-sm-gauge { flex-shrink: 0; }
+.ni-sm-digital { flex: 1; }
+.ni-sm-reading { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a2030; }
+.ni-sm-reading__label { color: #888; font-size: .65rem; }
+.ni-sm-reading__value { font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+.ni-sm-scan { margin-top: 8px; }
+.ni-sm-scan__title { font-size: .65rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+.ni-sm-scan canvas { width: 100%; display: block; border-radius: 4px; }
+
+/* ---- BER Tester ---- */
+.ni-ber-tester { font-size: .72rem; }
+.ni-bt-header { margin-bottom: 8px; }
+.ni-bt-title { font-weight: 700; color: #ddd; }
+.ni-bt-config { margin-bottom: 10px; }
+.ni-bt-config-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.ni-bt-field label { display: block; font-size: .58rem; color: #888; text-transform: uppercase; margin-bottom: 2px; }
+.ni-bt-value { font-weight: 700; color: #ddd; }
+.ni-bt-results { }
+.ni-bt-main { text-align: center; margin-bottom: 10px; }
+.ni-bt-ber {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 8px;
+}
+.ni-bt-ber--ok { background: rgba(46,204,113,0.1); border: 2px solid rgba(46,204,113,0.3); }
+.ni-bt-ber--warn { background: rgba(241,196,15,0.1); border: 2px solid rgba(241,196,15,0.3); }
+.ni-bt-ber--fail { background: rgba(231,76,60,0.1); border: 2px solid rgba(231,76,60,0.3); }
+.ni-bt-ber__label { font-size: .62rem; color: #888; text-transform: uppercase; }
+.ni-bt-ber__value { font-size: 1.5rem; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+.ni-bt-ber--ok .ni-bt-ber__value { color: #2ecc71; }
+.ni-bt-ber--warn .ni-bt-ber__value { color: #f1c40f; }
+.ni-bt-ber--fail .ni-bt-ber__value { color: #e74c3c; }
+.ni-bt-ber__note { font-size: .62rem; color: #888; margin-top: 4px; }
+
+.ni-bt-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.ni-bt-stat {
+  background: #0a0e14;
+  border: 1px solid #1a2030;
+  border-radius: 4px;
+  padding: 6px;
+  text-align: center;
+}
+.ni-bt-stat__label { font-size: .55rem; color: #666; text-transform: uppercase; }
+.ni-bt-stat__value { font-size: .82rem; font-weight: 700; color: #ddd; font-family: monospace; }
+
+.ni-bt-pattern__label { font-size: .62rem; color: #888; margin-bottom: 4px; }
+.ni-bt-pattern__grid { display: flex; flex-wrap: wrap; gap: 1px; }
+.ni-bt-pattern__cell { width: 10px; height: 10px; border-radius: 1px; }
+.ni-bt-ok { background: rgba(46,204,113,0.3); }
+.ni-bt-err { background: rgba(231,76,60,0.6); }
+
+/* ========== Live Traffic ========== */
+.lt-controls {
+  background: #0a0e14;
+  border: 1px solid #1a2030;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.lt-controls__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #ddd;
+  margin-bottom: 6px;
+}
+.lt-controls__row { display: flex; gap: 8px; align-items: flex-end; }
+.lt-field label {
+  display: block;
+  font-size: .58rem;
+  color: #888;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  cursor: help;
+}
+.lt-field input[type="range"] { width: 120px; }
+.lt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: .58rem;
+  color: #888;
+}
+.lt-legend__item { display: flex; align-items: center; gap: 3px; }
+.lt-legend__dot { width: 8px; height: 8px; border-radius: 50%; }
+.lt-metrics { margin-top: 8px; }
+.lt-metrics__title { font-weight: 700; color: #888; text-transform: uppercase; font-size: .62rem; margin-bottom: 4px; }
+
+/* ========== Responsive ========== */
+@media (max-width: 600px) {
+  .sg-controls-row, .sa-controls-row, .sc-config-row { flex-direction: column; }
+  .sg-fkeys { flex-wrap: wrap; }
+  .ni-ct-sections, .ni-nm-grid { grid-template-columns: 1fr; }
+  .sc-chain-flow { flex-wrap: nowrap; }
+  .ni-bt-stats { grid-template-columns: repeat(2, 1fr); }
+}

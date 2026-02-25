@@ -69,7 +69,7 @@ export function initEncryptLab() {
         <div class="enc-key-row"><label>Ключ</label><input type="text" id="encKeyInput" value="${encKey}" placeholder="Ключ"></div>
         <div class="enc-step">
           <div class="enc-step__title">Шаг 1: Текст → биты</div>
-          <div class="enc-bits">${textBytes.map((b, i) => `<span title="${encText[i] || '?'}">${toBin(b)}</span>`).join(' ')}</div>
+          <div class="enc-bits">${textBytes.map((b, i) => `<span data-tip="${encText[i] || '?'}">${toBin(b)}</span>`).join(' ')}</div>
         </div>
         <div class="enc-step">
           <div class="enc-step__title">Шаг 2: Ключ → биты (повторяется циклически)</div>

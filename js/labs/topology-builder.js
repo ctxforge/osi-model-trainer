@@ -1,5 +1,6 @@
 import { addXP } from '../core/gamification.js';
-import { analyzeTrafficPath, renderTrafficStats } from './traffic-sim.js';
+import { analyzeTrafficPath, renderTrafficStats, startLiveTraffic, stopLiveTraffic, setTrafficScenario, getLiveMetrics, getTrafficScenarios, buildLiveTrafficControls, renderLiveMetrics, drawLinkUtilization } from './traffic-sim.js';
+import { connectToLink, connectToDevice } from './network-instruments.js';
 
 /* ============================================================
    Topology Builder — Canvas-based visual network editor
@@ -867,7 +868,7 @@ function buildLinkPalette() {
     const items = LINK_TYPES.filter(lt => lt.medium === g.medium);
     if (items.length === 0) return '';
     return `<span style="font-size:.65rem;color:var(--text-secondary);margin-left:4px">${g.label}:</span>
-      ${items.map(lt => `<button class="dnd-btn tb-link-type${lt.id===currentLinkType?' active':''}" data-link="${lt.id}" style="padding:4px 7px;font-size:.68rem;border-color:${lt.color}" title="${lt.name} (${lt.bw} Мбит/с, ${lt.latency} мс)">${lt.name}</button>`).join('')}`;
+      ${items.map(lt => `<button class="dnd-btn tb-link-type${lt.id===currentLinkType?' active':''}" data-link="${lt.id}" style="padding:4px 7px;font-size:.68rem;border-color:${lt.color}" data-tip="${lt.name} (${lt.bw} Мбит/с, ${lt.latency} мс)">${lt.name}</button>`).join('')}`;
   }).join('');
 }
 
@@ -918,7 +919,7 @@ function buildUI(container) {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;padding:8px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)">
       <span style="font-size:.72rem;color:var(--text-secondary);width:100%;margin-bottom:2px">📦 Палитра устройств (нажмите = добавить):</span>
-      ${DEVICE_TYPES.map(t => `<button class="dnd-btn tb-add-dev" data-type="${t.type}" style="padding:5px 8px;font-size:.72rem" title="${t.name} (L${t.layer})">${t.icon} ${t.name}</button>`).join('')}
+      ${DEVICE_TYPES.map(t => `<button class="dnd-btn tb-add-dev" data-type="${t.type}" style="padding:5px 8px;font-size:.72rem" data-tip="${t.name} (L${t.layer})">${t.icon} ${t.name}</button>`).join('')}
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;align-items:center;padding:6px 8px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)">
       <span style="font-size:.72rem;color:var(--text-secondary)">🔗 Тип связи:</span>
@@ -943,6 +944,11 @@ function buildUI(container) {
       </div>
       <div class="tb-trace-log" style="max-height:180px;overflow-y:auto"></div>
       <div class="tb-traffic-stats" style="margin-top:8px"></div>
+    </div>
+    <div style="margin-top:10px;padding:10px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-weight:700;font-size:.82rem;margin-bottom:8px">📡 Live Traffic &amp; Instruments</div>
+      <div id="tbLiveTrafficControls"></div>
+      <div id="tbLiveMetrics"></div>
     </div>
     <div style="display:flex;gap:6px;margin-top:8px">
       <button class="dnd-btn tb-export" style="padding:6px 12px;font-size:.72rem">💾 Экспорт JSON</button>
@@ -1076,6 +1082,56 @@ function buildUI(container) {
 
   window.addEventListener('resize', () => resizeCanvas());
   renderProps(container); loadPreset('home'); updateSelects(container);
+
+  /* -- Live Traffic Controls -- */
+  const ltContainer = document.getElementById('tbLiveTrafficControls');
+  if (ltContainer) {
+    ltContainer.innerHTML = buildLiveTrafficControls();
+
+    const ltToggle = document.getElementById('ltToggle');
+    if (ltToggle) {
+      ltToggle.addEventListener('click', () => {
+        const metrics = getLiveMetrics();
+        if (metrics.running) {
+          stopLiveTraffic();
+          ltToggle.textContent = '▶ Start';
+        } else {
+          startLiveTraffic(devices, links, linkInfo, devById, canvas, draw);
+          ltToggle.textContent = '■ Stop';
+        }
+      });
+    }
+
+    const ltScenario = document.getElementById('ltScenario');
+    if (ltScenario) {
+      ltScenario.addEventListener('change', () => setTrafficScenario(ltScenario.value));
+    }
+
+    const ltIntensity = document.getElementById('ltIntensity');
+    if (ltIntensity) {
+      ltIntensity.addEventListener('input', () => {
+        const metrics = getLiveMetrics();
+        if (metrics.running) {
+          // Re-apply scenario intensity override
+          setTrafficScenario(document.getElementById('ltScenario')?.value || 'normal');
+        }
+      });
+    }
+
+    // Periodically update live metrics display
+    setInterval(() => {
+      const metricsEl = document.getElementById('tbLiveMetrics');
+      if (metricsEl) renderLiveMetrics(metricsEl);
+    }, 1000);
+  }
+}
+
+/** Returns a snapshot of the current topology (devices + links) for guided lab engine */
+export function getTopologyState() {
+  return {
+    devices: devices.map(d => ({ ...d })),
+    links: links.map(l => ({ ...l }))
+  };
 }
 
 /* ---- Init (MutationObserver pattern) ---- */

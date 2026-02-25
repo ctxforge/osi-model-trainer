@@ -40,9 +40,38 @@ function applyWindow(data, windowType) {
         w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1))
                     + 0.08 * Math.cos(4 * Math.PI * i / (N - 1));
         break;
+      case 'blackman-harris':
+        w = 0.35875 - 0.48829 * Math.cos(2 * Math.PI * i / (N - 1))
+                     + 0.14128 * Math.cos(4 * Math.PI * i / (N - 1))
+                     - 0.01168 * Math.cos(6 * Math.PI * i / (N - 1));
+        break;
+      case 'kaiser': {
+        var beta = (typeof msg !== 'undefined' && msg.kaiserBeta) || 5;
+        var M = N - 1;
+        var arg = beta * Math.sqrt(1 - Math.pow(2 * i / M - 1, 2));
+        w = besselI0(arg) / besselI0(beta);
+        break;
+      }
+      case 'flattop':
+        w = 0.21557895 - 0.41663158 * Math.cos(2 * Math.PI * i / (N - 1))
+                        + 0.277263158 * Math.cos(4 * Math.PI * i / (N - 1))
+                        - 0.083578947 * Math.cos(6 * Math.PI * i / (N - 1))
+                        + 0.006947368 * Math.cos(8 * Math.PI * i / (N - 1));
+        break;
     }
     data[i] *= w;
   }
+}
+
+/** Modified Bessel function I0 for Kaiser window */
+function besselI0(x) {
+  var sum = 1, term = 1;
+  for (var k = 1; k <= 25; k++) {
+    term *= (x / (2 * k)) * (x / (2 * k));
+    sum += term;
+    if (term < 1e-10 * sum) break;
+  }
+  return sum;
 }
 
 /* =====================================================================

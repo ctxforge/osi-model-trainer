@@ -1,6 +1,8 @@
 /* ==================== PHYSICS LAB BENCH ==================== */
 import { CHANNEL_TYPES } from '../data/channels.js';
 import { addXP, showToast } from '../core/gamification.js';
+import { SIGNAL_MISSIONS } from '../data/signal-missions.js';
+import { PARAM_THEORY, SPECTRUM_EXPLANATIONS } from '../data/signal-theory.js';
 import { physicsState } from '../core/router.js';
 import { genSamples, applyChannel, drawTimeDomain, drawSpectrum, drawConstellation, drawWaterfall, averageSpectrum, resetAveraging, detectPeaks, resetWaterfall } from './physics-dsp.js';
 import { initChannelSimulator, initFileUpload } from './physics-channel.js';
@@ -304,7 +306,12 @@ function render() {
       <button id="sgImportCSV">\uD83D\uDCC2 Импорт CSV</button>
     </div>
     <input type="file" id="sgImportFileInput" hidden accept=".csv,.txt">
+
+    <div id="sgMissionsPanel" style="margin-top:16px"></div>
   `;
+
+  // Render missions panel
+  renderMissionsPanel();
 
   drawTimeDomain(document.getElementById('sgTimeDomain'), txSamples);
   drawSpectrum(document.getElementById('sgSpectrum'), txSamples, sgFs, sgN, sgSpectrumScale, sgSpectrumWindow);
@@ -492,6 +499,57 @@ function render() {
       render();
     };
     reader.readAsText(file);
+  });
+}
+
+/* ==================== SIGNAL MISSIONS ==================== */
+let missionResults = {}; // missionId → 'pass' | 'fail'
+
+function renderMissionsPanel() {
+  const el = document.getElementById('sgMissionsPanel');
+  if (!el) return;
+  el.innerHTML = `
+    <details class="sg-missions-details">
+      <summary class="sg-missions-summary">🎯 Задания-миссии (${Object.values(missionResults).filter(r => r === 'pass').length}/${SIGNAL_MISSIONS.length} выполнено)</summary>
+      <div class="sg-missions-list">
+        ${SIGNAL_MISSIONS.map(m => {
+          const result = missionResults[m.id];
+          return `
+            <div class="sg-mission ${result === 'pass' ? 'sg-mission--pass' : result === 'fail' ? 'sg-mission--fail' : ''}">
+              <div class="sg-mission__header">
+                <span class="sg-mission__status">${result === 'pass' ? '✅' : result === 'fail' ? '❌' : '⬜'}</span>
+                <span class="sg-mission__title">${m.title}</span>
+                <span class="sg-mission__xp">+${m.xp} XP</span>
+              </div>
+              <div class="sg-mission__desc">${m.desc}</div>
+              ${result === 'pass' ? `<div class="sg-mission__insight">💡 ${m.insight}</div>` : ''}
+              ${!result ? `<button class="sg-mission__btn" data-mission="${m.id}">▶ Проверить</button>` : ''}
+              ${result === 'fail' ? `
+                <div class="sg-mission__hint">${m.hint}</div>
+                <button class="sg-mission__btn" data-mission="${m.id}">🔄 Попробовать снова</button>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </details>
+  `;
+
+  el.querySelectorAll('.sg-mission__btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mid = btn.dataset.mission;
+      const mission = SIGNAL_MISSIONS.find(m => m.id === mid);
+      if (!mission) return;
+      const pass = mission.validate(sgComponents);
+      missionResults[mid] = pass ? 'pass' : 'fail';
+      if (pass) {
+        addXP(mission.xp);
+        showToast('🎯', `Миссия «${mission.title}» выполнена!`, `+${mission.xp} XP`);
+      } else {
+        showToast('❌', `Миссия не пройдена`, mission.hint.slice(0, 40) + '…');
+      }
+      renderMissionsPanel();
+    });
   });
 }
 

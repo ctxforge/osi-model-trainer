@@ -1,0 +1,229 @@
+/* ===== Radio Laboratory ===== */
+.rl-header { margin-bottom: 14px; }
+.rl-header__title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+.rl-header__subtitle { font-size: .78rem; color: var(--text-secondary); }
+
+/* Band section */
+.rl-band-section {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.rl-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.rl-cat-btn {
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: .7rem;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.rl-cat-btn:hover { border-color: var(--l4); color: var(--l4); }
+.rl-cat-btn--active { background: var(--l4); color: #fff; border-color: var(--l4); }
+
+.rl-band-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.rl-band-card {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 120px;
+}
+.rl-band-card:hover { border-color: var(--l4); }
+.rl-band-card--active { border-color: var(--l4); background: rgba(52,152,219,.1); }
+.rl-band-card__name { font-size: .72rem; font-weight: 600; margin-bottom: 2px; }
+.rl-band-card__freq { font-size: .75rem; color: var(--l4); font-weight: 700; }
+.rl-band-card__lambda { font-size: .68rem; color: var(--text-secondary); }
+
+/* Selected band info */
+.rl-selected-band { margin-bottom: 12px; }
+.rl-selected-band__card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(52,152,219,.3);
+  font-size: .8rem;
+  line-height: 1.6;
+}
+.rl-selected-band__name { font-weight: 700; font-size: .88rem; margin-bottom: 6px; }
+.rl-selected-band__meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; color: var(--l4); font-size: .78rem; }
+.rl-selected-band__desc { color: var(--text-secondary); margin-bottom: 4px; }
+.rl-selected-band__examples { font-size: .75rem; color: var(--text-secondary); font-style: italic; }
+
+/* TX/RX panels */
+.rl-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 600px) { .rl-panels { grid-template-columns: 1fr; } }
+
+.rl-panel, .rl-channel-panel, .rl-budget-panel,
+.rl-pattern-section, .rl-fspl-section, .rl-experiments {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.rl-panel__title { font-size: .88rem; font-weight: 700; margin-bottom: 12px; color: var(--l4); }
+
+.rl-param { margin-bottom: 10px; }
+.rl-param label { display: block; font-size: .78rem; color: var(--text-secondary); margin-bottom: 4px; }
+.rl-param select {
+  width: 100%;
+  padding: 5px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: .8rem;
+}
+.rl-param input[type=checkbox] { margin-right: 4px; }
+
+.rl-slider-row { display: flex; align-items: center; gap: 8px; }
+.rl-slider-row input[type=range] { flex: 1; }
+.rl-val { font-size: .8rem; font-weight: 700; min-width: 55px; text-align: right; white-space: nowrap; }
+
+/* Presets row */
+.rl-power-presets, .rl-dist-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.rl-preset-btn {
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: .67rem;
+  cursor: pointer;
+  transition: all .12s;
+}
+.rl-preset-btn:hover { border-color: var(--l4); color: var(--l4); }
+
+/* Antenna info */
+.rl-ant-info { margin-top: 4px; }
+.rl-ant-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: .73rem;
+  line-height: 1.5;
+}
+.rl-ant-card__gain { color: var(--l4); font-weight: 700; font-size: .82rem; }
+.rl-ant-card__use { color: var(--text-secondary); }
+
+/* Lambda calculator */
+.rl-lambda-section { margin-bottom: 12px; }
+.rl-lambda-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(46,204,113,.25);
+}
+.rl-lambda-title { font-weight: 700; font-size: .82rem; margin-bottom: 8px; color: #2ecc71; }
+.rl-lambda-row { font-size: .82rem; margin-bottom: 8px; }
+.rl-lambda-sizes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: .78rem;
+}
+.rl-lambda-hint { font-size: .74rem; color: var(--text-secondary); border-left: 3px solid #2ecc71; padding-left: 8px; }
+
+/* Channel params */
+.rl-channel-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 600px) { .rl-channel-grid { grid-template-columns: 1fr; } }
+
+/* Budget table */
+.rl-budget-table { display: flex; flex-direction: column; gap: 2px; }
+.rl-brow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: .79rem;
+  background: var(--bg-secondary);
+  gap: 8px;
+}
+.rl-brow--eirp { color: var(--text-secondary); font-style: italic; border-top: 1px solid var(--border); }
+.rl-brow--result { border-top: 1px solid var(--border); font-weight: 600; }
+.rl-brow--snr { background: var(--bg-card); border: 1px solid var(--border); margin-top: 4px; }
+
+.rl-bval { font-family: monospace; font-size: .8rem; white-space: nowrap; }
+.rl-bval--good { color: #2ecc71; }
+.rl-bval--bad { color: #e74c3c; }
+
+.rl-snr-bar { height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+.rl-snr-bar__fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+.rl-no-conn {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(231,76,60,.08);
+  border: 1px solid rgba(231,76,60,.3);
+  border-radius: 8px;
+  font-size: .78rem;
+  line-height: 1.9;
+  color: var(--l7);
+}
+
+/* Antenna pattern */
+.rl-patterns-row { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+.rl-pattern-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.rl-pattern-label { font-size: .75rem; color: var(--text-secondary); text-align: center; max-width: 180px; }
+.rl-pattern-wrap canvas { border-radius: 50%; background: var(--bg-secondary); }
+
+/* FSPL graph */
+.rl-fspl-formula { font-family: monospace; font-size: .78rem; color: var(--text-secondary); margin-bottom: 8px; }
+
+/* Experiments */
+.rl-experiment { padding: 10px 12px; border-radius: 8px; background: var(--bg-secondary); margin-bottom: 8px; }
+.rl-experiment__title { font-weight: 700; font-size: .85rem; margin-bottom: 4px; }
+.rl-experiment__task { font-size: .79rem; color: var(--text-secondary); margin-bottom: 8px; }
+.rl-experiment__insight {
+  font-size: .78rem; color: var(--l4);
+  padding: 8px; background: rgba(52,152,219,.08);
+  border-radius: 6px; margin-bottom: 8px; line-height: 1.7;
+}
+.rl-exp-btn {
+  padding: 5px 12px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text); font-size: .75rem; cursor: pointer;
+}
+.rl-exp-btn:hover { border-color: var(--l4); color: var(--l4); }

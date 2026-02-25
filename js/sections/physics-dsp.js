@@ -1,5 +1,5 @@
 /* ==================== DSP: Signal Generation, FFT, Drawing ==================== */
-import { CHANNEL_TYPES } from '../data/channels.js';
+import { CHANNEL_TYPES, calcLinkBudget } from '../data/channels.js';
 
 /* =====================================================================
  *  Web Worker для DSP-вычислений (singleton, lazy init)
@@ -370,7 +370,8 @@ export function applyChannel(samples, chId, dist, sgFs, sgN) {
   if (!ch) return { rx: samples.slice(), snr: 999, atten: 0, bw: sgFs / 2 };
   const distUnit = ch.medium === 'fiber' ? dist / 1000 : dist / 100;
   const atten = ch.attenuation * distUnit;
-  const snr = Math.max(ch.snrBase - atten, -5);
+  const budget = calcLinkBudget(ch, dist);
+  const snr = budget.snr;
   const gain = Math.pow(10, -atten / 20);
   const noiseStd = gain / Math.max(Math.pow(10, snr / 20), 0.01);
   const bw = Math.min(ch.bandwidthMHz * 1e6, sgFs / 2);

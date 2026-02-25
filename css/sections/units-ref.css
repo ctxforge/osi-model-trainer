@@ -1,0 +1,295 @@
+/* ===== Units Reference Section ===== */
+.uref-page { padding: 0 0 32px; }
+
+.uref-intro {
+  font-size: .82rem;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border-left: 3px solid var(--l1);
+  line-height: 1.6;
+}
+
+.uref-block { margin-bottom: 28px; }
+
+.uref-block__title {
+  font-size: .95rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.uref-widget-card {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+
+.uref-widget-card__title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--l4);
+  margin-bottom: 12px;
+}
+
+/* Bit toggle */
+.uref-bit-row {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.uref-bit {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-family: monospace;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uref-bit:hover { border-color: var(--l4); }
+
+.uref-bit--on {
+  background: var(--l4);
+  color: #fff;
+  border-color: var(--l4);
+}
+
+.uref-bit-result {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: .82rem;
+  margin-bottom: 6px;
+}
+
+.uref-bit-hint {
+  font-size: .7rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Table */
+.uref-table {
+  background: var(--bg-card);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.uref-table__head, .uref-table__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: .78rem;
+  align-items: center;
+}
+
+.uref-table__head {
+  background: var(--bg-secondary);
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: .7rem;
+  text-transform: uppercase;
+}
+
+.uref-table__row:not(:last-child) { border-bottom: 1px solid var(--border); }
+
+.uref-table__row--note {
+  grid-template-columns: 1fr 3fr;
+  background: rgba(52, 152, 219, 0.06);
+  color: var(--l4);
+  font-size: .75rem;
+}
+
+/* Baud widget */
+.uref-baud-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  font-size: .82rem;
+}
+
+.uref-baud-ctrl label { min-width: 120px; }
+
+.uref-baud-ctrl select {
+  flex: 1;
+  padding: 5px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: .8rem;
+}
+
+.uref-baud-result {
+  padding: 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: .82rem;
+  line-height: 1.7;
+}
+
+/* Shannon */
+.uref-shannon__ctrls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.uref-shannon__result {
+  padding: 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: .85rem;
+  line-height: 1.7;
+}
+
+/* dB section */
+.uref-db-explainer {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: rgba(52, 73, 94, 0.3);
+  border-radius: 8px;
+  font-size: .8rem;
+  line-height: 1.6;
+  border-left: 3px solid var(--l4);
+}
+
+.uref-db-calc__row { margin-bottom: 8px; font-size: .82rem; }
+.uref-db-calc__row label { display: block; margin-bottom: 4px; color: var(--text-secondary); font-size: .78rem; }
+
+.uref-db-calc__input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.uref-db-calc__input-row input[type=number] {
+  width: 90px;
+  padding: 5px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: .85rem;
+}
+
+.uref-db-calc__arrow { color: var(--text-secondary); }
+
+.uref-db-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.uref-db-rule {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: .76rem;
+}
+
+.uref-db-rule__val {
+  font-weight: 700;
+  color: var(--l4);
+  min-width: 48px;
+  font-family: monospace;
+}
+
+/* dBm scale */
+.uref-dbm-formula {
+  font-family: monospace;
+  color: var(--l4);
+  margin-bottom: 12px;
+  font-size: .88rem;
+}
+
+.uref-dbm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.uref-dbm-item__bar-wrap {
+  flex: 0 0 100px;
+  background: var(--bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  height: 10px;
+}
+
+.uref-dbm-item__bar { height: 100%; border-radius: 3px; min-width: 2px; }
+
+.uref-dbm-item__label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: .77rem;
+  flex-wrap: wrap;
+}
+
+.uref-dbm-item__detail { color: var(--text-secondary); font-size: .7rem; }
+
+/* Freq widget */
+.uref-freq-ctrl { margin-bottom: 10px; font-size: .82rem; }
+
+.uref-freq-result {
+  padding: 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: .85rem;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.uref-freq-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.uref-freq-btn {
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-size: .72rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.uref-freq-btn:hover { border-color: var(--l4); color: var(--l4); }
+
+@media (max-width: 600px) {
+  .uref-table__head, .uref-table__row { grid-template-columns: 1fr 2fr; }
+  .uref-table__head span:last-child, .uref-table__row span:last-child { display: none; }
+  .uref-table__row--note { grid-template-columns: 1fr; }
+}

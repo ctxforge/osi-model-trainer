@@ -1,5 +1,5 @@
 /* ==================== CHANNEL SIMULATOR ==================== */
-import { CHANNEL_TYPES } from '../data/channels.js';
+import { CHANNEL_TYPES, calcLinkBudget } from '../data/channels.js';
 import { addXP } from '../core/gamification.js';
 import { formatSpeed } from '../core/utils.js';
 import { labData } from '../core/lab-data.js';
@@ -62,7 +62,8 @@ export function initChannelSimulator() {
     const ch = CHANNEL_TYPES.find(c => c.id === sgChannelId);
     const distUnit = ch.medium === 'fiber' ? sgChDistance / 1000 : sgChDistance / 100;
     const atten = ch.attenuation * distUnit;
-    const snr = Math.max(Math.round(ch.snrBase - atten), -5);
+    const { snr: snrFloat } = calcLinkBudget(ch, sgChDistance);
+    const snr = Math.round(snrFloat);
     const txBytes = chSrcBytes.slice(0, 4096);
     const txBits = [];
     txBytes.forEach(b => { for (let i = 7; i >= 0; i--) txBits.push((b >> i) & 1); });
@@ -122,7 +123,7 @@ export function initChannelSimulator() {
       try {
         const blob = new Blob([arr], { type: mime });
         const url = URL.createObjectURL(blob);
-        rxImgHtml = `<img src="${url}" class="ch-compare__img" onerror="this.style.display='none';this.nextSibling.style.display='block'" alt=""><div style="display:none;font-size:.75rem;color:var(--l7);padding:8px">Файл повреждён слишком сильно для отображения</div>`;
+        rxImgHtml = `<img src="${url}" class="ch-compare__img" style="image-rendering:pixelated" onerror="this.style.opacity='.3'">${errCount > 100 ? `<div style="font-size:.72rem;color:var(--l6);margin-top:6px;padding:6px;background:rgba(241,196,15,.08);border-radius:6px;border-left:3px solid var(--l6)"><strong>⚠ Артефакты изображения</strong> — ${errCount} бит повреждено.<br>Пиксели перевёрнуты в случайных позициях из-за ошибок в битах данных. Это наглядная демонстрация BER в действии.</div>` : ''}`;
       } catch(e) { rxImgHtml = '<div style="font-size:.75rem;color:var(--l7)">Ошибка реконструкции</div>'; }
     }
 

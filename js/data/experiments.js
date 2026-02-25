@@ -1,10 +1,10 @@
 export const LAB_GROUPS = [
   { id: 'overview', name: '🚀 Обзор', desc: 'Полный путь данных от отправителя до получателя',
     experiments: ['journey', 'scenario'] },
-  { id: 'physical', name: '⚡ L1 Физика', desc: 'Сигналы, модуляция, каналы связи, мультиплексирование, осциллограф, передача через канал',
-    experiments: ['signals', 'channelPhysics', 'multiplexing', 'oscilloscope', 'signalGenerator', 'spectrumAnalyzer', 'channelTransmit', 'wdmMultiplex'] },
-  { id: 'network', name: '🌐 L2-L3 Сеть', desc: 'Устройства, маршрутизация, адресация, конструктор сети, DHCP',
-    experiments: ['devices', 'netBuilder', 'topologyBuilder', 'routing', 'routingSim', 'fragmentation', 'ipCalc', 'vlanSim', 'arpDiscovery', 'dhcpLease'] },
+  { id: 'physical', name: '⚡ L1 Физика', desc: 'Сигналы, модуляция, каналы связи, мультиплексирование, осциллограф, передача через канал, профессиональные приборы',
+    experiments: ['signals', 'channelPhysics', 'multiplexing', 'oscilloscope', 'signalGenerator', 'spectrumAnalyzer', 'channelTransmit', 'wdmMultiplex', 'proSignalGen', 'proSpectrumAnalyzer', 'signalChain'] },
+  { id: 'network', name: '🌐 L2-L3 Сеть', desc: 'Устройства, маршрутизация, адресация, конструктор сети, DHCP, сетевые приборы',
+    experiments: ['devices', 'netBuilder', 'topologyBuilder', 'routing', 'routingSim', 'fragmentation', 'ipCalc', 'vlanSim', 'arpDiscovery', 'dhcpLease', 'networkInstruments'] },
   { id: 'transport', name: '📦 L4 Транспорт', desc: 'TCP/UDP: соединения, передача, автомат, перегрузка, окно',
     experiments: ['tcpHandshake', 'tcpVsUdp', 'packetTransmission', 'tcpStateMachine', 'tcpCongestion', 'tcpWindow', 'natTraversal'] },
   { id: 'security', name: '🔐 L5-L7 Безопасность', desc: 'Шифрование, TLS, сертификаты, Firewall',
@@ -244,5 +244,29 @@ export const LAB_EXPERIMENTS = {
     params: [
       { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1500, step: 100, default: 600, unit: 'мс' }
     ]
+  },
+  proSignalGen: {
+    title: 'Генератор (PRO)',
+    icon: '🎛️',
+    description: 'Профессиональный генератор сигналов: 8 форм, модуляция AM/FM/PM/PWM, sweep, burst, dual channel, арбитрарный режим. Стиль Keysight 33600A.',
+    params: []
+  },
+  proSpectrumAnalyzer: {
+    title: 'Спектроанализатор (PRO)',
+    icon: '📊',
+    description: 'Профессиональный анализатор спектра: FFT до 16384, 7 оконных функций, waterfall/spectrogram, 4 маркера, peak search, BW measurement. Стиль R&S FSW.',
+    params: []
+  },
+  signalChain: {
+    title: 'Цепочка передачи',
+    icon: '🔗',
+    description: 'Прозрачная визуализация всей цепочки: Данные → Кодирование → Модуляция → Канал → Демодуляция → Декодирование → Данные. Диагностика ошибок с рекомендациями.',
+    params: []
+  },
+  networkInstruments: {
+    title: 'Сетевые приборы',
+    icon: '🔧',
+    description: 'Набор профессиональных сетевых инструментов: Protocol Analyzer (Wireshark), Cable Tester/TDR, Network Monitor, Signal Meter, BER Tester.',
+    params: []
   }
 };

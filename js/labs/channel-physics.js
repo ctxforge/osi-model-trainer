@@ -1,4 +1,4 @@
-import { CHANNEL_TYPES, ENV_EFFECTS, getChannelEnvType } from '../data/channels.js';
+import { CHANNEL_TYPES, ENV_EFFECTS, getChannelEnvType, calcLinkBudget } from '../data/channels.js';
 import { labData, getLabBits, onLabDataChange, simState } from '../core/lab-data.js';
 import { formatSpeed } from '../core/utils.js';
 
@@ -111,17 +111,13 @@ export function initChannelPhysics() {
     });
 
     const envPen = calcEnvPenalty(ch, chState.env);
-    const distUnit = ch.medium === 'fiber' ? chState.dist / 1000 : chState.dist / 100;
-    const cableAtten = ch.attenuation * distUnit;
+    const cableAtten = ch.attenuation * (ch.medium === 'fiber' ? chState.dist / 1000 : chState.dist / 100);
     const envAtten = envPen.totalDb;
-    const totalAtten = cableAtten + envAtten;
-    const txPower = ch.snrBase + 10;
-    const rxPower = txPower - totalAtten;
-    const noiseFloor = -5 + (ch.interference === 'high' ? 5 : ch.interference === 'medium' ? 2 : 0);
-    const snr = rxPower - noiseFloor;
+    const budget = calcLinkBudget(ch, chState.dist, envAtten);
+    const { txPower, rxPower, noiseFloor, snr } = budget;
     const snrLin = Math.pow(10, Math.max(snr, 0) / 10);
     const shannon = ch.bandwidthMHz * Math.log2(1 + snrLin);
-    const effSpeed = Math.min(ch.speed, shannon) * envPen.speedFactor * (snr > 0 ? 1 : 0);
+    const effSpeed = Math.min(ch.speed, shannon) * envPen.speedFactor * (snr > 3 ? 1 : 0);
 
     let ber;
     if (snr > 30) ber = '< 10⁻¹²';
@@ -172,11 +168,11 @@ export function initChannelPhysics() {
 
       <div class="lab-result__title">Бюджет мощности</div>
       <div class="ch-budget">
-        <div class="ch-budget__row"><div class="ch-budget__icon">📡</div><div class="ch-budget__label">Мощность передатчика</div><div class="ch-budget__val ch-budget__val--good">+${txPower.toFixed(1)} дБ</div></div>
+        <div class="ch-budget__row"><div class="ch-budget__icon">📡</div><div class="ch-budget__label">Мощность передатчика</div><div class="ch-budget__val ch-budget__val--good">+${txPower.toFixed(1)} дБм</div></div>
         <div class="ch-budget__row"><div class="ch-budget__icon">📉</div><div class="ch-budget__label">Затухание в среде (${chState.dist >= 1000 ? (chState.dist/1000).toFixed(1)+'км' : chState.dist+'м'})</div><div class="ch-budget__val ch-budget__val--bad">−${cableAtten.toFixed(1)} дБ</div></div>
         ${envAtten > 0 ? `<div class="ch-budget__row"><div class="ch-budget__icon">🌧️</div><div class="ch-budget__label">Потери среды (помехи, условия)</div><div class="ch-budget__val ch-budget__val--bad">−${envAtten.toFixed(1)} дБ</div></div>` : ''}
-        <div class="ch-budget__row"><div class="ch-budget__icon">📥</div><div class="ch-budget__label">Мощность на приёмнике</div><div class="ch-budget__val" style="color:${qualColor}">${rxPower.toFixed(1)} дБ</div></div>
-        <div class="ch-budget__row"><div class="ch-budget__icon">🔊</div><div class="ch-budget__label">Шумовая полка</div><div class="ch-budget__val">${noiseFloor.toFixed(1)} дБ</div></div>
+        <div class="ch-budget__row"><div class="ch-budget__icon">📥</div><div class="ch-budget__label">Мощность на приёмнике</div><div class="ch-budget__val" style="color:${qualColor}">${rxPower.toFixed(1)} дБм</div></div>
+        <div class="ch-budget__row"><div class="ch-budget__icon">🔊</div><div class="ch-budget__label">Шумовая полка</div><div class="ch-budget__val">${noiseFloor.toFixed(1)} дБм</div></div>
         <div class="ch-budget__row" style="font-weight:700"><div class="ch-budget__icon">📶</div><div class="ch-budget__label">SNR (сигнал/шум)</div><div class="ch-budget__val" style="color:${qualColor}">${snr.toFixed(1)} дБ — ${quality}</div></div>
       </div>
       <div class="ch-budget__bar"><div class="ch-budget__bar-fill" style="width:${snrPct}%;background:${qualColor}"></div></div>
@@ -189,6 +185,21 @@ export function initChannelPhysics() {
         <div class="lab-stat"><div class="lab-stat__value">${propDelay.toFixed(3)} мс</div><div class="lab-stat__label">Задержка распр.</div></div>
         <div class="lab-stat"><div class="lab-stat__value">${ch.duplex === 'full' ? 'Full' : 'Half'}</div><div class="lab-stat__label">Дуплекс</div></div>
       </div>
+
+      ${snr < 3 ? `
+      <div style="margin:12px 0;padding:12px 14px;background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.3);border-radius:8px;font-size:.78rem;line-height:1.7">
+        <div style="font-weight:700;color:var(--l7);margin-bottom:6px">${snr < 0 ? '🚫' : '⚠️'} SNR = ${snr.toFixed(1)} дБ → ${snr < 0 ? 'Нет связи' : 'Критически плохой сигнал'}</div>
+        <div style="margin-bottom:6px"><strong>Причина:</strong> ${overMax ? `расстояние ${chState.dist >= 1000 ? (chState.dist/1000).toFixed(1)+' км' : chState.dist+' м'} превышает максимальную дальность ${ch.name}` : `высокое затухание (${(cableAtten + envAtten).toFixed(1)} дБ) при мощности передатчика ${txPower.toFixed(0)} дБм`}</div>
+        <div style="margin-bottom:6px;color:var(--text-secondary)">
+          • Мощность на приёмнике: <strong style="color:var(--text)">${rxPower.toFixed(1)} дБм</strong><br>
+          • Шумовая полка: <strong style="color:var(--text)">${noiseFloor.toFixed(1)} дБм</strong><br>
+          • SNR = ${snr.toFixed(1)} дБ &lt; минимум +3 дБ для BPSK
+        </div>
+        <div><strong>Что сделать:</strong><br>
+          ✦ Сократить расстояние до &lt; ${Math.floor(ch.maxDist * 0.8)} м<br>
+          ${ch.medium === 'radio' ? '✦ Использовать направленную антенну с высоким коэффициентом усиления<br>' : ''}✦ Добавить усилитель/ретранслятор (+20 дБ)
+        </div>
+      </div>` : ''}
 
       ${effects.length ? `
       <div class="ch-env-section">

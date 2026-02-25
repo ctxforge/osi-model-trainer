@@ -44,7 +44,7 @@ export async function runTcpWindow(labState) {
           else if (seg.status === 'lost') cls += ' tcp-seg--lost';
           else if (i >= sendBase && i < sendBase + windowSize && i >= nextSeqNum) cls += ' tcp-seg--sendable';
           else if (i >= sendBase + windowSize) cls += ' tcp-seg--blocked';
-          return `<div class="${cls}" title="Seq: ${seg.seq}">${label}</div>`;
+          return `<div class="${cls}" data-tip="Seq: ${seg.seq}">${label}</div>`;
         }).join('')}
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0;font-size:.68rem">

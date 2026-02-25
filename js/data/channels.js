@@ -160,3 +160,63 @@ export function getChannelEnvType(chId) {
   if (chId === 'o3b_meo') return 'satellite_meo';
   return 'radio';
 }
+
+/**
+ * Рассчитывает реалистичный бюджет мощности линка (link budget).
+ * TX power (дБм) − path loss (дБ) − noise floor (дБм) = SNR (дБ)
+ *
+ * @param {object} ch           — объект канала из CHANNEL_TYPES
+ * @param {number} dist         — расстояние в метрах
+ * @param {number} envPenaltyDb — дополнительные потери среды (помехи, условия), дБ
+ * @returns {{ txPower, pathLoss, rxPower, noiseFloor, snr }}  все в дБм/дБ
+ */
+export function calcLinkBudget(ch, dist, envPenaltyDb = 0) {
+  // Типичная мощность передатчика для разных сред (дБм)
+  const txPower = { copper: 0, fiber: 5, radio: 23, satellite: 50 }[ch.medium] ?? 10;
+
+  // Затухание в тракте:
+  // • медь/оптика: линейная модель дБ/100м или дБ/км
+  // • радио: нормировано на maxDist (доля от максимальной дальности)
+  // • спутник: фиксированные потери (орбита не меняется)
+  let pathLoss;
+  if (ch.medium === 'copper') {
+    pathLoss = ch.attenuation * (dist / 100);
+  } else if (ch.medium === 'fiber') {
+    pathLoss = ch.attenuation * (dist / 1000);
+  } else if (ch.medium === 'satellite') {
+    // LEO/MEO спутник: потери постоянны по орбите, +env
+    pathLoss = 2;  // символические 2 дБ базовых потерь (учтены в snrBase)
+  } else {
+    // Радио (LTE, Wi-Fi, 5G, GEO satellite через радио-medium):
+    // SNR деградирует от snrBase при defaultDist до ~0 при maxDist
+    const maxDistM = Math.max(ch.maxDist, 1);
+    const defaultRatio = (ch.defaultDist || 1) / maxDistM;
+    if (defaultRatio > 0.5) {
+      // Каналы с фиксированным расстоянием (GEO-спутник): SNR не зависит от dist в симуляции
+      pathLoss = 0;
+    } else {
+      // Обычные радиоканалы: потери растут с расстоянием
+      pathLoss = ch.snrBase * Math.min(dist / maxDistM, 3); // cap at 3× maxDist
+    }
+  }
+  pathLoss += envPenaltyDb;
+
+  // Реалистичная шумовая полка в дБм (тепловой шум kTB + шум-фигура приёмника)
+  const baseNoise = { copper: -100, fiber: -110, radio: -95, satellite: -100 }[ch.medium] ?? -100;
+
+  // Добавка от помех в среде
+  const interferenceOffset = ch.interference === 'high' ? 15
+    : ch.interference === 'medium' ? 7
+    : ch.interference === 'none' ? -5
+    : 2; // low / default
+
+  const noiseFloor = baseNoise + interferenceOffset;
+  // SNR: для радио/спутника snrBase кодирует качество при ref.расстоянии
+  const snr = ch.medium === 'copper' || ch.medium === 'fiber'
+    ? txPower - pathLoss - noiseFloor
+    : ch.snrBase - (pathLoss - envPenaltyDb);
+
+  const rxPower = noiseFloor + snr;
+
+  return { txPower, pathLoss, rxPower, noiseFloor, snr };
+}

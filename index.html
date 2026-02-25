@@ -32,7 +32,7 @@
       <p class="hero__subtitle">Полный курс компьютерных сетей — от физики сигналов до прикладных протоколов</p>
       <div class="hero__stats">
         <span class="hero__pill">📚 17 тем</span>
-        <span class="hero__pill">🔬 15 лабораторий</span>
+        <span class="hero__pill">🔬 34 лаборатории</span>
         <span class="hero__pill">💻 35+ команд</span>
       </div>
     </div>
@@ -387,6 +387,26 @@
       <div class="lab-result" id="labResult-topologyBuilder"></div>
     </div>
 
+    <!-- Professional Signal Generator -->
+    <div class="lab-content" id="lab-proSignalGen">
+      <div id="signalGeneratorUI"></div>
+    </div>
+
+    <!-- Professional Spectrum Analyzer -->
+    <div class="lab-content" id="lab-proSpectrumAnalyzer">
+      <div id="spectrumAnalyzerUI"></div>
+    </div>
+
+    <!-- Signal Chain Visualizer -->
+    <div class="lab-content" id="lab-signalChain">
+      <div id="signalChainUI"></div>
+    </div>
+
+    <!-- Network Instruments -->
+    <div class="lab-content" id="lab-networkInstruments">
+      <div id="networkInstrumentsUI"></div>
+    </div>
+
     <!-- Network Path Builder -->
     <div class="lab-content" id="lab-netBuilder">
       <div class="nb-presets" id="nbPresets"></div>
@@ -506,6 +526,21 @@
     </div>
   </section>
 
+  <!-- ===== UNITS REFERENCE ===== -->
+  <section class="section" id="section-units-ref">
+    <div id="unitsRefUI"></div>
+  </section>
+
+  <!-- ===== RADIO LAB ===== -->
+  <section class="section" id="section-radio-lab">
+    <div id="radioLabUI"></div>
+  </section>
+
+  <!-- ===== GUIDED LABS ===== -->
+  <section class="section" id="section-guided-labs">
+    <div id="guidedLabsUI"></div>
+  </section>
+
   <!-- ===== PROTOCOLS ===== -->
   <section class="section" id="section-protocols">
     <div class="proto-header">
@@ -589,12 +624,16 @@
     <div class="side-menu__group">Кампания</div>
     <button class="side-menu__item" data-section="campaign"><span class="side-menu__icon">🏰</span><span>Квесты</span></button>
     <div class="side-menu__group">Лаборатория</div>
-    <button class="side-menu__item" data-section="lab"><span class="side-menu__icon">🔬</span><span>Лаборатории</span><span class="side-menu__badge">30</span></button>
-    <button class="side-menu__subitem" data-lab-nav="physical"><span class="side-menu__icon">⚡</span><span>L1 Физика</span><span class="side-menu__badge">8</span></button>
-    <button class="side-menu__subitem" data-lab-nav="network"><span class="side-menu__icon">🌐</span><span>L2-L3 Сеть</span><span class="side-menu__badge">10</span></button>
+    <button class="side-menu__item" data-section="lab"><span class="side-menu__icon">🔬</span><span>Лаборатории</span><span class="side-menu__badge">34</span></button>
+    <button class="side-menu__subitem" data-lab-nav="physical"><span class="side-menu__icon">⚡</span><span>L1 Физика</span><span class="side-menu__badge">11</span></button>
+    <button class="side-menu__subitem" data-lab-nav="network"><span class="side-menu__icon">🌐</span><span>L2-L3 Сеть</span><span class="side-menu__badge">11</span></button>
     <button class="side-menu__subitem" data-lab-nav="transport"><span class="side-menu__icon">📦</span><span>L4 Транспорт</span><span class="side-menu__badge">7</span></button>
     <button class="side-menu__subitem" data-lab-nav="security"><span class="side-menu__icon">🔐</span><span>L5-L7</span><span class="side-menu__badge">3</span></button>
     <button class="side-menu__item" data-section="siggen"><span class="side-menu__icon">〰️</span><span>Физ. лаборатория</span></button>
+    <button class="side-menu__item" data-section="radio-lab"><span class="side-menu__icon">📡</span><span>Радиолаборатория</span></button>
+    <button class="side-menu__item" data-section="guided-labs"><span class="side-menu__icon">🧪</span><span>Лаб. работы</span></button>
+    <div class="side-menu__group">Справочник</div>
+    <button class="side-menu__item" data-section="units-ref"><span class="side-menu__icon">📐</span><span>Единицы измерений</span></button>
     <div class="side-menu__group">Инструменты</div>
     <button class="side-menu__item" data-section="terminal"><span class="side-menu__icon">💻</span><span>Терминал</span></button>
   </nav>
