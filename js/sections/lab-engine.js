@@ -38,13 +38,59 @@ function throttle(fn, ms) {
 const labState = {};
 
 let activeLabGroup = 'overview';
+let showDashboard = true;
+
+function buildLabDashboard() {
+  const container = document.getElementById('labTabs');
+  const dataPanel = document.getElementById('labDataPanel');
+  if (dataPanel) dataPanel.style.display = 'none';
+
+  // Hide all lab-content panels when showing dashboard
+  document.querySelectorAll('.lab-content').forEach(c => c.classList.remove('active'));
+
+  let html = '<div class="lab-dashboard__header"><h2>Лаборатории</h2><p>Выберите категорию для начала экспериментов</p></div>';
+  html += '<div class="lab-dashboard">';
+
+  LAB_GROUPS.forEach(group => {
+    const expChips = group.experiments.map(key => {
+      const exp = LAB_EXPERIMENTS[key];
+      if (!exp) return '';
+      return `<span class="lab-dashboard__exp-chip">${exp.icon} ${exp.title}</span>`;
+    }).join('');
+
+    html += `<div class="lab-dashboard__card" data-dash-group="${group.id}">
+      <div class="lab-dashboard__icon">${group.name.split(' ')[0]}</div>
+      <div class="lab-dashboard__title">${group.name.split(' ').slice(1).join(' ')}</div>
+      <div class="lab-dashboard__count">${group.experiments.length} экспериментов</div>
+      <div class="lab-dashboard__desc">${group.desc}</div>
+      <div class="lab-dashboard__experiments">${expChips}</div>
+    </div>`;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+
+  container.querySelectorAll('[data-dash-group]').forEach(card => {
+    card.addEventListener('click', () => {
+      showDashboard = false;
+      activeLabGroup = card.dataset.dashGroup;
+      buildLabTabs();
+    });
+  });
+}
 
 function buildLabTabs() {
   const container = document.getElementById('labTabs');
+  const dataPanel = document.getElementById('labDataPanel');
+  if (dataPanel) dataPanel.style.display = '';
+
   const group = LAB_GROUPS.find(g => g.id === activeLabGroup) || LAB_GROUPS[0];
 
+  // Back button
+  let html = '<button class="lab-back-btn" id="labBackBtn">← Все лаборатории</button>';
+
   // Group pills row
-  let html = '<div class="lab-groups">';
+  html += '<div class="lab-groups">';
   LAB_GROUPS.forEach(g => {
     html += `<button class="lab-group-btn${g.id === activeLabGroup ? ' active' : ''}" data-group="${g.id}">
       <span class="lab-group-btn__icon">${g.name.split(' ')[0]}</span>
@@ -69,6 +115,12 @@ function buildLabTabs() {
   html += '</div>';
 
   container.innerHTML = html;
+
+  // Back button handler
+  document.getElementById('labBackBtn')?.addEventListener('click', () => {
+    showDashboard = true;
+    buildLabDashboard();
+  });
 
   // Group switching
   container.querySelectorAll('[data-group]').forEach(btn => {
@@ -313,8 +365,18 @@ async function runDhcpLease(state) {
 }
 
 function initLabEngine() {
-  buildLabTabs();
+  buildLabDashboard();
   buildLabParams();
+
+  // Sidebar lab-group navigation
+  document.querySelectorAll('[data-lab-nav]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigateTo('lab');
+      showDashboard = false;
+      activeLabGroup = btn.dataset.labNav;
+      buildLabTabs();
+    });
+  });
 
   // Register click handlers for labs with run buttons
   document.getElementById('labRun-packetTransmission')?.addEventListener('click', () => {

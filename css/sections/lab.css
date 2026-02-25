@@ -1956,3 +1956,83 @@
   padding: 12px;
   margin-top: 12px;
 }
+
+/* ========== Lab Dashboard / Catalog ========== */
+.lab-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.lab-dashboard__card {
+  background: var(--bg-card);
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  padding: 20px;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative;
+}
+
+.lab-dashboard__card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  border-color: var(--accent);
+}
+
+.lab-dashboard__icon { font-size: 2rem; margin-bottom: 8px; }
+.lab-dashboard__title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+.lab-dashboard__count { font-size: .72rem; color: var(--accent); font-weight: 600; margin-bottom: 6px; }
+.lab-dashboard__desc { font-size: .75rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px; }
+
+.lab-dashboard__experiments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.lab-dashboard__exp-chip {
+  font-size: .65rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(120,120,140,0.1);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.lab-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 6px 0;
+  margin-bottom: 12px;
+}
+
+.lab-back-btn:hover { color: var(--accent); }
+
+.lab-dashboard__header {
+  margin-bottom: 16px;
+}
+
+.lab-dashboard__header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.lab-dashboard__header p {
+  font-size: .82rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .lab-dashboard { grid-template-columns: 1fr; gap: 10px; }
+  .lab-dashboard__card { padding: 14px; }
+}

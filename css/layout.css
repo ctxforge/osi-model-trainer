@@ -88,6 +88,39 @@
 .side-menu__item.active { color: var(--accent); background: var(--accent-glow); }
 .side-menu__icon { font-size: 1.2rem; width: 28px; text-align: center; }
 
+.side-menu__subitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px 10px 36px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: .78rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+  opacity: 0.85;
+}
+
+.side-menu__subitem:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.side-menu__subitem:active { background: var(--bg-surface); }
+
+.side-menu__badge {
+  font-size: .62rem;
+  background: rgba(79,195,247,0.15);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-left: auto;
+  font-weight: 700;
+}
+
 /* ========== Top Bar ========== */
 .top-bar {
   position: sticky;
