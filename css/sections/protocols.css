@@ -1,0 +1,566 @@
+/* ========== Protocol Reference ========== */
+.proto-header {
+  margin-bottom: 16px;
+}
+
+.proto-header__title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.proto-search-wrap {
+  margin-bottom: 10px;
+}
+
+.proto-search {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: .88rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.proto-search:focus {
+  border-color: var(--accent);
+}
+
+.proto-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.proto-filters::-webkit-scrollbar { display: none; }
+
+.proto-filter-btn {
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+
+.proto-filter-btn:active { transform: scale(.95); }
+.proto-filter-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.proto-count {
+  font-size: .75rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+/* Protocol Grid */
+.proto-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.proto-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.proto-card:active { transform: scale(.98); }
+
+.proto-card__icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.proto-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.proto-card__name {
+  font-weight: 700;
+  font-size: .85rem;
+}
+
+.proto-card__full-name {
+  font-size: .7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.proto-card__meta {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.proto-card__layer {
+  font-size: .65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: #fff;
+}
+
+.proto-card__ports {
+  font-size: .65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Layer colors for badges */
+.proto-layer--L7 { background: var(--l7); }
+.proto-layer--L6 { background: var(--l6); }
+.proto-layer--L5 { background: var(--l5); }
+.proto-layer--L4 { background: var(--l4); }
+.proto-layer--L3 { background: var(--l3); }
+.proto-layer--L2 { background: var(--l2); }
+.proto-layer--L1 { background: var(--l1); }
+
+/* Protocol Detail View */
+.proto-detail {
+  display: none;
+}
+
+.proto-detail.open {
+  display: block;
+}
+
+.proto-detail__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: .78rem;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all var(--transition);
+}
+
+.proto-detail__back:active { transform: scale(.96); }
+
+.proto-detail__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.proto-detail__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.proto-detail__icon {
+  font-size: 2rem;
+}
+
+.proto-detail__title {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.proto-detail__full-name {
+  font-size: .8rem;
+  color: var(--text-secondary);
+}
+
+.proto-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.proto-detail__badge {
+  font-size: .7rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.proto-detail__badge--layer {
+  color: #fff;
+  border: none;
+}
+
+.proto-detail__desc {
+  font-size: .85rem;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.proto-detail__details {
+  font-size: .8rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* Features */
+.proto-features {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-bottom: 12px;
+}
+
+.proto-features__title {
+  font-size: .78rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.proto-features__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.proto-features__list li {
+  font-size: .78rem;
+  line-height: 1.5;
+  padding-left: 18px;
+  position: relative;
+  color: var(--text);
+}
+
+.proto-features__list li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Use Cases */
+.proto-use-cases {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.proto-use-cases__title {
+  font-size: .78rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.proto-use-cases__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proto-use-case-tag {
+  font-size: .72rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* Interactive Header Diagram */
+.proto-header-diagram {
+  margin-bottom: 16px;
+}
+
+.proto-header-diagram__title {
+  font-size: .82rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.proto-header-fields {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.proto-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  min-height: 52px;
+  cursor: default;
+  transition: background var(--transition);
+  position: relative;
+}
+
+.proto-field:hover {
+  background: var(--bg-surface);
+}
+
+.proto-field__name {
+  font-size: .68rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.proto-field__bits {
+  font-size: .6rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.proto-field__tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 6px 10px;
+  font-size: .7rem;
+  color: var(--text);
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.proto-field:hover .proto-field__tooltip {
+  display: block;
+}
+
+/* ── Interactive Packet Builder ── */
+.proto-builder {
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.proto-builder__title {
+  font-size: .88rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.proto-builder__desc {
+  font-size: .72rem;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.proto-builder__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.proto-builder__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.proto-builder__label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.proto-builder__input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: .8rem;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.proto-builder__input:focus {
+  border-color: var(--accent);
+}
+
+select.proto-builder__input {
+  cursor: pointer;
+}
+
+/* TCP Flags checkboxes */
+.proto-builder__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.proto-builder__flag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .72rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.proto-builder__flag input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Hex preview */
+.proto-builder__preview {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.proto-builder__preview-title {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.proto-builder__hex {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .7rem;
+  line-height: 1.6;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  overflow-x: auto;
+  color: var(--text);
+  white-space: pre;
+  margin: 0;
+}
+
+.proto-builder__hex--text {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.proto-builder__size {
+  font-size: .68rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  text-align: right;
+}
+
+/* Related protocols */
+.proto-related {
+  margin-bottom: 12px;
+}
+
+.proto-related__title {
+  font-size: .78rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.proto-related__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proto-related__link {
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.proto-related__link:active { transform: scale(.95); }
+
+/* Theory link */
+.proto-theory-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  transition: all var(--transition);
+}
+
+.proto-theory-link:active { transform: scale(.96); }
+
+/* Desktop: 2-col grid */
+@media (min-width: 768px) {
+  .proto-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .proto-builder__form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  /* Let flags span full width */
+  .proto-builder__field:has(.proto-builder__flags) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .proto-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

@@ -1,11 +1,89 @@
 /* ==================== TERMINAL: Command Implementations ==================== */
 import { sleep } from '../core/utils.js';
-import { addXP } from '../core/gamification.js';
+import { addXP, unlockAchievement } from '../core/gamification.js';
 import { SIM_NET, resolveHost, termLine, termScroll } from './terminal-network.js';
+import { VirtualFS } from '../core/filesystem.js';
+import { TERM_SCENARIOS } from '../data/terminal-scenarios.js';
+
+const vfs = new VirtualFS();
+let cwd = '/home/student';
+
+/* ---- Scenario state ---- */
+let activeScenario = null;
+let activeStep = 0;
+const completedScenarios = new Set(
+  JSON.parse(localStorage.getItem('osi-term-scenarios') || '[]')
+);
+let _scenarioTermOutput = null;
+
+function _saveCompletedScenarios() {
+  localStorage.setItem('osi-term-scenarios', JSON.stringify([...completedScenarios]));
+}
+
+/** Called by terminal.js after every command to check scenario progress */
+export function checkScenarioStep(cmd) {
+  if (!activeScenario || !_scenarioTermOutput) return;
+  const tl = (text, cls) => termLine(_scenarioTermOutput, text, cls);
+
+  const step = activeScenario.steps[activeStep];
+  if (!step) return;
+
+  if (step.check(cmd)) {
+    activeStep++;
+    const total = activeScenario.steps.length;
+
+    if (activeStep >= total) {
+      // Scenario complete
+      tl('');
+      tl('\u2550'.repeat(44), 'header');
+      tl(`\u2705 \u0428\u0430\u0433 ${total}/${total} \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d!`);
+      tl('');
+      tl(`\u{1F389} \u0421\u0446\u0435\u043d\u0430\u0440\u0438\u0439 \u00ab${activeScenario.title}\u00bb \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d!`);
+      tl(`   \u2B50 \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u043e: ${activeScenario.xp} XP`);
+      tl('\u2550'.repeat(44), 'header');
+
+      addXP(activeScenario.xp);
+      completedScenarios.add(activeScenario.id);
+      _saveCompletedScenarios();
+
+      // Achievements per scenario index
+      const idx = TERM_SCENARIOS.findIndex(s => s.id === activeScenario.id);
+      if (idx >= 0) unlockAchievement(`term_scenario_${idx + 1}`);
+      // Generic terminal scenario achievement
+      unlockAchievement('term_scenario');
+      // All 10 scenarios complete
+      if (completedScenarios.size >= TERM_SCENARIOS.length) {
+        unlockAchievement('term_all_scenarios');
+      }
+
+      activeScenario = null;
+      activeStep = 0;
+    } else {
+      // Next step
+      const next = activeScenario.steps[activeStep];
+      tl('');
+      tl(`\u2705 \u0428\u0430\u0433 ${activeStep}/${total} \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d!`);
+      tl(`\u{1F4CB} \u0428\u0430\u0433 ${activeStep + 1}/${total}: ${next.instruction}`);
+    }
+  }
+}
+
+/** Получить текущий рабочий каталог */
+export function getCwd() { return cwd; }
 
 export function buildCommands(termOutput) {
   const tl = (text, cls) => termLine(termOutput, text, cls);
   const ts = () => termScroll(termOutput);
+  _scenarioTermOutput = termOutput;
+
+  /* ---- состояние симулированных сервисов ---- */
+  const services = {
+    nginx:    { active: true,  desc: 'A high performance web server and a reverse proxy server' },
+    dhcpd:    { active: false, desc: 'DHCPv4 Server Daemon' },
+    named:    { active: true,  desc: 'Berkeley Internet Name Domain (DNS)' },
+    sshd:     { active: true,  desc: 'OpenBSD Secure Shell server' },
+    iptables: { active: true,  desc: 'IPv4 packet filtering and NAT' },
+  };
 
   const TERM_COMMANDS = {
     help() {
@@ -48,15 +126,49 @@ export function buildCommands(termOutput) {
       ];
       conn.forEach(c => tl(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
       tl('');
-      tl('═══ HTTP и файлы ═══', 'header');
+      tl('═══ HTTP и загрузка ═══', 'header');
       const http = [
         ['curl &lt;url&gt;', 'HTTP-запрос (заголовки ответа)'],
         ['wget &lt;url&gt;', 'Скачать файл'],
       ];
       http.forEach(c => tl(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
       tl('');
-      tl('  <span class="term-cmd">clear                         </span> Очистить экран');
-      tl('  <span class="term-cmd">help                          </span> Эта справка');
+      tl('═══ Файловая система ═══', 'header');
+      const fs = [
+        ['cat &lt;file&gt;', 'Показать содержимое файла'],
+        ['ls [-l] [path]', 'Список файлов и каталогов'],
+        ['cd &lt;dir&gt;', 'Сменить каталог'],
+        ['pwd', 'Текущий рабочий каталог'],
+        ['grep &lt;pattern&gt; &lt;file&gt;', 'Поиск строки в файле'],
+        ['head [-n N] &lt;file&gt;', 'Первые N строк файла'],
+        ['tail [-n N | -f] &lt;file&gt;', 'Последние N строк / поток'],
+        ['touch &lt;file&gt;', 'Создать пустой файл'],
+        ['mkdir &lt;dir&gt;', 'Создать каталог'],
+        ['echo [text] [&gt; file]', 'Вывод текста / запись в файл'],
+        ['find &lt;dir&gt; -name &lt;pattern&gt;', 'Рекурсивный поиск файлов'],
+        ['chmod &lt;mode&gt; &lt;file&gt;', 'Изменить права доступа'],
+      ];
+      fs.forEach(c => tl(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      tl('');
+      tl('═══ Сервисы ═══', 'header');
+      const svc = [
+        ['systemctl status &lt;svc&gt;', 'Статус сервиса'],
+        ['systemctl start|stop &lt;svc&gt;', 'Запустить / остановить сервис'],
+        ['service &lt;svc&gt; &lt;action&gt;', 'Алиас для systemctl'],
+      ];
+      svc.forEach(c => tl(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      tl('');
+      tl('\u2550\u2550\u2550 \u0421\u0446\u0435\u043D\u0430\u0440\u0438\u0438 \u2550\u2550\u2550', 'header');
+      const scen = [
+        ['scenario', '\u0421\u043F\u0438\u0441\u043E\u043A \u043F\u043E\u0448\u0430\u0433\u043E\u0432\u044B\u0445 \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0435\u0432 (10 \u0443\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u0439)'],
+        ['scenario N', '\u041D\u0430\u0447\u0430\u0442\u044C \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0439 N'],
+        ['scenario hint', '\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043A \u0442\u0435\u043A\u0443\u0449\u0435\u043C\u0443 \u0448\u0430\u0433\u0443'],
+        ['scenario quit', '\u041F\u0440\u0435\u0440\u0432\u0430\u0442\u044C \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0439'],
+      ];
+      scen.forEach(c => tl(`  <span class="term-cmd">${c[0].padEnd(30)}</span> ${c[1]}`));
+      tl('');
+      tl('  <span class="term-cmd">clear                         </span> \u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C \u044D\u043A\u0440\u0430\u043D');
+      tl('  <span class="term-cmd">help                          </span> \u042D\u0442\u0430 \u0441\u043F\u0440\u0430\u0432\u043A\u0430');
       addXP(2);
     },
 
@@ -391,6 +503,412 @@ export function buildCommands(termOutput) {
       tl(`Welcome to ${host} (Ubuntu 22.04.3 LTS)`);
       tl(`Last login: ${new Date(Date.now() - 86400000).toUTCString()}`);
       addXP(2);
+    },
+
+    /* ==================== Файловая система ==================== */
+
+    cat(args) {
+      if (!args.length) { tl('cat: не указан файл', 'error'); return; }
+      const path = vfs.resolvePath(cwd, args[0]);
+      const content = vfs.readFile(path);
+      if (content === null) {
+        tl(`cat: ${args[0]}: Нет такого файла или каталога`, 'error');
+        return;
+      }
+      const isConf = /\.(conf|cnf|cfg|ini|rules|db)$/.test(path) || path.endsWith('.v4');
+      const lines = content.split('\n');
+      lines.forEach(line => {
+        let out = line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        if (isConf) {
+          // подсветка комментариев
+          if (/^\s*(#|;|\/\/)/.test(out)) {
+            out = `<span class="term-time">${out}</span>`;
+          } else {
+            // подсветка ключевых слов
+            out = out.replace(/\b(listen|server|root|index|proxy_pass|nameserver|subnet|range|option|zone|type|master|file|forwarders|allow-query|default-lease-time|max-lease-time|address|netmask|gateway|dns-nameservers|auto|iface|inet|static|loopback|worker_processes|worker_connections|sendfile|keepalive_timeout|include|default_type|server_name|try_files|location|net\.\S+)\b/g,
+              '<span class="term-cmd">$1</span>');
+            // подсветка IP-адресов
+            out = out.replace(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g,
+              '<span class="term-ip">$1</span>');
+          }
+        }
+        tl(out);
+      });
+      addXP(3);
+    },
+
+    ls(args) {
+      const longFlag = args.includes('-l') || args.includes('-la') || args.includes('-al');
+      const filtered = args.filter(a => !a.startsWith('-'));
+      const target = filtered.length ? vfs.resolvePath(cwd, filtered[0]) : cwd;
+      const entries = vfs.listDir(target);
+      if (entries === null) {
+        tl(`ls: невозможно открыть каталог '${filtered[0] || target}': Нет такого файла или каталога`, 'error');
+        return;
+      }
+      if (longFlag) {
+        tl(`итого ${entries.length}`, 'header');
+        entries.forEach(e => {
+          const fullPath = target === '/' ? '/' + e.name : target + '/' + e.name;
+          const perm = vfs.getPermissions(fullPath) || (e.type === 'dir' ? 'drwxr-xr-x' : '-rw-r--r--');
+          const size = e.type === 'file' ? String(vfs.getSize(fullPath)).padStart(6) : '  4096';
+          const date = 'фев 25 08:00';
+          const nameHtml = e.type === 'dir'
+            ? `<span class="term-cmd">${e.name}/</span>`
+            : e.name;
+          tl(`${perm}  1 root root ${size} ${date} ${nameHtml}`);
+        });
+      } else {
+        let line = '';
+        entries.forEach(e => {
+          const name = e.type === 'dir'
+            ? `<span class="term-cmd">${e.name}/</span>`
+            : e.name;
+          line += name + '  ';
+        });
+        if (line) tl(line);
+      }
+      addXP(2);
+    },
+
+    cd(args) {
+      if (!args.length || args[0] === '~') { cwd = '/home/student'; addXP(1); return; }
+      const target = vfs.resolvePath(cwd, args[0]);
+      const kind = vfs.exists(target);
+      if (kind === 'dir') {
+        cwd = target;
+      } else if (kind === 'file') {
+        tl(`bash: cd: ${args[0]}: Не является каталогом`, 'error');
+      } else {
+        tl(`bash: cd: ${args[0]}: Нет такого файла или каталога`, 'error');
+      }
+      addXP(1);
+    },
+
+    pwd() {
+      tl(cwd);
+      addXP(1);
+    },
+
+    grep(args) {
+      if (args.length < 2) { tl('Использование: grep &lt;pattern&gt; &lt;file&gt;', 'error'); return; }
+      const pattern = args[0];
+      const path = vfs.resolvePath(cwd, args[1]);
+      const content = vfs.readFile(path);
+      if (content === null) {
+        tl(`grep: ${args[1]}: Нет такого файла или каталога`, 'error');
+        return;
+      }
+      let found = 0;
+      const re = new RegExp(`(${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      content.split('\n').forEach(line => {
+        if (re.test(line)) {
+          found++;
+          const safe = line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          tl(safe.replace(re, '<span class="term-fail">$1</span>'));
+        }
+      });
+      if (!found) tl(`(совпадений не найдено)`);
+      addXP(3);
+    },
+
+    async tail(args) {
+      const followFlag = args.includes('-f');
+      let nLines = 10;
+      const nIdx = args.indexOf('-n');
+      if (nIdx !== -1) {
+        nLines = parseInt(args[nIdx + 1]) || 10;
+      }
+      // убираем флаги и числовой аргумент -n
+      const skip = new Set(['-f', '-n']);
+      if (nIdx !== -1 && args[nIdx + 1]) skip.add(args[nIdx + 1]);
+      const fileArg = args.find(a => !skip.has(a) && !a.startsWith('-'));
+      if (!fileArg) { tl('Использование: tail [-n N] [-f] &lt;file&gt;', 'error'); return; }
+      const path = vfs.resolvePath(cwd, fileArg);
+      const content = vfs.readFile(path);
+      if (content === null) {
+        tl(`tail: невозможно открыть '${fileArg}': Нет такого файла или каталога`, 'error');
+        return;
+      }
+      const lines = content.split('\n').filter(l => l.length > 0);
+      const start = Math.max(0, lines.length - nLines);
+      lines.slice(start).forEach(line => {
+        tl(line.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+      });
+      ts();
+      if (followFlag) {
+        tl('--- tail -f: потоковый вывод (симуляция) ---', 'info');
+        ts();
+        const svcs = ['kernel', 'systemd', 'NetworkManager', 'sshd', 'cron', 'nginx'];
+        const liveMsgs = [
+          'eth0: link watchdog — link is up',
+          'Accepted publickey for student from 192.168.1.50 port 52440',
+          'DHCPACK of 192.168.1.100 from 192.168.1.1 (xid=0x3a4f21b8)',
+          'Firewall: INPUT ACCEPT IN=eth0 SRC=192.168.1.55 PROTO=TCP DPT=80',
+          'GET /index.html HTTP/1.1 200 3456 "Mozilla/5.0"',
+          'TCP connection established: 192.168.1.100:443 → 93.184.216.34:54321',
+          'ARP: who-has 192.168.1.1 tell 192.168.1.100',
+          'rsyslogd: action \'action-3-builtin:omfile\' resumed',
+        ];
+        for (let i = 0; i < 6; i++) {
+          await sleep(1000 + Math.random() * 1500);
+          const now = new Date();
+          const stamp = `Feb 25 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+          const svc = svcs[Math.floor(Math.random() * svcs.length)];
+          const msg = liveMsgs[Math.floor(Math.random() * liveMsgs.length)];
+          tl(`${stamp} netlab-student ${svc}[${2000 + Math.floor(Math.random() * 1000)}]: ${msg}`);
+          ts();
+        }
+        tl('--- (Ctrl+C) завершение tail -f ---', 'info');
+      }
+      addXP(3);
+    },
+
+    head(args) {
+      let nLines = 10;
+      if (args.includes('-n')) {
+        const idx = args.indexOf('-n');
+        nLines = parseInt(args[idx + 1]) || 10;
+      }
+      const fileArg = args.find(a => !a.startsWith('-') && a !== String(nLines));
+      if (!fileArg) { tl('Использование: head [-n N] &lt;file&gt;', 'error'); return; }
+      const path = vfs.resolvePath(cwd, fileArg);
+      const content = vfs.readFile(path);
+      if (content === null) {
+        tl(`head: невозможно открыть '${fileArg}': Нет такого файла или каталога`, 'error');
+        return;
+      }
+      const lines = content.split('\n');
+      lines.slice(0, nLines).forEach(line => {
+        tl(line.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+      });
+      addXP(2);
+    },
+
+    chmod(args) {
+      if (args.length < 2) { tl('Использование: chmod &lt;mode&gt; &lt;file&gt;', 'error'); return; }
+      const mode = args[0];
+      const path = vfs.resolvePath(cwd, args[1]);
+      if (!vfs.exists(path)) {
+        tl(`chmod: невозможно изменить права '${args[1]}': Нет такого файла или каталога`, 'error');
+        return;
+      }
+      tl(`<span class="term-ok">Права '${args[1]}' изменены на ${mode}</span>`);
+      addXP(1);
+    },
+
+    mkdir(args) {
+      if (!args.length) { tl('Использование: mkdir &lt;dir&gt;', 'error'); return; }
+      const target = vfs.resolvePath(cwd, args[0]);
+      if (vfs.exists(target)) {
+        tl(`mkdir: невозможно создать каталог '${args[0]}': Файл существует`, 'error');
+        return;
+      }
+      vfs.mkdir(target);
+      tl(`<span class="term-ok">Каталог '${args[0]}' создан</span>`);
+      addXP(2);
+    },
+
+    echo(args) {
+      const full = args.join(' ');
+      const redirectMatch = full.match(/^(.*?)\s*>\s*(.+)$/);
+      if (redirectMatch) {
+        let text = redirectMatch[1].trim();
+        const filePath = redirectMatch[2].trim();
+        // убрать кавычки
+        text = text.replace(/^["']|["']$/g, '');
+        const absPath = vfs.resolvePath(cwd, filePath);
+        vfs.writeFile(absPath, text + '\n');
+        tl(`<span class="term-ok">Записано в ${filePath}</span>`);
+      } else {
+        let text = full;
+        text = text.replace(/^["']|["']$/g, '');
+        tl(text.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+      }
+      addXP(1);
+    },
+
+    touch(args) {
+      if (!args.length) { tl('Использование: touch &lt;file&gt;', 'error'); return; }
+      const path = vfs.resolvePath(cwd, args[0]);
+      if (!vfs.exists(path)) {
+        vfs.writeFile(path, '');
+      }
+      tl(`<span class="term-ok">'${args[0]}' создан</span>`);
+      addXP(1);
+    },
+
+    find(args) {
+      if (args.length < 3 || args[1] !== '-name') {
+        tl('Использование: find &lt;dir&gt; -name &lt;pattern&gt;', 'error');
+        return;
+      }
+      const dir = vfs.resolvePath(cwd, args[0]);
+      const pattern = args[2].replace(/^["']|["']$/g, '');
+      if (vfs.exists(dir) !== 'dir') {
+        tl(`find: '${args[0]}': Нет такого каталога`, 'error');
+        return;
+      }
+      // рекурсивный обход
+      const re = new RegExp('^' + pattern.replace(/\./g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+      let found = 0;
+      const recurse = (dirPath) => {
+        const entries = vfs.listDir(dirPath);
+        if (!entries) return;
+        entries.forEach(e => {
+          const full = dirPath === '/' ? '/' + e.name : dirPath + '/' + e.name;
+          if (re.test(e.name)) {
+            tl(`<span class="${e.type === 'dir' ? 'term-cmd' : ''}">${full}</span>`);
+            found++;
+          }
+          if (e.type === 'dir') recurse(full);
+        });
+      };
+      recurse(dir);
+      if (!found) tl('(ничего не найдено)');
+      addXP(3);
+    },
+
+    /* ==================== Сервисы ==================== */
+
+    systemctl(args) {
+      if (args.length < 2) {
+        tl('Использование: systemctl &lt;status|start|stop&gt; &lt;service&gt;', 'error');
+        return;
+      }
+      const action = args[0];
+      const svcName = args[1].replace(/\.service$/, '');
+      const svc = services[svcName];
+      if (!svc) {
+        tl(`Unit ${svcName}.service could not be found.`, 'error');
+        return;
+      }
+      if (action === 'status') {
+        const dot = svc.active
+          ? '<span class="term-ok">●</span>'
+          : '<span class="term-fail">●</span>';
+        const state = svc.active
+          ? '<span class="term-ok">active (running)</span>'
+          : '<span class="term-fail">inactive (dead)</span>';
+        tl(`${dot} ${svcName}.service - ${svc.desc}`);
+        tl(`     Loaded: loaded (/lib/systemd/system/${svcName}.service; enabled)`);
+        tl(`     Active: ${state} since ${new Date(Date.now() - 3600000).toUTCString()}`);
+        tl(`   Main PID: ${1000 + Math.floor(Math.random() * 5000)} (${svcName})`);
+        tl(`      Tasks: ${2 + Math.floor(Math.random() * 10)} (limit: 4915)`);
+        tl(`     Memory: ${(2 + Math.random() * 60).toFixed(1)}M`);
+        tl(`        CPU: ${(0.1 + Math.random() * 2).toFixed(3)}s`);
+      } else if (action === 'start') {
+        if (svc.active) {
+          tl(`Сервис ${svcName} уже запущен.`, 'info');
+        } else {
+          svc.active = true;
+          tl(`<span class="term-ok">● ${svcName}.service запущен</span>`);
+        }
+      } else if (action === 'stop') {
+        if (!svc.active) {
+          tl(`Сервис ${svcName} уже остановлен.`, 'info');
+        } else {
+          svc.active = false;
+          tl(`<span class="term-fail">● ${svcName}.service остановлен</span>`);
+        }
+      } else if (action === 'restart') {
+        svc.active = true;
+        tl(`<span class="term-ok">● ${svcName}.service перезапущен</span>`);
+      } else {
+        tl(`Неизвестное действие: ${action}. Используйте status, start, stop, restart.`, 'error');
+      }
+      addXP(3);
+    },
+
+    service(args) {
+      if (args.length < 2) {
+        tl('Использование: service &lt;name&gt; &lt;status|start|stop&gt;', 'error');
+        return;
+      }
+      // service <name> <action> → systemctl <action> <name>
+      TERM_COMMANDS.systemctl([args[1], args[0]]);
+    },
+
+    /* ==================== Сценарии ==================== */
+
+    scenario(args) {
+      _scenarioTermOutput = termOutput;
+
+      // scenario hint
+      if (args[0] === 'hint') {
+        if (!activeScenario) {
+          tl('\u041D\u0435\u0442 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0433\u043E \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u044F. \u0412\u0432\u0435\u0434\u0438\u0442\u0435 <span class="term-cmd">scenario</span> \u0434\u043B\u044F \u0441\u043F\u0438\u0441\u043A\u0430.', 'info');
+          return;
+        }
+        const step = activeScenario.steps[activeStep];
+        if (step) {
+          tl(`\u{1F4A1} \u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430: <span class="term-cmd">${step.hint}</span>`, 'info');
+        }
+        return;
+      }
+
+      // scenario quit
+      if (args[0] === 'quit' || args[0] === 'exit' || args[0] === 'stop') {
+        if (!activeScenario) {
+          tl('\u041D\u0435\u0442 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0433\u043E \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u044F.', 'info');
+          return;
+        }
+        tl(`\u0421\u0446\u0435\u043D\u0430\u0440\u0438\u0439 \u00ab${activeScenario.title}\u00bb \u043F\u0440\u0435\u0440\u0432\u0430\u043D.`, 'info');
+        activeScenario = null;
+        activeStep = 0;
+        return;
+      }
+
+      // scenario N — start scenario
+      if (args[0] && /^\d+$/.test(args[0])) {
+        const num = parseInt(args[0]);
+        if (num < 1 || num > TERM_SCENARIOS.length) {
+          tl(`\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0438 1\u2013${TERM_SCENARIOS.length}.`, 'error');
+          return;
+        }
+        const sc = TERM_SCENARIOS[num - 1];
+        activeScenario = sc;
+        activeStep = 0;
+
+        const total = sc.steps.length;
+        const titleLine = `${sc.icon} \u0421\u0446\u0435\u043D\u0430\u0440\u0438\u0439 ${num}: ${sc.title.replace(/^\d+\.\s*/, '')}`;
+        const stepLine = `\u0428\u0430\u0433 1/${total}: ${sc.steps[0].instruction}`;
+        const hintLine = '\u{1F4A1} \u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430: scenario hint';
+
+        tl('\u2554' + '\u2550'.repeat(44) + '\u2557');
+        tl('\u2551  ' + titleLine.padEnd(43) + '\u2551');
+        tl('\u2551  ' + stepLine.padEnd(43) + '\u2551');
+        tl('\u2551  ' + hintLine.padEnd(43) + '\u2551');
+        tl('\u255A' + '\u2550'.repeat(44) + '\u255D');
+        tl('');
+        tl('\u0412\u044B\u043F\u043E\u043B\u043D\u044F\u0439\u0442\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u044B \u043F\u0440\u044F\u043C\u043E \u0432 \u0442\u0435\u0440\u043C\u0438\u043D\u0430\u043B\u0435. \u0421\u0438\u0441\u0442\u0435\u043C\u0430 \u043F\u0440\u043E\u0432\u0435\u0440\u0438\u0442 \u043A\u0430\u0436\u0434\u044B\u0439 \u0448\u0430\u0433 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438.', 'info');
+        return;
+      }
+
+      // scenario (no args) — list all
+      tl('\u2550\u2550\u2550 \u0421\u0446\u0435\u043D\u0430\u0440\u0438\u0438 \u0442\u0435\u0440\u043C\u0438\u043D\u0430\u043B\u0430 \u2550\u2550\u2550', 'header');
+      tl('');
+      TERM_SCENARIOS.forEach((sc, i) => {
+        const done = completedScenarios.has(sc.id);
+        const mark = done ? '\u2705' : '\u2B1C';
+        const num = String(i + 1).padStart(2);
+        tl(`  ${mark} <span class="term-cmd">scenario ${i + 1}</span>  ${sc.icon} ${sc.title}`);
+        tl(`      ${sc.desc}  [\u0448\u0430\u0433\u043E\u0432: ${sc.steps.length}, XP: ${sc.xp}]`);
+      });
+      tl('');
+      tl(`\u041F\u0440\u043E\u0439\u0434\u0435\u043D\u043E: ${completedScenarios.size}/${TERM_SCENARIOS.length}`, 'info');
+      tl('');
+      tl('\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435:', 'header');
+      tl('  <span class="term-cmd">scenario N</span>       \u2014 \u043D\u0430\u0447\u0430\u0442\u044C \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0439 N (1\u2013' + TERM_SCENARIOS.length + ')');
+      tl('  <span class="term-cmd">scenario hint</span>    \u2014 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043A \u0442\u0435\u043A\u0443\u0449\u0435\u043C\u0443 \u0448\u0430\u0433\u0443');
+      tl('  <span class="term-cmd">scenario quit</span>    \u2014 \u043F\u0440\u0435\u0440\u0432\u0430\u0442\u044C \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0439');
+
+      if (activeScenario) {
+        tl('');
+        const total = activeScenario.steps.length;
+        tl(`\u25B6 \u0410\u043A\u0442\u0438\u0432\u043D\u044B\u0439: ${activeScenario.icon} ${activeScenario.title} \u2014 \u0448\u0430\u0433 ${activeStep + 1}/${total}`, 'info');
+        tl(`  ${activeScenario.steps[activeStep].instruction}`);
+      }
     }
   };
 
@@ -477,5 +995,38 @@ export const TERM_CMD_INFO = [
     params: [{ label: 'Домен', id: 'host', type: 'select', options: ['google.com','ya.ru','github.com','example.com'] }],
     flags: '', build: (p) => `whois ${p.host}` },
   { cmd: 'hostname', label: 'hostname', desc: 'Имя текущей машины, FQDN и IP-адрес.',
-    params: [], flags: '<code>-f</code> FQDN &nbsp; <code>-I</code> все IP &nbsp; <code>-d</code> домен', build: () => 'hostname' }
+    params: [], flags: '<code>-f</code> FQDN &nbsp; <code>-I</code> все IP &nbsp; <code>-d</code> домен', build: () => 'hostname' },
+  { cmd: 'cat', label: 'cat', desc: 'Показать содержимое файла. Конфигурационные файлы подсвечиваются автоматически.',
+    params: [{ label: 'Файл', id: 'file', type: 'select', options: ['/etc/hosts','/etc/resolv.conf','/etc/network/interfaces','/etc/nginx/nginx.conf','/etc/bind/named.conf','/etc/dhcp/dhcpd.conf','/etc/sysctl.conf','/etc/iptables/rules.v4','/home/student/.bashrc'] }],
+    flags: '', build: (p) => `cat ${p.file}` },
+  { cmd: 'ls', label: 'ls', desc: 'Список файлов и каталогов. Каталоги выделены цветом.',
+    params: [{ label: 'Путь', id: 'path', type: 'select', options: ['.','/etc','/var/log','/proc/net','/home/student','/etc/nginx','/etc/bind/zones'] }],
+    flags: '<code>-l</code> подробный вывод (права, размер)',
+    build: (p) => `ls -l ${p.path}` },
+  { cmd: 'cd', label: 'cd', desc: 'Сменить текущий рабочий каталог. Поддерживает абсолютные и относительные пути, «..» и «~».',
+    params: [{ label: 'Каталог', id: 'dir', type: 'select', options: ['/etc','/var/log','/proc/net','/home/student','..','~'] }],
+    flags: '', build: (p) => `cd ${p.dir}` },
+  { cmd: 'grep', label: 'grep', desc: 'Поиск строки (паттерна) в файле. Совпадения выделяются цветом.',
+    params: [
+      { label: 'Паттерн', id: 'pattern', type: 'input', placeholder: 'nameserver' },
+      { label: 'Файл', id: 'file', type: 'select', options: ['/etc/resolv.conf','/etc/hosts','/var/log/syslog','/var/log/auth.log','/etc/nginx/nginx.conf'] }
+    ],
+    flags: '<code>-i</code> без учёта регистра &nbsp; <code>-n</code> номера строк &nbsp; <code>-c</code> количество совпадений',
+    build: (p) => `grep ${p.pattern || 'nameserver'} ${p.file}` },
+  { cmd: 'tail', label: 'tail', desc: 'Показать последние строки файла. С флагом -f симулирует потоковый вывод логов в реальном времени.',
+    params: [{ label: 'Файл', id: 'file', type: 'select', options: ['/var/log/syslog','/var/log/auth.log','/var/log/nginx/access.log'] }],
+    flags: '<code>-n N</code> кол-во строк &nbsp; <code>-f</code> следить за файлом (поток)',
+    build: (p) => `tail -n 5 ${p.file}` },
+  { cmd: 'systemctl', label: 'systemctl', desc: 'Управление системными сервисами — статус, запуск, остановка. Сервисы: nginx, dhcpd, named, sshd, iptables.',
+    params: [
+      { label: 'Действие', id: 'action', type: 'select', options: ['status','start','stop','restart'] },
+      { label: 'Сервис', id: 'svc', type: 'select', options: ['nginx','sshd','named','dhcpd','iptables'] }
+    ],
+    flags: '', build: (p) => `systemctl ${p.action} ${p.svc}` },
+  { cmd: 'scenario', label: '\u{1F3AF} scenario', desc: 'Пошаговые сценарии — 10 управляемых упражнений по настройке сети, DNS, DHCP, firewall, VPN и диагностике.',
+    params: [
+      { label: '\u0421\u0446\u0435\u043D\u0430\u0440\u0438\u0439', id: 'num', type: 'select', options: ['','1','2','3','4','5','6','7','8','9','10','hint','quit'] }
+    ],
+    flags: '<code>scenario</code> \u0441\u043F\u0438\u0441\u043E\u043A &nbsp; <code>scenario N</code> \u043D\u0430\u0447\u0430\u0442\u044C &nbsp; <code>scenario hint</code> \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 &nbsp; <code>scenario quit</code> \u043F\u0440\u0435\u0440\u0432\u0430\u0442\u044C',
+    build: (p) => p.num ? `scenario ${p.num}` : 'scenario' }
 ];

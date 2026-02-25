@@ -162,6 +162,24 @@ function renderNBPath() {
 }
 
 export function initNetBuilder() {
+  const labEl = document.getElementById('lab-netBuilder');
+  if (!labEl) return;
+  let built = false;
+
+  function build() {
+    if (built) return;
+    built = true;
+    _initNetBuilderInner();
+  }
+
+  const obs = new MutationObserver(() => {
+    if (labEl.classList.contains('active') && !built) build();
+  });
+  obs.observe(labEl, { attributes: true, attributeFilter: ['class'] });
+  if (labEl.classList.contains('active')) build();
+}
+
+function _initNetBuilderInner() {
   renderNBPresets();
   renderNBPath();
 

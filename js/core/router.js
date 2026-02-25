@@ -57,7 +57,7 @@ function initRouter() {
   document.querySelectorAll('.side-menu__item').forEach(btn =>
     btn.addEventListener('click', () => navigateTo(btn.dataset.section))
   );
-  document.querySelectorAll('.nav-card').forEach(card =>
+  document.querySelectorAll('.nav-card[data-nav]').forEach(card =>
     card.addEventListener('click', () => navigateTo(card.dataset.nav))
   );
 
@@ -78,4 +78,4 @@ function initRouter() {
   });
 }
 
-export { navigateTo, initRouter, physicsState, updateChChannelInfo };
+export { navigateTo, initRouter, updateChChannelInfo };

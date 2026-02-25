@@ -118,4 +118,4 @@ function initLabData() {
   updateLabData();
 }
 
-export { labData, onLabDataChange, getLabBits, getLabText, getLabBytes, simState, initLabData };
+export { labData, onLabDataChange, getLabBits, getLabText, getLabBytes, initLabData };

@@ -9,6 +9,21 @@ export const CHANNEL_TYPES = [
     attenuation: 20, snrBase: 44, duplex: 'full', interference: 'low', propagation: 0.64,
     encoding: 'PAM-16', jitter: 0.003, bandwidthMHz: 250, defaultDist: 20,
     desc: 'Cat6 — улучшенная витая пара с разделителем пар. 10 Гбит/с на коротких дистанциях, усиленная защита от перекрёстных наводок (NEXT).' },
+  { id: 'cat6a', name: 'Ethernet Cat6a', speed: 10000, latency: 0.01, medium: 'copper', maxDist: 100,
+    icon: '🔌', color: '#2471a3',
+    attenuation: 18, snrBase: 46, duplex: 'full', interference: 'low', propagation: 0.64,
+    encoding: 'PAM-16', jitter: 0.003, bandwidthMHz: 500, defaultDist: 50,
+    desc: 'Cat6a — экранированная витая пара, 500 МГц полоса. 10GBASE-T на полные 100 м. Толще Cat6, требует более аккуратной прокладки.' },
+  { id: 'cat7', name: 'Ethernet Cat7', speed: 10000, latency: 0.01, medium: 'copper', maxDist: 100,
+    icon: '🔌', color: '#1a5276',
+    attenuation: 16, snrBase: 48, duplex: 'full', interference: 'low', propagation: 0.64,
+    encoding: 'PAM-16', jitter: 0.002, bandwidthMHz: 600, defaultDist: 50,
+    desc: 'Cat7 — полностью экранированная (S/FTP), 600 МГц. Каждая пара в индивидуальном экране. Разъём TERA или GG45. Промышленные сети.' },
+  { id: 'cat8', name: 'Ethernet Cat8', speed: 40000, latency: 0.005, medium: 'copper', maxDist: 30,
+    icon: '🔌', color: '#0e3d54',
+    attenuation: 24, snrBase: 50, duplex: 'full', interference: 'low', propagation: 0.64,
+    encoding: 'PAM-16', jitter: 0.001, bandwidthMHz: 2000, defaultDist: 15,
+    desc: 'Cat8 — 2000 МГц полоса, 25/40 Гбит/с на 30 м. Для коммутации внутри серверных стоек. Экранирование S/FTP, разъём RJ-45.' },
   { id: 'fiber_sm', name: 'Оптоволокно SM', speed: 100000, latency: 0.005, medium: 'fiber', maxDist: 80000,
     icon: '💡', color: '#e74c3c',
     attenuation: 0.2, snrBase: 55, duplex: 'full', interference: 'none', propagation: 0.67,
@@ -19,6 +34,11 @@ export const CHANNEL_TYPES = [
     attenuation: 3.0, snrBase: 48, duplex: 'full', interference: 'none', propagation: 0.67,
     encoding: '64B/66B', jitter: 0.002, bandwidthMHz: 4700, defaultDist: 100,
     desc: 'Многомодовое оптоволокно — ядро 50/62.5 мкм, несколько лучей. Модовая дисперсия ограничивает дальность. Для дата-центров.' },
+  { id: 'fiber_om3', name: 'Оптоволокно OM3', speed: 10000, latency: 0.005, medium: 'fiber', maxDist: 300,
+    icon: '💡', color: '#a93226',
+    attenuation: 3.5, snrBase: 45, duplex: 'full', interference: 'none', propagation: 0.67,
+    encoding: '64B/66B', jitter: 0.002, bandwidthMHz: 2000, defaultDist: 100,
+    desc: 'OM3 — многомодовое оптоволокно с лазерной оптимизацией (LOMMF). 10GBASE-SR на 300 м. Ядро 50 мкм, aqua-цвет оболочки. Дата-центры.' },
   { id: 'wifi24', name: 'Wi-Fi 2.4 GHz', speed: 150, latency: 3, medium: 'radio', maxDist: 70,
     icon: '📶', color: '#2ecc71',
     attenuation: 60, snrBase: 35, duplex: 'half', interference: 'high', propagation: 0.99,
@@ -34,6 +54,11 @@ export const CHANNEL_TYPES = [
     attenuation: 72, snrBase: 42, duplex: 'half', interference: 'medium', propagation: 0.99,
     encoding: 'OFDMA 1024-QAM', jitter: 0.8, bandwidthMHz: 160, defaultDist: 8,
     desc: 'Wi-Fi 6 (802.11ax) — OFDMA для параллельного доступа, 1024-QAM, Target Wake Time. Лучше в плотных сетях, но всё ещё полудуплекс.' },
+  { id: 'wifi7', name: 'Wi-Fi 7 (be)', speed: 46000, latency: 0.5, medium: 'radio', maxDist: 30,
+    icon: '📶', color: '#0e8a6e',
+    attenuation: 74, snrBase: 44, duplex: 'half', interference: 'medium', propagation: 0.99,
+    encoding: 'OFDMA 4096-QAM', jitter: 0.5, bandwidthMHz: 320, defaultDist: 8,
+    desc: 'Wi-Fi 7 (802.11be) — 4096-QAM, каналы 320 МГц, Multi-Link Operation (MLO). До 46 Гбит/с. 2.4+5+6 ГГц одновременно. Полудуплекс.' },
   { id: 'coax', name: 'Коаксиальный', speed: 1000, latency: 0.5, medium: 'copper', maxDist: 500,
     icon: '📺', color: '#e67e22',
     attenuation: 6, snrBase: 38, duplex: 'half', interference: 'low', propagation: 0.77,
@@ -86,8 +111,8 @@ export const ENV_EFFECTS = {
 };
 
 export function getChannelEnvType(chId) {
-  if (['cat5e','cat6','coax','dsl'].includes(chId)) return 'copper';
-  if (['fiber_sm','fiber_mm'].includes(chId)) return 'fiber';
+  if (['cat5e','cat6','cat6a','cat7','cat8','coax','dsl'].includes(chId)) return 'copper';
+  if (['fiber_sm','fiber_mm','fiber_om3'].includes(chId)) return 'fiber';
   if (chId === 'satellite') return 'satellite';
   return 'radio';
 }

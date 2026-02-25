@@ -27,6 +27,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity .3s ease;
+  will-change: opacity;
 }
 
 .menu-overlay.open {
@@ -46,6 +47,8 @@
   overflow-y: auto;
   transition: left .3s cubic-bezier(.4,0,.2,1);
   padding-bottom: 40px;
+  will-change: left;
+  contain: layout style;
 }
 
 .side-menu.open { left: 0; }
@@ -148,6 +151,8 @@
   animation: fadeIn .2s ease;
   max-height: 70vh;
   overflow-y: auto;
+  will-change: opacity, transform;
+  contain: layout style;
 }
 
 .xp-panel.open { display: block; }
@@ -187,6 +192,7 @@
   background: linear-gradient(90deg, var(--accent), var(--l4));
   border-radius: 4px;
   transition: width .5s ease;
+  will-change: width;
 }
 
 .xp-bar__label {
@@ -253,6 +259,8 @@
   font-weight: 600;
   animation: toastIn .4s ease, toastOut .4s ease 2.6s forwards;
   pointer-events: auto;
+  will-change: opacity, transform;
+  contain: layout style;
 }
 
 .toast__icon { font-size: 1.2rem; flex-shrink: 0; }
@@ -290,8 +298,9 @@
   display: none;
   padding: 16px;
   animation: fadeIn .35s ease;
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
+  will-change: opacity, transform;
 }
 
 .section.active { display: block; }
@@ -310,6 +319,7 @@
   margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition);
+  contain: layout style;
 }
 
 .card:active { transform: scale(.98); }

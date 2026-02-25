@@ -91,9 +91,55 @@ export function drawLineCode(canvas, bits, type) {
       const y = mid - (levels[symIdx] / 3) * amp;
       if (i === 0) ctx.moveTo(x0, y); else ctx.lineTo(x0, y);
       ctx.lineTo(x1, y);
+    } else if (type === 'mlt3') {
+      // MLT-3: 3 levels, cycle 0→+1→0→−1→0→+1... on bit=1
+      const mlt3Levels = [0, 1, 0, -1];
+      if (b === 1) prevLevel = (prevLevel + 1) % 4;
+      const val = mlt3Levels[prevLevel];
+      const y = mid - val * amp;
+      if (i === 0) ctx.moveTo(x0, y); else ctx.lineTo(x0, y);
+      ctx.lineTo(x1, y);
+    } else if (type === 'pam5') {
+      // PAM-5: 5 levels, map pairs of bits + trellis
+      const levels5 = [-2, -1, 0, 1, 2];
+      const pair = (i % 2 === 0 && i + 1 < bits.length) ? bits[i] * 2 + bits[i + 1] : bits[i] * 2;
+      const symIdx = Math.min(pair, 3) + (i % 4 === 0 ? 1 : 0);
+      const val = levels5[Math.min(symIdx, 4)];
+      const y = mid - (val / 2) * amp;
+      if (i === 0) ctx.moveTo(x0, y); else ctx.lineTo(x0, y);
+      ctx.lineTo(x1, y);
+    } else if (type === 'fourb5b') {
+      // 4B/5B: show NRZI-like output with expanded bits
+      const table4b5b = [0x1E,0x09,0x14,0x15,0x0A,0x0B,0x0E,0x0F,0x12,0x13,0x16,0x17,0x1A,0x1B,0x1C,0x1D];
+      const nibbleIdx = Math.floor(i / 4);
+      const nibbleStart = nibbleIdx * 4;
+      let nibbleVal = 0;
+      for (let j = 0; j < 4 && nibbleStart + j < bits.length; j++) nibbleVal = nibbleVal * 2 + bits[nibbleStart + j];
+      const code5 = table4b5b[nibbleVal] || 0;
+      const bitInCode = i % 4;
+      const expandedBit = bitInCode < 5 ? (code5 >> (4 - bitInCode)) & 1 : b;
+      if (expandedBit) prevLevel = prevLevel ? 0 : 1;
+      const y = prevLevel ? mid - amp : mid + amp;
+      if (i === 0) ctx.moveTo(x0, y); else ctx.lineTo(x0, y);
+      ctx.lineTo(x1, y);
+    } else if (type === 'eightb10b' || type === 'sixfour66b') {
+      // Simplified: show NRZ-like with transitions added for DC balance
+      const effectiveBit = (i % 3 === 0) ? (b ^ 1) : b;
+      if (effectiveBit) prevLevel = prevLevel ? 0 : 1;
+      const y = prevLevel ? mid - amp : mid + amp;
+      if (i === 0) ctx.moveTo(x0, y); else ctx.lineTo(x0, y);
+      ctx.lineTo(x1, y);
     }
   }
   ctx.stroke();
+
+  // Draw extra annotation for block codes
+  if (type === 'fourb5b' || type === 'eightb10b' || type === 'sixfour66b') {
+    ctx.fillStyle = '#e67e2280';
+    ctx.font = '8px sans-serif';
+    const label = type === 'fourb5b' ? '4B→5B + NRZI' : type === 'eightb10b' ? '8B→10B (DC-balanced)' : '64B + 2b sync header';
+    ctx.fillText(label, w - ctx.measureText(label).width - 4, h - 4);
+  }
 }
 
 export function drawModulation(canvas, bits, type, MOD_TYPES) {

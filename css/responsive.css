@@ -1,7 +1,94 @@
-/* ========== Desktop enhancements ========== */
+/* ========== Tablet (768px+) ========== */
 @media (min-width: 768px) {
-  .section { max-width: 720px; padding: 24px; }
+  .section { max-width: 800px; padding: 24px; }
   .hero__title { font-size: 2.4rem; }
 
   .nav-cards { grid-template-columns: repeat(4, 1fr); }
+
+  .feature-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Lab: wider tabs */
+  .lab-tabs { gap: 4px; }
+
+  /* Terminal: bigger font */
+  .terminal__output { font-size: .82rem; }
+  .terminal__input { font-size: .82rem; }
+
+  /* Study: wider comparison table */
+  .comparison-table { font-size: .78rem; }
+
+  /* Simulator: config grid 4 cols */
+  .sim-config-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ========== Laptop (1024px+) ========== */
+@media (min-width: 1024px) {
+  .section { max-width: 960px; padding: 28px 32px; }
+
+  /* Home: 3-col feature cards, compact tower side-by-side feel */
+  .feature-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  /* Lab: params + result side by side */
+  .lab-content.active {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Terminal: larger, more readable */
+  .terminal { max-height: 65vh; }
+  .terminal__output { font-size: .85rem; line-height: 1.7; }
+  .terminal__input { font-size: .85rem; }
+  .term-quick__btn { font-size: .78rem; }
+
+  /* DnD: wider zones */
+  .dnd-items { gap: 8px; }
+  .dnd-zone { padding: 12px 14px; }
+
+  /* Physics lab: wider canvas */
+  .sig-canvas-wrap canvas,
+  .ch-canvas-wrap canvas { min-height: 200px; }
+}
+
+/* ========== Desktop (1200px+) ========== */
+@media (min-width: 1200px) {
+  .section { max-width: 1100px; padding: 32px 40px; }
+
+  /* Home hero */
+  .hero__title { font-size: 2.8rem; }
+  .hero__subtitle { font-size: 1rem; }
+
+  /* Home progress: horizontal layout */
+  .home-progress__metrics { gap: 16px; }
+
+  /* Feature cards: still 2 cols but wider */
+  .feature-card { padding: 18px; }
+  .feature-card__desc { font-size: .82rem; }
+
+  /* OSI tower on home: 2-row grid */
+  .osi-tower--compact {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  /* Lab: data panel + tabs side by side */
+  .lab-data-panel { padding: 16px; }
+
+  /* Simulator: wider PDU cards */
+  .pdu-card { padding: 16px; }
+
+  /* Study panel: wider */
+  .study-panel { padding: 20px; }
+
+  /* Terminal: full width feel */
+  .terminal { max-height: 70vh; }
+  .terminal__output { font-size: .88rem; }
 }

@@ -16,10 +16,104 @@
 
 .hero__subtitle {
   color: var(--text-secondary);
-  font-size: .95rem;
+  font-size: .88rem;
+  line-height: 1.5;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
-/* OSI Tower (shared) */
+.hero__stats {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.hero__pill {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: .78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ===== Home Progress Block ===== */
+.home-progress {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.home-progress__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.home-progress__icon {
+  font-size: 1.6rem;
+}
+
+.home-progress__info {
+  flex: 1;
+}
+
+.home-progress__level {
+  font-weight: 700;
+  font-size: .88rem;
+}
+
+.home-progress__xp-text {
+  font-size: .75rem;
+  color: var(--text-secondary);
+}
+
+.home-progress__bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.home-progress__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--l4), var(--l7));
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+
+.home-progress__metrics {
+  display: flex;
+  gap: 12px;
+}
+
+.home-progress__metric {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+}
+
+.home-progress__metric-value {
+  font-weight: 700;
+  font-size: .88rem;
+}
+
+.home-progress__metric-label {
+  font-size: .68rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ===== OSI Tower (shared) ===== */
 .osi-tower {
   display: flex;
   flex-direction: column;
@@ -89,7 +183,96 @@
 
 .osi-layer.active::before { opacity: .18; }
 
-/* Home nav cards */
+/* Compact tower for home */
+.osi-tower--compact {
+  margin: 12px 0;
+}
+
+.osi-tower--compact .osi-layer {
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.osi-tower--compact .osi-layer__number {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: .78rem;
+}
+
+.osi-tower--compact .osi-layer__name {
+  font-size: .82rem;
+}
+
+.osi-tower--compact .osi-layer__name-en {
+  font-size: .68rem;
+}
+
+/* ===== Feature Cards ===== */
+.feature-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.feature-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.feature-card:active { transform: scale(.98); }
+
+.feature-card__icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.feature-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.feature-card__title {
+  font-weight: 600;
+  font-size: .88rem;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feature-card__badge {
+  display: inline-block;
+  background: var(--l4);
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.feature-card__badge:empty {
+  display: none;
+}
+
+.feature-card__desc {
+  font-size: .78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Home nav cards (legacy, kept for compatibility) */
 .nav-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -111,3 +294,30 @@
 .nav-card__icon { font-size: 1.8rem; margin-bottom: 6px; }
 .nav-card__title { font-size: .85rem; font-weight: 600; }
 .nav-card__desc { font-size: .7rem; color: var(--text-secondary); margin-top: 4px; }
+
+/* ===== Home About ===== */
+.home-about {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: .8rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.home-about__title {
+  font-weight: 700;
+  font-size: .88rem;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.home-about p {
+  margin: 0 0 6px;
+}
+
+.home-about p:last-child {
+  margin-bottom: 0;
+}

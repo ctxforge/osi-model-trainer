@@ -1,5 +1,5 @@
 /* ==================== TERMINAL: UI & Input Handling ==================== */
-import { buildCommands, TERM_CMD_INFO } from './terminal-commands.js';
+import { buildCommands, TERM_CMD_INFO, getCwd, checkScenarioStep } from './terminal-commands.js';
 import { termLine, termScroll } from './terminal-network.js';
 
 let TERM_COMMANDS;
@@ -14,7 +14,8 @@ async function executeCommand(input) {
   const cmd = parts[0].toLowerCase();
   const args = parts.slice(1);
 
-  termLine(termOutput, `<span class="term-line--cmd">root@osi-lab:~$ ${input.replace(/</g, '&lt;')}</span>`);
+  const promptDir = getCwd() === '/root' ? '~' : getCwd();
+  termLine(termOutput, `<span class="term-line--cmd">root@osi-lab:${promptDir}$ ${input.replace(/</g, '&lt;')}</span>`);
 
   if (!cmd) { termScroll(termOutput); return; }
 
@@ -23,6 +24,10 @@ async function executeCommand(input) {
   } else {
     termLine(termOutput, `bash: ${cmd}: command not found. Введите <span class="term-cmd">help</span> для списка команд`, 'error');
   }
+
+  // Check active scenario step against the full input
+  checkScenarioStep(input.trim().toLowerCase());
+
   termLine(termOutput, '');
   termScroll(termOutput);
 }

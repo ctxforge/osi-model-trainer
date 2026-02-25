@@ -3,6 +3,24 @@ import { addXP } from '../core/gamification.js';
 import { labData, getLabText } from '../core/lab-data.js';
 
 export function initJourney() {
+  const container = document.getElementById('lab-journey');
+  if (!container) return;
+  let built = false;
+
+  function build() {
+    if (built) return;
+    built = true;
+    _initJourneyInner();
+  }
+
+  const obs = new MutationObserver(() => {
+    if (container.classList.contains('active') && !built) build();
+  });
+  obs.observe(container, { attributes: true, attributeFilter: ['class'] });
+  if (container.classList.contains('active')) build();
+}
+
+function _initJourneyInner() {
   let journeyFile = null;
   let journeyImgData = null;
 

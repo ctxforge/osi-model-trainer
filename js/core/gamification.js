@@ -6,6 +6,7 @@ if (!gameState.xp) gameState.xp = 0;
 if (!gameState.achievements) gameState.achievements = [];
 if (!gameState.studiedLayers) gameState.studiedLayers = [];
 if (!gameState.usedChannels) gameState.usedChannels = [];
+if (!gameState.theoryRead) gameState.theoryRead = [];
 
 function saveGame() { localStorage.setItem('osi-game', JSON.stringify(gameState)); }
 
@@ -32,6 +33,8 @@ function addXP(amount) {
   }
   if (gameState.xp >= 100) unlockAchievement('xp_100');
   if (gameState.xp >= 300) unlockAchievement('xp_300');
+  if (gameState.xp >= 1000) unlockAchievement('xp_1000');
+  if (gameState.xp >= 5000) unlockAchievement('xp_5000');
 }
 
 function unlockAchievement(id) {
@@ -74,7 +77,10 @@ function updateXPDisplay() {
     <div class="xp-bar__label">${next.minXp > lvl.minXp ? `${gameState.xp}/${next.minXp} XP \u0434\u043e \u00ab${next.name}\u00bb` : '\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439 \u0443\u0440\u043e\u0432\u0435\u043d\u044c!'}</div>
     <div class="xp-achievements">
       <div class="xp-achievements__title">\u0414\u043e\u0441\u0442\u0438\u0436\u0435\u043d\u0438\u044f (${gameState.achievements.length}/${ACHIEVEMENTS.length})</div>
-      ${ACHIEVEMENTS.map(a => {
+      ${ACHIEVEMENTS.filter(a => {
+        const unlocked = gameState.achievements.includes(a.id);
+        return unlocked || !a.hidden;
+      }).map(a => {
         const unlocked = gameState.achievements.includes(a.id);
         return `<div class="xp-ach ${unlocked ? '' : 'xp-ach--locked'}">
           <div class="xp-ach__icon">${a.icon}</div>
@@ -82,6 +88,7 @@ function updateXPDisplay() {
           ${a.xp > 0 ? `<div class="xp-ach__xp">${unlocked ? '\u2713' : '+' + a.xp}</div>` : ''}
         </div>`;
       }).join('')}
+      ${ACHIEVEMENTS.some(a => a.hidden && !gameState.achievements.includes(a.id)) ? `<div class="xp-ach xp-ach--locked" style="justify-content:center;font-style:italic;color:var(--text-secondary);font-size:.72rem">+ ${ACHIEVEMENTS.filter(a => a.hidden && !gameState.achievements.includes(a.id)).length} скрытых достижений</div>` : ''}
     </div>
   `;
 }
@@ -102,4 +109,4 @@ function initGamification() {
   });
 }
 
-export { gameState, saveGame, addXP, unlockAchievement, showToast, updateXPDisplay, initGamification };
+export { gameState, saveGame, addXP, unlockAchievement, showToast, updateXPDisplay, initGamification, getCurrentLevel, getNextLevel };

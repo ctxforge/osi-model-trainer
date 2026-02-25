@@ -56,21 +56,27 @@
 
 /* ========== LAB Section ========== */
 .lab-tabs {
+  margin-bottom: 16px;
+}
+
+/* --- Group Pills --- */
+.lab-groups {
   display: flex;
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 8px;
-  margin-bottom: 16px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.lab-tabs::-webkit-scrollbar { display: none; }
 .lab-groups::-webkit-scrollbar { display: none; }
 
-.lab-tab {
+.lab-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
-  border-radius: 20px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-secondary);
@@ -82,12 +88,76 @@
   flex-shrink: 0;
 }
 
+.lab-group-btn:active { transform: scale(.96); }
+
+.lab-group-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.lab-group-btn__icon {
+  font-size: .9rem;
+  line-height: 1;
+}
+
+.lab-group-btn__label {
+  font-size: .75rem;
+}
+
+/* --- Group Description --- */
+.lab-group-desc {
+  font-size: .72rem;
+  color: var(--text-secondary);
+  padding: 6px 2px 10px;
+  line-height: 1.4;
+}
+
+/* --- Experiment Tabs --- */
+.lab-exp-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.lab-exp-tabs::-webkit-scrollbar { display: none; }
+
+.lab-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  will-change: transform, background-color;
+}
+
 .lab-tab:active { transform: scale(.95); }
 
 .lab-tab.active {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+.lab-tab__icon {
+  font-size: .85rem;
+  line-height: 1;
+}
+
+.lab-tab__name {
+  font-size: .75rem;
 }
 
 .lab-content {
@@ -1662,3 +1732,227 @@
 }
 
 .tls-lock { color: #2ecc71; }
+
+/* ========== TCP State Machine ========== */
+.tcp-fsm__diagram {
+  background: #0a0e14;
+  border: 1px solid #1a2030;
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.tcp-fsm__diagram svg text {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ========== TCP Sliding Window ========== */
+.tcp-window-bar {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 8px 0;
+  scrollbar-width: none;
+}
+
+.tcp-window-bar::-webkit-scrollbar { display: none; }
+
+.tcp-seg {
+  min-width: 28px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .68rem;
+  font-weight: 700;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all .3s ease;
+}
+
+.tcp-seg--acked { background: rgba(46,204,113,.25); border-color: #2ecc71; color: #2ecc71; }
+.tcp-seg--sent { background: rgba(241,196,15,.2); border-color: #f1c40f; color: #f1c40f; }
+.tcp-seg--sendable { background: rgba(52,152,219,.2); border-color: #3498db; color: #3498db; }
+.tcp-seg--blocked { background: var(--bg-surface); border-color: var(--border); color: var(--text-secondary); opacity: .4; }
+.tcp-seg--lost { background: rgba(231,76,60,.2); border-color: #e74c3c; color: #e74c3c; }
+
+.tcp-window-ptr {
+  display: flex;
+  gap: 2px;
+}
+
+.tcp-window-ptr__cell {
+  min-width: 28px;
+  height: 16px;
+  text-align: center;
+  font-size: .55rem;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.tcp-window-log {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: .72rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.tcp-window-log__entry {
+  padding: 2px 0;
+  line-height: 1.5;
+}
+
+.tcp-window-log--send { color: #3498db; }
+.tcp-window-log--ack { color: #2ecc71; }
+.tcp-window-log--loss { color: #e74c3c; }
+.tcp-window-log--retransmit { color: #e67e22; }
+.tcp-window-log--done { color: #2ecc71; font-weight: 700; }
+
+/* ========== VLAN Simulator ========== */
+.vlan-ports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.vlan-port {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-size: .75rem;
+}
+
+.vlan-port__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.vlan-port__id {
+  font-weight: 700;
+  font-size: .7rem;
+}
+
+.vlan-port__label {
+  font-size: .68rem;
+  color: var(--text-secondary);
+}
+
+.vlan-port__config {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vlan-port__mode,
+.vlan-port__vlan {
+  width: 100%;
+  padding: 5px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: .7rem;
+  outline: none;
+}
+
+.vlan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.vlan-entry {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-size: .75rem;
+}
+
+.vlan-member-chip {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: .62rem;
+  font-weight: 600;
+}
+
+/* ========== Firewall Simulator ========== */
+.fw-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.fw-rule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-xs);
+  font-size: .72rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.fw-rule.fw-accept { border-left: 3px solid #2ecc71; }
+.fw-rule.fw-drop { border-left: 3px solid #e74c3c; }
+.fw-rule.fw-reject { border-left: 3px solid #e67e22; }
+.fw-rule.fw-nat { border-left: 3px solid #3498db; }
+
+.fw-rule__num { font-weight: 700; color: var(--text-secondary); min-width: 28px; }
+.fw-rule__proto { font-weight: 600; color: var(--accent); min-width: 36px; }
+.fw-rule__addr { flex: 1; color: var(--text); }
+.fw-rule__action { font-weight: 700; min-width: 58px; }
+.fw-accept .fw-rule__action { color: #2ecc71; }
+.fw-drop .fw-rule__action { color: #e74c3c; }
+.fw-reject .fw-rule__action { color: #e67e22; }
+.fw-rule__comment { color: var(--text-secondary); font-family: inherit; font-style: italic; }
+.fw-rule__del {
+  background: none; border: none; color: var(--text-secondary); cursor: pointer;
+  font-size: .8rem; padding: 2px 4px; opacity: .5; transition: opacity .2s;
+}
+.fw-rule__del:hover { opacity: 1; color: #e74c3c; }
+
+.fw-add-form {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.fw-add-form select,
+.fw-add-form input {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: .72rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  outline: none;
+}
+
+.vlan-trace {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-top: 12px;
+}

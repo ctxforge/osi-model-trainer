@@ -2,7 +2,26 @@ import { OSI_LAYERS } from '../data/osi-layers.js';
 
 export function initDevicesLab() {
   const result = document.getElementById('labResult-devices');
+  if (!result) return;
+  let built = false;
 
+  function build() {
+    if (built) return;
+    built = true;
+    _initDevicesLabInner(result);
+  }
+
+  const labEl = document.getElementById('lab-devices');
+  if (labEl) {
+    const obs = new MutationObserver(() => {
+      if (labEl.classList.contains('active') && !built) build();
+    });
+    obs.observe(labEl, { attributes: true, attributeFilter: ['class'] });
+    if (labEl.classList.contains('active')) build();
+  }
+}
+
+function _initDevicesLabInner(result) {
   const devicesInfo = {
     hub: {
       name: 'Хаб (Hub)', layer: 1, icon: '🔌',

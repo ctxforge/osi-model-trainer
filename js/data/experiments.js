@@ -1,14 +1,14 @@
 export const LAB_GROUPS = [
   { id: 'overview', name: '🚀 Обзор', desc: 'Полный путь данных от отправителя до получателя',
     experiments: ['journey', 'scenario'] },
-  { id: 'physical', name: '⚡ L1 Физика', desc: 'Сигналы, модуляция, каналы связи, мультиплексирование',
-    experiments: ['signals', 'channelPhysics', 'multiplexing'] },
+  { id: 'physical', name: '⚡ L1 Физика', desc: 'Сигналы, модуляция, каналы связи, мультиплексирование, осциллограф',
+    experiments: ['signals', 'channelPhysics', 'multiplexing', 'oscilloscope', 'signalGenerator', 'spectrumAnalyzer'] },
   { id: 'network', name: '🌐 L2-L3 Сеть', desc: 'Устройства, маршрутизация, адресация, конструктор сети',
-    experiments: ['devices', 'netBuilder', 'routing', 'fragmentation', 'ipCalc'] },
-  { id: 'transport', name: '📦 L4 Транспорт', desc: 'TCP/UDP: соединения, передача, сравнение протоколов',
-    experiments: ['tcpHandshake', 'tcpVsUdp', 'packetTransmission'] },
-  { id: 'security', name: '🔐 L5-L7 Безопасность', desc: 'Шифрование, TLS, сертификаты',
-    experiments: ['encryption', 'tls'] }
+    experiments: ['devices', 'netBuilder', 'topologyBuilder', 'routing', 'routingSim', 'fragmentation', 'ipCalc', 'vlanSim', 'arpDiscovery'] },
+  { id: 'transport', name: '📦 L4 Транспорт', desc: 'TCP/UDP: соединения, передача, автомат, перегрузка, окно',
+    experiments: ['tcpHandshake', 'tcpVsUdp', 'packetTransmission', 'tcpStateMachine', 'tcpCongestion', 'tcpWindow', 'natTraversal'] },
+  { id: 'security', name: '🔐 L5-L7 Безопасность', desc: 'Шифрование, TLS, сертификаты, DHCP',
+    experiments: ['encryption', 'tls', 'firewallSim', 'dhcpLease', 'channelTransmit', 'wdmMultiplex'] }
 ];
 
 export const LAB_EXPERIMENTS = {
@@ -79,10 +79,16 @@ export const LAB_EXPERIMENTS = {
   ipCalc: {
     title: 'IP-калькулятор',
     icon: '🔢',
-    description: 'Рассчитайте параметры подсети по IP-адресу и маске',
+    description: 'IPv4/IPv6 калькулятор, VLSM-планировщик, суммаризация маршрутов',
     params: [
-      { id: 'ip', label: 'IP-адрес', type: 'ip', default: '192.168.1.100' },
-      { id: 'cidr', label: 'Маска (CIDR)', type: 'range', min: 8, max: 30, step: 1, default: 24, unit: '' }
+      { id: 'mode', label: 'Режим', type: 'toggle', options: ['IPv4', 'IPv6', 'VLSM', 'Суммаризация'], default: 0 },
+      { id: 'ip', label: 'IPv4-адрес', type: 'ip', default: '192.168.1.100' },
+      { id: 'cidr', label: 'Маска (CIDR)', type: 'range', min: 8, max: 30, step: 1, default: 24, unit: '' },
+      { id: 'ipv6', label: 'IPv6-адрес', type: 'ip', default: '2001:db8::1' },
+      { id: 'ipv6prefix', label: 'Префикс IPv6', type: 'range', min: 16, max: 128, step: 1, default: 64, unit: '' },
+      { id: 'vlsmBase', label: 'Базовая сеть (VLSM)', type: 'ip', default: '192.168.1.0/24' },
+      { id: 'vlsmSubnets', label: 'Хосты (через запятую)', type: 'ip', default: '50,30,10,5' },
+      { id: 'summarizeNets', label: 'Подсети для суммаризации', type: 'ip', default: '192.168.1.0/24, 192.168.2.0/24, 192.168.3.0/24' }
     ]
   },
   tcpHandshake: {
@@ -119,5 +125,124 @@ export const LAB_EXPERIMENTS = {
     icon: '🔗',
     description: 'Постройте маршрут из реальных устройств и каналов связи, затем отправьте пакет',
     params: []
+  },
+  topologyBuilder: {
+    title: 'Конструктор топологий',
+    icon: '🗺️',
+    description: 'Визуальный редактор сетевых топологий: размещайте устройства, создавайте связи, трассируйте пакеты',
+    params: []
+  },
+  tcpStateMachine: {
+    title: 'TCP Автомат',
+    icon: '🔄',
+    description: 'Конечный автомат TCP: 11 состояний, переходы между ними при отправке и получении сегментов',
+    params: [
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1500, step: 100, default: 500, unit: 'мс' }
+    ]
+  },
+  tcpCongestion: {
+    title: 'Перегрузка TCP',
+    icon: '📈',
+    description: 'Контроль перегрузки: Slow Start, Congestion Avoidance, Fast Retransmit. Сравнение Tahoe, Reno, CUBIC',
+    params: [
+      { id: 'algorithm', label: 'Алгоритм', type: 'toggle', options: ['Tahoe', 'Reno', 'NewReno', 'CUBIC'], default: 1 },
+      { id: 'mss', label: 'MSS (байт)', type: 'range', min: 536, max: 1460, step: 1, default: 1460, unit: 'Б' },
+      { id: 'ssthresh', label: 'ssthresh (начальный)', type: 'range', min: 2, max: 64, step: 1, default: 16, unit: 'MSS' },
+      { id: 'lossProb', label: 'Вероятность потерь', type: 'range', min: 1, max: 30, step: 1, default: 5, unit: '%' },
+      { id: 'speed', label: 'Скорость (RTT)', type: 'range', min: 50, max: 500, step: 50, default: 200, unit: 'мс' }
+    ]
+  },
+  vlanSim: {
+    title: 'VLAN 802.1Q',
+    icon: '🏷️',
+    description: 'Создание VLAN, trunk-порты, 802.1Q тегирование, трассировка кадров, inter-VLAN routing',
+    params: []
+  },
+  firewallSim: {
+    title: 'Firewall',
+    icon: '🛡️',
+    description: 'Правила iptables, цепочки INPUT/OUTPUT/FORWARD, трассировка пакетов, NAT',
+    params: []
+  },
+  encryption: {
+    title: 'Шифрование',
+    icon: '🔑',
+    description: 'XOR, Шифр Цезаря, AES, RSA, DES, Diffie-Hellman, ECDH, HMAC, цифровая подпись',
+    params: []
+  },
+  oscilloscope: {
+    title: 'Осциллограф',
+    icon: '📟',
+    description: '2-канальный цифровой осциллограф: развёртка, курсоры, измерения, математика (FFT), триггер',
+    params: []
+  },
+  routingSim: {
+    title: 'Протоколы маршрутизации',
+    icon: '🗺️',
+    description: 'RIP, OSPF, BGP — пошаговая визуализация работы протоколов маршрутизации с конвергенцией',
+    params: [
+      { id: 'protocol', label: 'Протокол', type: 'toggle', options: ['RIP', 'OSPF', 'BGP'], default: 0 },
+      { id: 'speed', label: 'Скорость', type: 'range', min: 200, max: 1000, step: 100, default: 500, unit: 'мс' }
+    ]
+  },
+  tcpWindow: {
+    title: 'Скользящее окно',
+    icon: '🪟',
+    description: 'Визуализация скользящего окна TCP: отправленные, подтверждённые, ожидающие и заблокированные байты',
+    params: [
+      { id: 'windowSize', label: 'Window Size', type: 'range', min: 1, max: 16, step: 1, default: 4, unit: ' сегм.' },
+      { id: 'mss', label: 'MSS (байт)', type: 'range', min: 100, max: 1460, step: 100, default: 1000, unit: 'Б' },
+      { id: 'packetLoss', label: 'Потеря пакетов', type: 'range', min: 0, max: 40, step: 5, default: 10, unit: '%' },
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 100, max: 1000, step: 50, default: 300, unit: 'мс' }
+    ]
+  },
+  signalGenerator: {
+    title: 'Генератор сигналов',
+    icon: '🎛️',
+    description: 'Создавайте сигналы произвольной формы, комбинируйте компоненты, применяйте модуляцию. Экспорт в CSV/WAV/JSON.',
+    params: []
+  },
+  channelTransmit: {
+    title: 'Передача через канал',
+    icon: '📡',
+    description: 'Отправьте сигнал или файл через смоделированный физический канал связи с затуханием, шумом и ограничением полосы',
+    params: []
+  },
+  spectrumAnalyzer: {
+    title: 'Анализатор спектра',
+    icon: '📊',
+    description: 'FFT-анализ сигнала: спектр мощности, waterfall-дисплей, усреднение, обнаружение пиков с дельта-маркерами',
+    params: []
+  },
+  wdmMultiplex: {
+    title: 'WDM мультиплексирование',
+    icon: '🌈',
+    description: 'Wavelength Division Multiplexing: передача нескольких сигналов по одному оптоволокну на разных длинах волн',
+    params: []
+  },
+  arpDiscovery: {
+    title: 'ARP Discovery',
+    icon: '🔍',
+    description: 'Визуализация ARP-запросов и ответов: как устройства узнают MAC-адреса друг друга в локальной сети',
+    params: [
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1500, step: 100, default: 500, unit: 'мс' }
+    ]
+  },
+  natTraversal: {
+    title: 'NAT / PAT',
+    icon: '🔀',
+    description: 'Network Address Translation: как внутренние IP-адреса транслируются во внешние. SNAT, DNAT, PAT (маскарадинг)',
+    params: [
+      { id: 'natType', label: 'Тип NAT', type: 'toggle', options: ['Static NAT', 'Dynamic NAT', 'PAT'], default: 2 },
+      { id: 'speed', label: 'Скорость', type: 'range', min: 200, max: 1000, step: 100, default: 400, unit: 'мс' }
+    ]
+  },
+  dhcpLease: {
+    title: 'DHCP DORA',
+    icon: '📋',
+    description: 'Полный процесс получения IP-адреса: Discover → Offer → Request → Ack. Аренда (lease), обновление, освобождение',
+    params: [
+      { id: 'speed', label: 'Скорость анимации', type: 'range', min: 200, max: 1500, step: 100, default: 600, unit: 'мс' }
+    ]
   }
 };

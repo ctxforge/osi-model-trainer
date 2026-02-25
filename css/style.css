@@ -4,9 +4,12 @@
 @import url('components.css');
 @import url('sections/home.css');
 @import url('sections/study.css');
+@import url('sections/theory.css');
 @import url('sections/simulator.css');
 @import url('sections/lab.css');
 @import url('sections/dragdrop.css');
+@import url('sections/protocols.css');
 @import url('sections/physics-lab.css');
 @import url('sections/terminal.css');
+@import url('sections/quest.css');
 @import url('responsive.css');
