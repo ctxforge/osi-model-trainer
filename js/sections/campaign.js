@@ -141,6 +141,57 @@ function renderChapter(container) {
   });
 }
 
+/* ---- Related Materials Helper ---- */
+function renderRelatedLinks(quest) {
+  if ((!quest.relatedLabs || quest.relatedLabs.length === 0) &&
+      (!quest.relatedTheory || quest.relatedTheory.length === 0)) return '';
+
+  let html = '<div class="quest-briefing__related">';
+  html += '<div class="quest-briefing__related-title">Полезные материалы</div>';
+
+  if (quest.relatedLabs && quest.relatedLabs.length > 0) {
+    html += '<div class="quest-briefing__related-group">';
+    html += '<div class="quest-briefing__related-label">Лаборатории:</div>';
+    quest.relatedLabs.forEach(l => {
+      html += `<button class="quest-related-link" data-nav-section="lab" data-nav-lab="${l.lab}">🔬 ${l.text}</button>`;
+    });
+    html += '</div>';
+  }
+
+  if (quest.relatedTheory && quest.relatedTheory.length > 0) {
+    html += '<div class="quest-briefing__related-group">';
+    html += '<div class="quest-briefing__related-label">Теория:</div>';
+    quest.relatedTheory.forEach(t => {
+      html += `<button class="quest-related-link quest-related-link--theory" data-nav-section="theory" data-nav-topic="${t.topic}">📚 ${t.text}</button>`;
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function bindRelatedLinks(container) {
+  container.querySelectorAll('.quest-related-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const section = btn.dataset.navSection;
+      if (section === 'lab') {
+        navigateTo('lab');
+        setTimeout(() => {
+          const labTab = document.querySelector(`[data-lab="${btn.dataset.navLab}"]`);
+          if (labTab) labTab.click();
+        }, 100);
+      } else if (section === 'theory') {
+        navigateTo('theory');
+        setTimeout(() => {
+          const topicBtn = document.querySelector(`[data-topic="${btn.dataset.navTopic}"]`);
+          if (topicBtn) topicBtn.click();
+        }, 100);
+      }
+    });
+  });
+}
+
 /* ---- Briefing View ---- */
 function renderBriefing(container) {
   const state = getQuestState();
@@ -168,6 +219,7 @@ function renderBriefing(container) {
       ${prev?.completed ? '<span>🔄 Перепрохождение (50% XP)</span>' : ''}
       <span>💡 3 подсказки</span>
     </div>
+    ${renderRelatedLinks(quest)}
     <div class="quest-briefing__actions">
       <button class="quest-btn quest-btn--primary" id="questStart">▶ Начать квест</button>
       <button class="quest-btn quest-btn--secondary" id="questCancel">Отмена</button>
@@ -175,6 +227,7 @@ function renderBriefing(container) {
   </div>`;
 
   container.innerHTML = html;
+  bindRelatedLinks(container);
 
   document.getElementById('questBackToChapter')?.addEventListener('click', () => {
     exitQuest();
@@ -233,6 +286,9 @@ function renderActive(container) {
     ${typeof quest.story === 'function' ? quest.story(state.params) : quest.story}
   </div>`;
 
+  // Related materials
+  html += renderRelatedLinks(quest);
+
   // Answer input
   html += `<div class="quest-answer">
     <div class="quest-answer__label">Ваш ответ:</div>
@@ -243,6 +299,7 @@ function renderActive(container) {
   html += `<button class="quest-btn quest-btn--secondary" id="questExit" style="margin-top:8px">✕ Отменить квест</button>`;
 
   container.innerHTML = html;
+  bindRelatedLinks(container);
 
   // Hint buttons
   container.querySelectorAll('[data-hint]').forEach(btn => {

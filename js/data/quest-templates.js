@@ -88,6 +88,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Медная витая пара работает до 100 м (Cat5e–Cat7). Для ${p.distance > 100 ? 'такого расстояния нужно оптоволокно' : 'этого хватит витой пары'}.`,
       (p) => `Правильный ответ: ${p.answer}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'channelPhysics', text: 'Физика канала' },
+      { section: 'lab', lab: 'signals', text: 'Сигналы L1' }
+    ],
+    relatedTheory: [
+      { topic: 'transmission-media', text: 'Среды передачи' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -110,6 +117,13 @@ export const QUEST_TEMPLATES = [
       () => `Частота = 1 / период. Измерь период по сетке осциллографа.`,
       (p) => `Период ≈ ${(1000 / p.freq).toFixed(2)} мс. Амплитуда — от нуля до пика.`,
       (p) => `Частота = ${p.freq} Гц, амплитуда = ${p.amplitude} В`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'oscilloscope', text: 'Осциллограф' },
+      { section: 'lab', lab: 'signals', text: 'Сигналы L1' }
+    ],
+    relatedTheory: [
+      { topic: 'data-transmission', text: 'Передача данных' }
     ],
     baseXP: 15, isBoss: false
   },
@@ -143,6 +157,15 @@ export const QUEST_TEMPLATES = [
       (p) => `Затухание канала: ${p.attenuation} дБ. Шум: ${p.noise} дБ.`,
       (p) => `SNR ≈ ${p.snr} дБ → качество: ${p.quality}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'channelPhysics', text: 'Физика канала' },
+      { section: 'lab', lab: 'signals', text: 'Сигналы L1' },
+      { section: 'lab', lab: 'oscilloscope', text: 'Осциллограф' }
+    ],
+    relatedTheory: [
+      { topic: 'data-transmission', text: 'Передача данных' },
+      { topic: 'transmission-media', text: 'Среды передачи' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -165,6 +188,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Вспомни правила кода ${p.codeName}: как кодируются 0 и 1.`,
       (p) => `${p.codeName}: ${p.codeName === 'NRZ' ? 'высокий = 1, низкий = 0' : p.codeName === 'Manchester' ? 'переход вверх = 0, вниз = 1 (по IEEE)' : 'каждый бит определяет переход уровня'}`,
       (p) => `Открой лабораторию "Сигналы L1" и выбери код ${p.codeName}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'signals', text: 'Сигналы L1' },
+      { section: 'lab', lab: 'signalGenerator', text: 'Генератор сигналов' }
+    ],
+    relatedTheory: [
+      { topic: 'data-transmission', text: 'Передача данных' }
     ],
     baseXP: 15, isBoss: false
   },
@@ -189,6 +219,14 @@ export const QUEST_TEMPLATES = [
       () => `Используй формулу Шеннона: C = B × log₂(1 + SNR).`,
       (p) => `B = ${p.bandwidth} МГц, SNR = ${p.snr} дБ → SNR_linear = 10^(${p.snr}/10) ≈ ${Math.round(Math.pow(10, p.snr/10))}.`,
       (p) => `C ≈ ${p.shannonMbps} Мбит/с`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'channelPhysics', text: 'Физика канала' },
+      { section: 'lab', lab: 'signalGenerator', text: 'Генератор сигналов' }
+    ],
+    relatedTheory: [
+      { topic: 'data-transmission', text: 'Передача данных' },
+      { topic: 'transmission-media', text: 'Среды передачи' }
     ],
     baseXP: 20, isBoss: false
   },
@@ -220,6 +258,15 @@ export const QUEST_TEMPLATES = [
       (p) => `${p.maxDistance > 100 ? 'Расстояние больше 100 м — нужно оптоволокно!' : 'Витая пара подойдёт.'} Не забудь про резерв 20%.`,
       (p) => `Кабель: ${p.answer}, линий: ${p.cableRuns}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'channelPhysics', text: 'Физика канала' },
+      { section: 'lab', lab: 'signals', text: 'Сигналы L1' },
+      { section: 'lab', lab: 'signalGenerator', text: 'Генератор сигналов' }
+    ],
+    relatedTheory: [
+      { topic: 'data-transmission', text: 'Передача данных' },
+      { topic: 'transmission-media', text: 'Среды передачи' }
+    ],
     baseXP: 30, isBoss: true
   },
 
@@ -245,6 +292,13 @@ export const QUEST_TEMPLATES = [
       () => `Посмотри таблицу MAC-адресов коммутатора.`,
       (p) => `Ищи MAC ${p.targetMac.substring(0, 8)}...`,
       (p) => `Ответ: порт ${p.targetPort}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'devices', text: 'Hub / Switch / Router' },
+      { section: 'lab', lab: 'netBuilder', text: 'Конструктор сети' }
+    ],
+    relatedTheory: [
+      { topic: 'ethernet', text: 'Ethernet и канальный уровень' }
     ],
     baseXP: 15, isBoss: false
   },
@@ -272,6 +326,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Подумай, чем отличается ${p.isHub ? 'хаб' : 'коммутатор'} в плане доменов коллизий.`,
       (p) => `${p.isHub ? 'Хаб создаёт единый домен коллизий — все устройства конкурируют.' : 'Коммутатор изолирует порты, но при перегрузке нужно сегментирование.'}`,
       (p) => `Решение: ${p.solution}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'devices', text: 'Hub / Switch / Router' },
+      { section: 'lab', lab: 'simulator', text: 'Симулятор сети' }
+    ],
+    relatedTheory: [
+      { topic: 'ethernet', text: 'Ethernet и канальный уровень' }
     ],
     baseXP: 15, isBoss: false
   },
@@ -303,6 +364,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Всего ${p.departments.length} отделов. Используй VLAN ${p.departments.map(d => d.vlan).join(', ')}.`,
       (p) => `${p.departments.map(d => `${d.name} = VLAN ${d.vlan}`).join(', ')}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'vlanSim', text: 'VLAN 802.1Q' },
+      { section: 'lab', lab: 'netBuilder', text: 'Конструктор сети' }
+    ],
+    relatedTheory: [
+      { topic: 'ethernet', text: 'Ethernet и канальный уровень' }
+    ],
     baseXP: 20, isBoss: false
   },
   {
@@ -327,6 +395,14 @@ export const QUEST_TEMPLATES = [
       () => `Root Bridge — коммутатор с наименьшим Bridge ID.`,
       (p) => `Bridge ID = приоритет + MAC. Наименьший приоритет: ${p.rootPriority}.`,
       (p) => `Root Bridge: ${p.rootBridge}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'devices', text: 'Hub / Switch / Router' },
+      { section: 'lab', lab: 'netBuilder', text: 'Конструктор сети' },
+      { section: 'lab', lab: 'simulator', text: 'Симулятор сети' }
+    ],
+    relatedTheory: [
+      { topic: 'ethernet', text: 'Ethernet и канальный уровень' }
     ],
     baseXP: 20, isBoss: false
   },
@@ -356,6 +432,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Заголовок = 14 Б, FCS = 4 Б, payload = ${p.payloadSize} Б.`,
       (p) => `Размер кадра: ${p.frameSize} байт`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'devices', text: 'Hub / Switch / Router' },
+      { section: 'lab', lab: 'simulator', text: 'Симулятор сети' }
+    ],
+    relatedTheory: [
+      { topic: 'ethernet', text: 'Ethernet и канальный уровень' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -382,6 +465,14 @@ export const QUEST_TEMPLATES = [
       (p) => `Обнаружено ${p.problems.length} проблем. Начни с проверки VLAN и портов.`,
       (p) => `Проблемы: ${p.problems.join('; ')}.`,
       (p) => `Решения: ${p.fixes.join('; ')}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'vlanSim', text: 'VLAN 802.1Q' },
+      { section: 'lab', lab: 'devices', text: 'Hub / Switch / Router' },
+      { section: 'lab', lab: 'netBuilder', text: 'Конструктор сети' }
+    ],
+    relatedTheory: [
+      { topic: 'ethernet', text: 'Ethernet и канальный уровень' }
     ],
     baseXP: 40, isBoss: true
   },
@@ -424,6 +515,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Подсказка по маскам: ${p.subnets.map(s => `${s.name} (${s.hosts} хостов) → /${s.prefix}`).join(', ')}.`,
       (p) => `${p.subnets.map(s => `${s.name} = /${s.prefix}`).join(', ')}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'ipCalc', text: 'IP-калькулятор' },
+      { section: 'lab', lab: 'topologyBuilder', text: 'Конструктор топологий' }
+    ],
+    relatedTheory: [
+      { topic: 'ip-addressing', text: 'IP-адресация' }
+    ],
     baseXP: 20, isBoss: false
   },
   {
@@ -454,6 +552,12 @@ export const QUEST_TEMPLATES = [
       (p) => `Хостов = 2^${32 - p.prefix} − 2 = ${p.maxHosts}.`,
       (p) => `Сеть: ${p.network}, broadcast: ${p.broadcast}, хостов: ${p.maxHosts}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'ipCalc', text: 'IP-калькулятор' }
+    ],
+    relatedTheory: [
+      { topic: 'ip-addressing', text: 'IP-адресация' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -478,6 +582,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Добавь маршрут к ${p.dstNet}/24 через ${p.nextHop}.`,
       (p) => `ip route add ${p.missingRoute}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'routing', text: 'Маршрутизация и TTL' },
+      { section: 'lab', lab: 'routingSim', text: 'Протоколы маршрутизации' }
+    ],
+    relatedTheory: [
+      { topic: 'routing', text: 'Маршрутизация' }
+    ],
     baseXP: 20, isBoss: false
   },
   {
@@ -498,6 +609,14 @@ export const QUEST_TEMPLATES = [
       () => `Используй traceroute — он покажет, где пакет зацикливается.`,
       (p) => `TTL уменьшается на 1 на каждом хопе. Петля: один из роутеров — ${p.routerA}.`,
       (p) => `Петля: ${p.loop}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'routing', text: 'Маршрутизация и TTL' },
+      { section: 'lab', lab: 'topologyBuilder', text: 'Конструктор топологий' }
+    ],
+    relatedTheory: [
+      { topic: 'routing', text: 'Маршрутизация' },
+      { topic: 'ip-addressing', text: 'IP-адресация' }
     ],
     baseXP: 15, isBoss: false
   },
@@ -523,6 +642,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Payload = ${p.mtu} − 20 = ${p.payloadPerFragment} Б. Данные = ${p.fileSize * 1024} Б.`,
       (p) => `Фрагментов: ${p.fragments}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'fragmentation', text: 'Фрагментация MTU' },
+      { section: 'lab', lab: 'ipCalc', text: 'IP-калькулятор' }
+    ],
+    relatedTheory: [
+      { topic: 'ip-addressing', text: 'IP-адресация' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -545,6 +671,14 @@ export const QUEST_TEMPLATES = [
       () => `Для нескольких хостов за одним IP используется PAT (Port Address Translation).`,
       (p) => `Внутренняя сеть ${p.internalNet}/${p.prefix}, ${p.hostCount} хостов → нужен ${p.natType}.`,
       (p) => `${p.natType}: iptables -t nat -A POSTROUTING -s ${p.internalNet}/${p.prefix} -j MASQUERADE`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'natTraversal', text: 'NAT / PAT' },
+      { section: 'lab', lab: 'ipCalc', text: 'IP-калькулятор' }
+    ],
+    relatedTheory: [
+      { topic: 'ip-addressing', text: 'IP-адресация' },
+      { topic: 'routing', text: 'Маршрутизация' }
     ],
     baseXP: 20, isBoss: false
   },
@@ -571,6 +705,15 @@ export const QUEST_TEMPLATES = [
       (p) => `Адресация: ${p.branches.map(b => `${b.name} = ${b.subnet}`).join(', ')}.`,
       (p) => `Маршрутизация: ${p.routingProtocol}. ${p.branches.map(b => `${b.name} = ${b.subnet}`).join(', ')}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'routing', text: 'Маршрутизация и TTL' },
+      { section: 'lab', lab: 'routingSim', text: 'Протоколы маршрутизации' },
+      { section: 'lab', lab: 'topologyBuilder', text: 'Конструктор топологий' }
+    ],
+    relatedTheory: [
+      { topic: 'ip-addressing', text: 'IP-адресация' },
+      { topic: 'routing', text: 'Маршрутизация' }
+    ],
     baseXP: 50, isBoss: true
   },
 
@@ -595,6 +738,13 @@ export const QUEST_TEMPLATES = [
       () => `ACK в SYN-ACK = ISN клиента + 1.`,
       (p) => `Клиент ISN = ${p.clientISN}. Сервер ответит ACK = ${p.clientISN} + 1.`,
       (p) => `ACK = ${p.expectedAck}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'tcpHandshake', text: 'TCP Handshake' },
+      { section: 'lab', lab: 'tcpVsUdp', text: 'TCP vs UDP' }
+    ],
+    relatedTheory: [
+      { topic: 'tcp', text: 'Протокол TCP' }
     ],
     baseXP: 15, isBoss: false
   },
@@ -625,6 +775,14 @@ export const QUEST_TEMPLATES = [
       (p) => `Подумай: для ${p.task} важнее надёжность или скорость?`,
       (p) => `Ответ: ${p.answer} (${p.reason})`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'tcpVsUdp', text: 'TCP vs UDP' },
+      { section: 'lab', lab: 'tcpHandshake', text: 'TCP Handshake' }
+    ],
+    relatedTheory: [
+      { topic: 'tcp', text: 'Протокол TCP' },
+      { topic: 'udp', text: 'Протокол UDP' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -650,6 +808,14 @@ export const QUEST_TEMPLATES = [
       (p) => `Один из портов: ${p.ports[0].port} = ${p.ports[0].service}.`,
       (p) => `${p.ports.map(pp => `${pp.port}=${pp.service}`).join(', ')}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'terminal', text: 'Терминал' },
+      { section: 'lab', lab: 'tcpVsUdp', text: 'TCP vs UDP' }
+    ],
+    relatedTheory: [
+      { topic: 'tcp', text: 'Протокол TCP' },
+      { topic: 'udp', text: 'Протокол UDP' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -674,6 +840,13 @@ export const QUEST_TEMPLATES = [
       (p) => `cwnd = ${p.cwnd}, ssthresh = ${p.ssthresh}. ${p.cwnd < p.ssthresh ? 'cwnd < ssthresh' : 'cwnd ≥ ssthresh'}.`,
       (p) => `Фаза: ${p.phase}. При потере: ssthresh = ${p.newSsthresh}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'tcpCongestion', text: 'Перегрузка TCP' },
+      { section: 'lab', lab: 'tcpWindow', text: 'Скользящее окно' }
+    ],
+    relatedTheory: [
+      { topic: 'tcp', text: 'Протокол TCP' }
+    ],
     baseXP: 20, isBoss: false
   },
   {
@@ -695,6 +868,13 @@ export const QUEST_TEMPLATES = [
       () => `BDP (Bandwidth-Delay Product) = bandwidth × RTT. Окно должно быть ≥ BDP.`,
       (p) => `${p.bw} Мбит/с = ${p.bw * 1e6 / 8} Б/с. RTT = ${p.rtt / 1000} с.`,
       (p) => `Окно = ${p.bdp} Б ≈ ${p.windowSegments} сегментов`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'tcpWindow', text: 'Скользящее окно' },
+      { section: 'lab', lab: 'tcpCongestion', text: 'Перегрузка TCP' }
+    ],
+    relatedTheory: [
+      { topic: 'tcp', text: 'Протокол TCP' }
     ],
     baseXP: 20, isBoss: false
   },
@@ -722,6 +902,15 @@ export const QUEST_TEMPLATES = [
       (p) => `Проанализируй каждый симптом: задержка, потери или джиттер?`,
       (p) => `Причины: ${p.causes.join(', ')}.`,
       (p) => `Решения: ${p.fixes.join('; ')}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'tcpVsUdp', text: 'TCP vs UDP' },
+      { section: 'lab', lab: 'tcpCongestion', text: 'Перегрузка TCP' },
+      { section: 'lab', lab: 'terminal', text: 'Терминал' }
+    ],
+    relatedTheory: [
+      { topic: 'tcp', text: 'Протокол TCP' },
+      { topic: 'udp', text: 'Протокол UDP' }
     ],
     baseXP: 40, isBoss: true
   },
@@ -757,6 +946,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Первая буква "${p.message[0]}" → "${p.encrypted.split(' ')[0] || p.encrypted[0]}".`,
       (p) => `Ответ: ${p.encrypted}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'encryption', text: 'Шифрование' },
+      { section: 'lab', lab: 'tls', text: 'TLS / Сертификаты' }
+    ],
+    relatedTheory: [
+      { topic: 'security', text: 'Безопасность' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -781,6 +977,13 @@ export const QUEST_TEMPLATES = [
       (p) => `TLS ${p.version}: сколько RTT нужно для рукопожатия?`,
       (p) => `TLS ${p.version} = ${p.rttCount}-RTT. Начинается с ClientHello.`,
       (p) => `Шаги: ${p.steps.join(' → ')}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'tls', text: 'TLS / Сертификаты' },
+      { section: 'lab', lab: 'encryption', text: 'Шифрование' }
+    ],
+    relatedTheory: [
+      { topic: 'security', text: 'Безопасность' }
     ],
     baseXP: 20, isBoss: false
   },
@@ -810,6 +1013,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Используй iptables с цепочкой INPUT. Действие: DROP или LIMIT.`,
       (p) => `${p.port ? 'Порт: ' + p.port : 'IP: ' + p.ip}. Используй -j DROP или -m limit.`,
       (p) => `${p.expectedRule}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'firewallSim', text: 'Firewall' },
+      { section: 'lab', lab: 'terminal', text: 'Терминал' }
+    ],
+    relatedTheory: [
+      { topic: 'security', text: 'Безопасность' }
     ],
     baseXP: 20, isBoss: false
   },
@@ -843,6 +1053,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Обрати внимание на ${p.issueType === 'expired' ? 'дату' : p.issueType === 'self-signed' ? 'издателя' : p.issueType === 'wrong-domain' ? 'домен в сертификате' : 'длину ключа'}.`,
       (p) => `Проблема: ${p.issue}. Решение: ${p.fix}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'tls', text: 'TLS / Сертификаты' },
+      { section: 'lab', lab: 'encryption', text: 'Шифрование' }
+    ],
+    relatedTheory: [
+      { topic: 'security', text: 'Безопасность' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -872,6 +1089,14 @@ export const QUEST_TEMPLATES = [
       (p) => `Найдено ${p.vulns.length} уязвимостей. Начни с самой критичной.`,
       (p) => `Проблемы: ${p.vulns.map(v => v.desc).join('; ')}.`,
       (p) => `Решения: ${p.vulns.map(v => v.fix).join('; ')}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'firewallSim', text: 'Firewall' },
+      { section: 'lab', lab: 'encryption', text: 'Шифрование' },
+      { section: 'lab', lab: 'tls', text: 'TLS / Сертификаты' }
+    ],
+    relatedTheory: [
+      { topic: 'security', text: 'Безопасность' }
     ],
     baseXP: 50, isBoss: true
   },
@@ -905,6 +1130,13 @@ export const QUEST_TEMPLATES = [
       (p) => `Нужны записи: ${p.requiredRecords.map(r => r.type).join(', ')} для ${p.domain}.`,
       (p) => `${p.requiredRecords.map(r => `${r.type} = ${r.value}`).join(', ')}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'terminal', text: 'Терминал' },
+      { section: 'lab', lab: 'topologyBuilder', text: 'Конструктор топологий' }
+    ],
+    relatedTheory: [
+      { topic: 'application-protocols', text: 'Прикладные протоколы' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -929,6 +1161,14 @@ export const QUEST_TEMPLATES = [
       () => `Укажи: пул адресов, шлюз (default-router), DNS-сервер, время аренды.`,
       (p) => `Пул: ${p.poolStart}–${p.poolEnd}. Шлюз: ${p.gateway}.`,
       (p) => `Полная конфигурация: subnet ${p.subnet}, range ${p.poolStart}–${p.poolEnd}, router ${p.gateway}, dns ${p.dns}, lease ${p.lease}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'dhcpLease', text: 'DHCP DORA' },
+      { section: 'lab', lab: 'terminal', text: 'Терминал' }
+    ],
+    relatedTheory: [
+      { topic: 'application-protocols', text: 'Прикладные протоколы' },
+      { topic: 'network-management', text: 'Управление сетью' }
     ],
     baseXP: 15, isBoss: false
   },
@@ -957,6 +1197,14 @@ export const QUEST_TEMPLATES = [
       (p) => `${p.code} = ${p.name}. Причина: ${p.cause}.`,
       (p) => `Решение: ${p.fix}`
     ],
+    relatedLabs: [
+      { section: 'lab', lab: 'terminal', text: 'Терминал' },
+      { section: 'lab', lab: 'topologyBuilder', text: 'Конструктор топологий' }
+    ],
+    relatedTheory: [
+      { topic: 'application-protocols', text: 'Прикладные протоколы' },
+      { topic: 'principles', text: 'Основы сетей' }
+    ],
     baseXP: 15, isBoss: false
   },
   {
@@ -981,6 +1229,14 @@ export const QUEST_TEMPLATES = [
       (p) => `Проанализируй паттерн: частота, время, направление трафика.`,
       (p) => `Источник: IP ${p.sourceIP}. Тип проблемы связан с ${p.type.split('/')[0]}.`,
       (p) => `Тип: ${p.type}, источник: ${p.sourceIP}`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'terminal', text: 'Терминал' },
+      { section: 'lab', lab: 'routing', text: 'Маршрутизация и TTL' }
+    ],
+    relatedTheory: [
+      { topic: 'network-management', text: 'Управление сетью' },
+      { topic: 'application-protocols', text: 'Прикладные протоколы' }
     ],
     baseXP: 20, isBoss: false
   },
@@ -1014,6 +1270,15 @@ export const QUEST_TEMPLATES = [
       (p) => `Начни с адресации: каждому отделу — свою подсеть/VLAN. Всего ${p.totalEmployees} хостов.`,
       (p) => `Оборудование: core router, коммутаторы по отделам, ${p.requirements.includes('firewall на периметре') ? 'firewall,' : ''} AP для Wi-Fi.`,
       (p) => `${p.departments.map((d, i) => `${d.name}: VLAN ${(i+1)*10}, 192.168.${(i+1)*10}.0/24`).join('; ')}. NAT на выходе.`
+    ],
+    relatedLabs: [
+      { section: 'lab', lab: 'topologyBuilder', text: 'Конструктор топологий' },
+      { section: 'lab', lab: 'routing', text: 'Маршрутизация и TTL' },
+      { section: 'lab', lab: 'dhcpLease', text: 'DHCP DORA' }
+    ],
+    relatedTheory: [
+      { topic: 'principles', text: 'Основы сетей' },
+      { topic: 'network-management', text: 'Управление сетью' }
     ],
     baseXP: 80, isBoss: true
   }

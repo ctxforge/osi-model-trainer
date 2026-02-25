@@ -83,7 +83,39 @@ export const CHANNEL_TYPES = [
     icon: '🛰️', color: '#34495e',
     attenuation: 200, snrBase: 15, duplex: 'half', interference: 'medium', propagation: 0.99,
     encoding: 'DVB-S2 (8PSK)', jitter: 20, bandwidthMHz: 36, defaultDist: 35786,
-    desc: 'GEO-спутник на высоте 35 786 км. Задержка ~600 мс RTT (неустранима физикой). Затухание в свободном пространстве, влияние погоды (rain fade).' }
+    desc: 'GEO-спутник на высоте 35 786 км. Задержка ~600 мс RTT (неустранима физикой). Затухание в свободном пространстве, влияние погоды (rain fade).' },
+
+  // === Спутниковые каналы ===
+  { id: 'starlink_leo', name: 'Starlink (LEO)', speed: 300, latency: 30, medium: 'satellite', maxDist: 550,
+    icon: '🛰️', color: '#1e3a5f',
+    attenuation: 160, snrBase: 22, duplex: 'full', interference: 'low', propagation: 0.99,
+    encoding: 'OFDM (Ku/Ka)', jitter: 5, bandwidthMHz: 250, defaultDist: 550,
+    desc: 'Starlink — LEO-созвездие SpaceX, орбита 550 км. Низкая задержка (~30 мс RTT), частые хэндоверы между спутниками. Ku/Ka-диапазон, фазированные антенны.' },
+  { id: 'oneweb_leo', name: 'OneWeb (LEO)', speed: 195, latency: 40, medium: 'satellite', maxDist: 1200,
+    icon: '🛰️', color: '#2c5282',
+    attenuation: 170, snrBase: 20, duplex: 'full', interference: 'low', propagation: 0.99,
+    encoding: 'DVB-S2X (Ku)', jitter: 6, bandwidthMHz: 200, defaultDist: 1200,
+    desc: 'OneWeb — LEO-созвездие на орбите 1200 км. Ku-диапазон, ориентировано на B2B и удалённые регионы. Задержка ~40 мс RTT.' },
+  { id: 'o3b_meo', name: 'O3b mPOWER (MEO)', speed: 10000, latency: 135, medium: 'satellite', maxDist: 8062,
+    icon: '🛰️', color: '#4a5568',
+    attenuation: 185, snrBase: 18, duplex: 'full', interference: 'medium', propagation: 0.99,
+    encoding: 'DVB-S2X (Ka)', jitter: 10, bandwidthMHz: 4000, defaultDist: 8062,
+    desc: 'O3b mPOWER — MEO-созвездие SES на 8062 км. Ka-диапазон, до 10 Гбит/с на луч. Задержка ~135 мс RTT. Для магистральных каналов и операторов.' },
+  { id: 'vsat_ku', name: 'VSAT (GEO Ku)', speed: 50, latency: 600, medium: 'satellite', maxDist: 35786,
+    icon: '🛰️', color: '#5a6a7e',
+    attenuation: 205, snrBase: 14, duplex: 'half', interference: 'medium', propagation: 0.99,
+    encoding: 'DVB-S2 (QPSK)', jitter: 25, bandwidthMHz: 36, defaultDist: 35786,
+    desc: 'VSAT Ku-band — терминалы с антенной 0.75-1.2 м. Широкий луч, умеренная скорость. Для корпоративных сетей, банкоматов, удалённых офисов.' },
+  { id: 'hts_ka', name: 'HTS Ka-band (GEO)', speed: 200, latency: 600, medium: 'satellite', maxDist: 35786,
+    icon: '🛰️', color: '#6b7c93',
+    attenuation: 210, snrBase: 16, duplex: 'half', interference: 'medium', propagation: 0.99,
+    encoding: 'DVB-S2X (16APSK)', jitter: 22, bandwidthMHz: 500, defaultDist: 35786,
+    desc: 'HTS Ka-band — спутники с высокой пропускной способностью (High Throughput Satellite). Много узких лучей, повторное использование частот. До 200 Мбит/с.' },
+  { id: 'iridium_leo', name: 'Iridium (LEO)', speed: 0.128, latency: 25, medium: 'satellite', maxDist: 780,
+    icon: '🛰️', color: '#718096',
+    attenuation: 155, snrBase: 12, duplex: 'half', interference: 'low', propagation: 0.99,
+    encoding: 'QPSK (L-band)', jitter: 8, bandwidthMHz: 0.0315, defaultDist: 780,
+    desc: 'Iridium — 66 LEO-спутников на 780 км с межспутниковыми связями. L-band, глобальное покрытие включая полюса. Узкий канал (128 кбит/с), но работает везде.' }
 ];
 
 export const ENV_EFFECTS = {
@@ -107,12 +139,24 @@ export const ENV_EFFECTS = {
     { id: 'weather', label: 'Погода (rain fade)', type: 'select', options: ['Ясно', 'Облачно', 'Дождь', 'Ливень'], dbPenalties: [0, 2, 8, 20], desc: 'Rain fade — главный враг спутниковой связи, дождь поглощает Ku/Ka-диапазон' },
     { id: 'elevation', label: 'Угол возвышения (°)', type: 'range', min: 5, max: 90, default: 45, desc: 'Низкий угол → сигнал проходит дольше через атмосферу → больше затухание' },
     { id: 'solar', label: 'Солнечная интерференция', type: 'toggle', default: false, dbPenalty: 15, desc: 'Когда Солнце за спутником — мощные помехи, потери до 15 дБ (раз в сезон)' }
+  ],
+  satellite_leo: [
+    { id: 'weather', label: 'Погода (rain fade)', type: 'select', options: ['Ясно', 'Облачно', 'Дождь', 'Ливень'], dbPenalties: [0, 1, 5, 12], desc: 'LEO-спутники менее подвержены rain fade из-за короткого пути через атмосферу' },
+    { id: 'obstruction', label: 'Препятствия', type: 'select', options: ['Открытое небо', 'Деревья', 'Здания рядом', 'Плотная застройка'], dbPenalties: [0, 3, 8, 15], desc: 'LEO-спутники низко над горизонтом — деревья и здания могут блокировать сигнал' },
+    { id: 'handover', label: 'Частота хэндовера', type: 'select', options: ['Редкий', 'Средний', 'Частый'], dbPenalties: [0, 1, 3], desc: 'LEO-спутники быстро движутся — частые переключения между спутниками вносят кратковременные потери' }
+  ],
+  satellite_meo: [
+    { id: 'weather', label: 'Погода (rain fade)', type: 'select', options: ['Ясно', 'Облачно', 'Дождь', 'Ливень'], dbPenalties: [0, 2, 7, 16], desc: 'MEO-спутники: средний путь через атмосферу, умеренный rain fade' },
+    { id: 'elevation', label: 'Угол возвышения (°)', type: 'range', min: 10, max: 90, default: 40, desc: 'Низкий угол → больше атмосферного затухания, но MEO-спутники обычно выше над горизонтом чем LEO' },
+    { id: 'solar', label: 'Солнечная интерференция', type: 'toggle', default: false, dbPenalty: 12, desc: 'Солнечная интерференция на MEO — до 12 дБ потерь, длится дольше чем для GEO' }
   ]
 };
 
 export function getChannelEnvType(chId) {
   if (['cat5e','cat6','cat6a','cat7','cat8','coax','dsl'].includes(chId)) return 'copper';
   if (['fiber_sm','fiber_mm','fiber_om3'].includes(chId)) return 'fiber';
-  if (chId === 'satellite') return 'satellite';
+  if (['satellite','vsat_ku','hts_ka'].includes(chId)) return 'satellite';
+  if (['starlink_leo','oneweb_leo','iridium_leo'].includes(chId)) return 'satellite_leo';
+  if (chId === 'o3b_meo') return 'satellite_meo';
   return 'radio';
 }

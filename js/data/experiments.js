@@ -1,14 +1,14 @@
 export const LAB_GROUPS = [
   { id: 'overview', name: '🚀 Обзор', desc: 'Полный путь данных от отправителя до получателя',
     experiments: ['journey', 'scenario'] },
-  { id: 'physical', name: '⚡ L1 Физика', desc: 'Сигналы, модуляция, каналы связи, мультиплексирование, осциллограф',
-    experiments: ['signals', 'channelPhysics', 'multiplexing', 'oscilloscope', 'signalGenerator', 'spectrumAnalyzer'] },
-  { id: 'network', name: '🌐 L2-L3 Сеть', desc: 'Устройства, маршрутизация, адресация, конструктор сети',
-    experiments: ['devices', 'netBuilder', 'topologyBuilder', 'routing', 'routingSim', 'fragmentation', 'ipCalc', 'vlanSim', 'arpDiscovery'] },
+  { id: 'physical', name: '⚡ L1 Физика', desc: 'Сигналы, модуляция, каналы связи, мультиплексирование, осциллограф, передача через канал',
+    experiments: ['signals', 'channelPhysics', 'multiplexing', 'oscilloscope', 'signalGenerator', 'spectrumAnalyzer', 'channelTransmit', 'wdmMultiplex'] },
+  { id: 'network', name: '🌐 L2-L3 Сеть', desc: 'Устройства, маршрутизация, адресация, конструктор сети, DHCP',
+    experiments: ['devices', 'netBuilder', 'topologyBuilder', 'routing', 'routingSim', 'fragmentation', 'ipCalc', 'vlanSim', 'arpDiscovery', 'dhcpLease'] },
   { id: 'transport', name: '📦 L4 Транспорт', desc: 'TCP/UDP: соединения, передача, автомат, перегрузка, окно',
     experiments: ['tcpHandshake', 'tcpVsUdp', 'packetTransmission', 'tcpStateMachine', 'tcpCongestion', 'tcpWindow', 'natTraversal'] },
-  { id: 'security', name: '🔐 L5-L7 Безопасность', desc: 'Шифрование, TLS, сертификаты, DHCP',
-    experiments: ['encryption', 'tls', 'firewallSim', 'dhcpLease', 'channelTransmit', 'wdmMultiplex'] }
+  { id: 'security', name: '🔐 L5-L7 Безопасность', desc: 'Шифрование, TLS, сертификаты, Firewall',
+    experiments: ['encryption', 'tls', 'firewallSim'] }
 ];
 
 export const LAB_EXPERIMENTS = {

@@ -520,6 +520,75 @@
   color: var(--accent);
 }
 
+/* ---- Related Materials ---- */
+.quest-briefing__related {
+  background: rgba(79,195,247,0.06);
+  border: 1px solid rgba(79,195,247,0.2);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.quest-briefing__related-title {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quest-briefing__related-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.quest-briefing__related-group:last-child {
+  margin-bottom: 0;
+}
+
+.quest-briefing__related-label {
+  font-size: .7rem;
+  color: var(--text-secondary);
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.quest-related-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--accent);
+  background: rgba(79,195,247,0.08);
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  text-decoration: none;
+}
+
+.quest-related-link:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.quest-related-link--theory {
+  border-color: #9b59b6;
+  background: rgba(155,89,182,0.08);
+  color: #9b59b6;
+}
+
+.quest-related-link--theory:hover {
+  background: #9b59b6;
+  color: #fff;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 600px) {
   .campaign-map {

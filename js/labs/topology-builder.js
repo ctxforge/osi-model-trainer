@@ -1,4 +1,5 @@
 import { addXP } from '../core/gamification.js';
+import { analyzeTrafficPath, renderTrafficStats } from './traffic-sim.js';
 
 /* ============================================================
    Topology Builder — Canvas-based visual network editor
@@ -23,10 +24,26 @@ const DEVICE_TYPES = [
 ];
 
 const LINK_TYPES = [
-  { id: 'ethernet', name: 'Ethernet', color: '#3498db', dash: [], bw: 1000, latency: 0.5, loss: 0 },
-  { id: 'fiber', name: 'Fiber', color: '#2ecc71', dash: [], bw: 10000, latency: 0.2, loss: 0 },
-  { id: 'wifi', name: 'Wi-Fi', color: '#9b59b6', dash: [6, 4], bw: 300, latency: 2, loss: 0.01 },
-  { id: 'wan', name: 'WAN', color: '#7f8c8d', dash: [8, 4], bw: 100, latency: 20, loss: 0.001 }
+  // Медь
+  { id: 'cat5e', name: 'Cat5e', color: '#3498db', dash: [], bw: 1000, latency: 0.5, loss: 0, medium: 'copper' },
+  { id: 'cat6', name: 'Cat6', color: '#2980b9', dash: [], bw: 10000, latency: 0.3, loss: 0, medium: 'copper' },
+  { id: 'cat6a', name: 'Cat6a', color: '#2471a3', dash: [], bw: 10000, latency: 0.3, loss: 0, medium: 'copper' },
+  { id: 'coax', name: 'Coax', color: '#e67e22', dash: [], bw: 1000, latency: 0.5, loss: 0.001, medium: 'copper' },
+  { id: 'dsl', name: 'DSL', color: '#f39c12', dash: [4, 3], bw: 100, latency: 10, loss: 0.002, medium: 'copper' },
+  // Оптоволокно
+  { id: 'fiber_sm', name: 'Fiber SM', color: '#e74c3c', dash: [], bw: 100000, latency: 0.1, loss: 0, medium: 'fiber' },
+  { id: 'fiber_mm', name: 'Fiber MM', color: '#c0392b', dash: [], bw: 10000, latency: 0.2, loss: 0, medium: 'fiber' },
+  // Беспроводная
+  { id: 'wifi24', name: 'Wi-Fi 2.4G', color: '#2ecc71', dash: [6, 4], bw: 150, latency: 3, loss: 0.02, medium: 'wireless' },
+  { id: 'wifi5', name: 'Wi-Fi 5G', color: '#27ae60', dash: [6, 4], bw: 866, latency: 2, loss: 0.01, medium: 'wireless' },
+  { id: 'wifi6', name: 'Wi-Fi 6', color: '#1abc9c', dash: [6, 4], bw: 2400, latency: 1, loss: 0.005, medium: 'wireless' },
+  { id: 'lte', name: '4G LTE', color: '#9b59b6', dash: [6, 4], bw: 100, latency: 30, loss: 0.005, medium: 'wireless' },
+  { id: '5g', name: '5G', color: '#8e44ad', dash: [6, 4], bw: 1000, latency: 5, loss: 0.002, medium: 'wireless' },
+  // Спутник
+  { id: 'starlink', name: 'Starlink', color: '#1e3a5f', dash: [8, 4], bw: 300, latency: 30, loss: 0.005, medium: 'satellite' },
+  { id: 'sat_geo', name: 'Sat GEO', color: '#34495e', dash: [8, 4], bw: 100, latency: 600, loss: 0.01, medium: 'satellite' },
+  // WAN
+  { id: 'wan', name: 'WAN', color: '#7f8c8d', dash: [8, 4], bw: 100, latency: 20, loss: 0.001, medium: 'wan' }
 ];
 
 /* Helper to build device objects concisely: [id, type, name, x, y, ip?, mask?, gw?] */
@@ -39,14 +56,14 @@ const PRESETS = {
       D(3,'pc','PC',200,280,'192.168.1.10','255.255.255.0','192.168.1.1'),
       D(4,'laptop','Laptop',400,280,'192.168.1.11','255.255.255.0','192.168.1.1'),
       D(5,'phone','Phone',600,280,'192.168.1.12','255.255.255.0','192.168.1.1')],
-    links: [L(1,2,'wan'), L(2,3,'ethernet'), L(2,4,'wifi'), L(2,5,'wifi')]
+    links: [L(1,2,'wan'), L(2,3,'cat5e'), L(2,4,'wifi5'), L(2,5,'wifi5')]
   },
   office: { name: '\u{1F3E2} \u041C\u0430\u043B\u044B\u0439 \u043E\u0444\u0438\u0441',
     devices: [D(1,'router','Router',400,40,'10.0.0.1','255.255.255.0'), D(2,'switch_l2','Switch',400,160),
       D(3,'pc','PC-1',100,300,'10.0.0.10','255.255.255.0','10.0.0.1'), D(4,'pc','PC-2',250,300,'10.0.0.11','255.255.255.0','10.0.0.1'),
       D(5,'pc','PC-3',400,300,'10.0.0.12','255.255.255.0','10.0.0.1'), D(6,'pc','PC-4',550,300,'10.0.0.13','255.255.255.0','10.0.0.1'),
       D(7,'server','Server',650,160,'10.0.0.2','255.255.255.0','10.0.0.1'), D(8,'server','Printer',700,300,'10.0.0.3','255.255.255.0','10.0.0.1')],
-    links: [L(1,2,'ethernet'), L(2,3,'ethernet'), L(2,4,'ethernet'), L(2,5,'ethernet'), L(2,6,'ethernet'), L(2,7,'fiber'), L(2,8,'ethernet')]
+    links: [L(1,2,'cat5e'), L(2,3,'cat5e'), L(2,4,'cat5e'), L(2,5,'cat5e'), L(2,6,'cat5e'), L(2,7,'fiber_sm'), L(2,8,'cat5e')]
   },
   campus: { name: '\u{1F3EB} 3-Tier Campus',
     devices: [D(1,'router','Core Router',400,30,'10.0.0.1','255.255.0.0'),
@@ -54,22 +71,47 @@ const PRESETS = {
       D(4,'switch_l2','Acc-SW1',100,240), D(5,'switch_l2','Acc-SW2',340,240), D(6,'switch_l2','Acc-SW3',460,240), D(7,'switch_l2','Acc-SW4',700,240),
       ...[8,9,10,11].map((id,i) => D(id,'pc','PC-'+( i+1),[40,160,280,400][i],360,'10.0.1.'+(10+i),'255.255.255.0','10.0.1.1')),
       ...[12,13,14,15].map((id,i) => D(id,'pc','PC-'+(i+5),[400,520,640,760][i], i===0?420:360,'10.0.2.'+(10+i),'255.255.255.0','10.0.2.1'))],
-    links: [L(1,2,'fiber'), L(1,3,'fiber'), L(2,4,'ethernet'), L(2,5,'ethernet'), L(3,6,'ethernet'), L(3,7,'ethernet'),
-      L(4,8,'ethernet'), L(4,9,'ethernet'), L(5,10,'ethernet'), L(5,11,'ethernet'),
-      L(6,12,'ethernet'), L(6,13,'ethernet'), L(7,14,'ethernet'), L(7,15,'ethernet')]
+    links: [L(1,2,'fiber_sm'), L(1,3,'fiber_sm'), L(2,4,'cat5e'), L(2,5,'cat5e'), L(3,6,'cat5e'), L(3,7,'cat5e'),
+      L(4,8,'cat5e'), L(4,9,'cat5e'), L(5,10,'cat5e'), L(5,11,'cat5e'),
+      L(6,12,'cat5e'), L(6,13,'cat5e'), L(7,14,'cat5e'), L(7,15,'cat5e')]
   }
 };
 
 /* ---- State ---- */
 let devices = [], links = [], nextId = 1;
 let selectedId = null, connectingFrom = null, dragging = null, dragOff = { x: 0, y: 0 };
-let canvas, ctx, currentLinkType = 'ethernet', animPacket = null;
+let canvas, ctx, currentLinkType = 'cat5e', animPacket = null;
 const DW = 80, DH = 50;
 
 /* ---- Helpers ---- */
 const devById = id => devices.find(d => d.id === id);
 const typeInfo = type => DEVICE_TYPES.find(t => t.type === type);
 const linkInfo = id => LINK_TYPES.find(l => l.id === id);
+
+/* ---- Link overlay state for traffic analysis visualization ---- */
+let linkOverlays = new Map(); // linkKey -> { color, label }
+function linkKey(fromId, toId) { return `${Math.min(fromId, toId)}-${Math.max(fromId, toId)}`; }
+
+function colorLinksByAnalysis(analysis) {
+  linkOverlays = new Map();
+  if (!analysis || !analysis.hops) return;
+  analysis.hops.forEach((hop, i) => {
+    // Find corresponding link
+    const l = links.find(l => {
+      const a = devById(l.from), b = devById(l.to);
+      return a && b && ((a.name === hop.from && b.name === hop.to) || (a.name === hop.to && b.name === hop.from));
+    });
+    if (!l) return;
+    const isBottleneck = analysis.bottleneck && analysis.bottleneck.hopIndex === i;
+    const lossHigh = hop.loss > 0.005;
+    const color = isBottleneck || lossHigh ? '#e74c3c' : hop.bw < analysis.effectiveBandwidth * 1.5 ? '#f39c12' : '#2ecc71';
+    linkOverlays.set(linkKey(l.from, l.to), {
+      color,
+      label: `${hop.bw >= 1000 ? (hop.bw/1000) + ' Гбит/с' : hop.bw + ' Мбит/с'}, ${hop.latency} мс`
+    });
+  });
+  draw();
+}
 
 function hitTest(mx, my) {
   for (let i = devices.length - 1; i >= 0; i--) {
@@ -104,10 +146,19 @@ function draw() {
   links.forEach(l => {
     const a = devById(l.from), b = devById(l.to); if (!a || !b) return;
     const lt = linkInfo(l.type);
-    ctx.strokeStyle = lt.color; ctx.lineWidth = 2; ctx.setLineDash(lt.dash);
+    const overlay = linkOverlays.get(linkKey(l.from, l.to));
+    const drawColor = overlay ? overlay.color : lt.color;
+    const drawWidth = overlay ? 3 : 2;
+    ctx.strokeStyle = drawColor; ctx.lineWidth = drawWidth; ctx.setLineDash(lt.dash);
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
-    ctx.font = '9px sans-serif'; ctx.fillStyle = lt.color; ctx.textAlign = 'center';
-    ctx.fillText(lt.name, (a.x+b.x)/2, (a.y+b.y)/2 - 5);
+    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    ctx.font = '9px sans-serif'; ctx.fillStyle = drawColor; ctx.textAlign = 'center';
+    ctx.fillText(lt.name, mx, my - 5);
+    // Show overlay label (metrics) if analysis is active
+    if (overlay && overlay.label) {
+      ctx.font = '8px sans-serif'; ctx.fillStyle = overlay.color;
+      ctx.fillText(overlay.label, mx, my + 8);
+    }
   });
 
   // devices
@@ -228,12 +279,22 @@ async function tracePacket(container) {
   animPacket = { path: pts, idx: 0, t: 0 };
   logEl.innerHTML = '';
 
+  // Clear previous analysis overlays
+  linkOverlays = new Map();
+
   for (let i = 0; i < path.length; i++) {
     const d = devById(path[i]);
     if (i < path.length - 1) {
       animPacket.idx = i;
+      // Calculate duration proportional to link latency
+      const link = links.find(l =>
+        (l.from === path[i] && l.to === path[i+1]) || (l.from === path[i+1] && l.to === path[i])
+      );
+      const lt = link ? linkInfo(link.type) : null;
+      const latency = lt ? lt.latency : 1;
+      // Scale: 0.1ms → 200ms anim, 600ms → 1200ms anim
+      const segDuration = Math.max(200, Math.min(1200, 200 + latency * 1.5));
       await new Promise(resolve => {
-        const segDuration = 500; // ms per segment
         const startTime = performance.now();
         function animateFrame(now) {
           const elapsed = now - startTime;
@@ -259,13 +320,14 @@ async function tracePacket(container) {
 }
 
 /* ---- Random topology generator ---- */
-function generateRandomTopology() {
+function generateRandomTopology(options = {}) {
   const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
   const topoTypes = ['home', 'small_office', 'corporate', 'campus', 'isp', 'datacenter'];
-  const topoType = pick(topoTypes);
-  const totalTarget = topoType === 'home' ? rand(5, 8) : topoType === 'small_office' ? rand(8, 15) : topoType === 'corporate' ? rand(15, 30) : topoType === 'campus' ? rand(20, 40) : topoType === 'isp' ? rand(10, 20) : rand(15, 30);
+  const topoTypeMap = { 'random': null, 'star': 'home', 'tree': 'corporate', 'mesh': 'isp', 'ring': 'campus', 'hybrid': 'small_office', 'isp': 'isp', 'datacenter': 'datacenter' };
+  const topoType = options.topoType && topoTypeMap[options.topoType] ? topoTypeMap[options.topoType] : pick(topoTypes);
+  const totalTarget = options.deviceCount || (topoType === 'home' ? rand(5, 8) : topoType === 'small_office' ? rand(8, 15) : topoType === 'corporate' ? rand(15, 30) : topoType === 'campus' ? rand(20, 40) : topoType === 'isp' ? rand(10, 20) : rand(15, 30));
 
   const genDevices = [];
   const genLinks = [];
@@ -310,21 +372,34 @@ function generateRandomTopology() {
   }
 
   /* --- Link type selection helpers --- */
+  const medPref = options.mediumPreference || 'auto';
+  const copperLinks = ['cat5e', 'cat6', 'cat6a'];
+  const fiberLinks = ['fiber_sm', 'fiber_mm'];
+  const wirelessLinks = ['wifi5', 'wifi6'];
+
   function linkBetween(a, b) {
     const tA = a.type, tB = b.type;
     if (tA === 'cloud' || tB === 'cloud') return 'wan';
+
+    const isWirelessDev = t => t === 'phone' || t === 'laptop' || t === 'ap';
+    // Wireless devices always use wireless links
+    if (isWirelessDev(tA) || isWirelessDev(tB)) {
+      if (tA === 'ap' || tB === 'ap') return pick(wirelessLinks);
+      if (medPref === 'copper') return pick(copperLinks);
+      return pick(['cat5e', ...wirelessLinks]);
+    }
+
+    if (medPref === 'copper') return pick(copperLinks);
+    if (medPref === 'fiber') return pick(fiberLinks);
+    if (medPref === 'wireless') return pick(wirelessLinks);
+
     const isRouterA = tA === 'router' || tA === 'firewall';
     const isRouterB = tB === 'router' || tB === 'firewall';
-    if (isRouterA && isRouterB) return pick(['fiber', 'wan']);
+    if (isRouterA && isRouterB) return pick(['fiber_sm', 'wan']);
     const isSwitchA = tA.startsWith('switch') || tA === 'hub';
     const isSwitchB = tB.startsWith('switch') || tB === 'hub';
-    if (isSwitchA && isSwitchB) return pick(['fiber', 'ethernet']);
-    const isWireless = t => t === 'phone' || t === 'laptop' || t === 'ap';
-    if (isWireless(tA) || isWireless(tB)) {
-      if (tA === 'ap' || tB === 'ap') return 'wifi';
-      return pick(['ethernet', 'wifi']);
-    }
-    return 'ethernet';
+    if (isSwitchA && isSwitchB) return pick(['fiber_sm', 'cat6']);
+    return 'cat5e';
   }
 
   function addLink(a, b) {
@@ -728,6 +803,24 @@ function generateRandomTopology() {
     }
   }
 
+  /* Optional firewall and load balancer from options */
+  if (options.includeFirewall && !genDevices.some(d => d.type === 'firewall')) {
+    const router = genDevices.find(d => d.type === 'router');
+    if (router) {
+      const fw = addDev('firewall', 'Firewall', router.x + 100, router.y,
+        `${baseNet}.${nextSubnet()}.1`, maskStr());
+      addLink(router, fw);
+    }
+  }
+  if (options.includeLB && !genDevices.some(d => d.type === 'loadbalancer')) {
+    const sw = genDevices.find(d => d.type.startsWith('switch'));
+    if (sw) {
+      const lb = addDev('loadbalancer', 'LB-1', sw.x + 100, sw.y,
+        `${baseNet}.${nextSubnet()}.1`, maskStr());
+      addLink(sw, lb);
+    }
+  }
+
   /* Apply to module state */
   devices = genDevices.map(d => ({ ...d }));
   links = genLinks.map(l => ({ ...l }));
@@ -761,22 +854,76 @@ function updateSelects(container) {
   }
 }
 
+/* ---- Build grouped link palette ---- */
+function buildLinkPalette() {
+  const groups = [
+    { label: 'Медь', medium: 'copper' },
+    { label: 'Оптоволокно', medium: 'fiber' },
+    { label: 'Беспроводная', medium: 'wireless' },
+    { label: 'Спутник', medium: 'satellite' },
+    { label: 'WAN', medium: 'wan' }
+  ];
+  return groups.map(g => {
+    const items = LINK_TYPES.filter(lt => lt.medium === g.medium);
+    if (items.length === 0) return '';
+    return `<span style="font-size:.65rem;color:var(--text-secondary);margin-left:4px">${g.label}:</span>
+      ${items.map(lt => `<button class="dnd-btn tb-link-type${lt.id===currentLinkType?' active':''}" data-link="${lt.id}" style="padding:4px 7px;font-size:.68rem;border-color:${lt.color}" title="${lt.name} (${lt.bw} Мбит/с, ${lt.latency} мс)">${lt.name}</button>`).join('')}`;
+  }).join('');
+}
+
 /* ---- Build UI ---- */
 function buildUI(container) {
   container.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-      <span style="font-size:.75rem;color:var(--text-secondary);align-self:center;margin-right:4px">\u041F\u0440\u0435\u0441\u0435\u0442\u044B:</span>
+      <span style="font-size:.75rem;color:var(--text-secondary);align-self:center;margin-right:4px">Пресеты:</span>
       ${Object.entries(PRESETS).map(([k,v]) => `<button class="dnd-btn tb-preset" data-preset="${k}" style="padding:6px 10px;font-size:.72rem">${v.name}</button>`).join('')}
-      <button class="dnd-btn tb-preset" data-preset="random" style="padding:6px 10px;font-size:.72rem">\u{1F3B2} \u0421\u043B\u0443\u0447\u0430\u0439\u043D\u0430\u044F</button>
+    </div>
+    <div style="padding:10px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);margin-bottom:8px">
+      <div style="font-weight:700;font-size:.78rem;margin-bottom:8px">🎲 Генератор топологий</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:120px">
+          <label style="font-size:.68rem;color:var(--text-secondary);display:block;margin-bottom:2px">Тип топологии</label>
+          <select class="ch-phy-select tb-gen-topo" style="font-size:.75rem;padding:4px 6px;width:100%">
+            <option value="random">Случайная</option>
+            <option value="star">Звезда</option>
+            <option value="tree">Дерево</option>
+            <option value="mesh">Mesh</option>
+            <option value="ring">Кольцо</option>
+            <option value="hybrid">Гибрид</option>
+            <option value="isp">ISP</option>
+            <option value="datacenter">Дата-центр</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:130px">
+          <label style="font-size:.68rem;color:var(--text-secondary);display:block;margin-bottom:2px">Устройств: <span class="tb-gen-count-val">15</span></label>
+          <input type="range" class="tb-gen-count" min="5" max="50" value="15" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label style="font-size:.68rem;color:var(--text-secondary);display:block;margin-bottom:2px">Среда</label>
+          <select class="ch-phy-select tb-gen-medium" style="font-size:.75rem;padding:4px 6px;width:100%">
+            <option value="auto">Авто</option>
+            <option value="copper">Медь</option>
+            <option value="fiber">Оптоволокно</option>
+            <option value="wireless">Беспроводная</option>
+          </select>
+        </div>
+        <label style="font-size:.68rem;color:var(--text-secondary);display:flex;align-items:center;gap:3px">
+          <input type="checkbox" class="tb-gen-fw"> Firewall
+        </label>
+        <label style="font-size:.68rem;color:var(--text-secondary);display:flex;align-items:center;gap:3px">
+          <input type="checkbox" class="tb-gen-lb"> Load Balancer
+        </label>
+        <button class="lab-run-btn tb-gen-btn" style="padding:6px 14px;font-size:.78rem;margin:0">🎲 Сгенерировать</button>
+      </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;padding:8px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)">
-      <span style="font-size:.72rem;color:var(--text-secondary);width:100%;margin-bottom:2px">\u{1F4E6} \u041F\u0430\u043B\u0438\u0442\u0440\u0430 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432 (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 = \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C):</span>
+      <span style="font-size:.72rem;color:var(--text-secondary);width:100%;margin-bottom:2px">📦 Палитра устройств (нажмите = добавить):</span>
       ${DEVICE_TYPES.map(t => `<button class="dnd-btn tb-add-dev" data-type="${t.type}" style="padding:5px 8px;font-size:.72rem" title="${t.name} (L${t.layer})">${t.icon} ${t.name}</button>`).join('')}
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
-      <span style="font-size:.72rem;color:var(--text-secondary)">\u{1F517} \u0422\u0438\u043F \u0441\u0432\u044F\u0437\u0438:</span>
-      ${LINK_TYPES.map(lt => `<button class="dnd-btn tb-link-type${lt.id===currentLinkType?' active':''}" data-link="${lt.id}" style="padding:5px 8px;font-size:.72rem;border-color:${lt.color}">${lt.name}</button>`).join('')}
-      <span style="font-size:.68rem;color:var(--text-secondary);margin-left:auto">\u0414\u0432\u043E\u0439\u043D\u043E\u0439 \u043A\u043B\u0438\u043A \u043F\u043E \u0443\u0441\u0442\u0440-\u0432\u0443 \u2192 \u043A\u043B\u0438\u043A \u043F\u043E \u0446\u0435\u043B\u0438 = \u0441\u043E\u0435\u0434\u0438\u043D\u0438\u0442\u044C | Esc = \u043E\u0442\u043C\u0435\u043D\u0430</span>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;align-items:center;padding:6px 8px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)">
+      <span style="font-size:.72rem;color:var(--text-secondary)">🔗 Тип связи:</span>
+      ${buildLinkPalette()}
+      <span style="font-size:.65rem;color:var(--text-secondary);margin-left:auto">Двойной клик → клик по цели = соединить</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <div style="flex:1;min-width:280px">
@@ -785,32 +932,49 @@ function buildUI(container) {
       <div class="tb-props" style="width:220px;min-width:180px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);max-height:500px;overflow-y:auto"></div>
     </div>
     <div style="margin-top:10px;padding:10px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)">
-      <div style="font-weight:700;font-size:.82rem;margin-bottom:8px">\u{1F4E1} \u0422\u0440\u0430\u0441\u0441\u0438\u0440\u043E\u0432\u043A\u0430 \u043F\u0430\u043A\u0435\u0442\u0430</div>
+      <div style="font-weight:700;font-size:.82rem;margin-bottom:8px">📡 Трассировка пакета</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-        <label style="font-size:.72rem">\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A:</label>
+        <label style="font-size:.72rem">Источник:</label>
         <select class="ch-phy-select" data-role="src" style="font-size:.75rem;padding:4px 6px;max-width:140px"></select>
-        <label style="font-size:.72rem">\u041D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435:</label>
+        <label style="font-size:.72rem">Назначение:</label>
         <select class="ch-phy-select" data-role="dst" style="font-size:.75rem;padding:4px 6px;max-width:140px"></select>
-        <button class="lab-run-btn tb-send-pkt" style="padding:6px 14px;font-size:.78rem;margin:0">\u25B6 \u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043F\u0430\u043A\u0435\u0442</button>
+        <button class="lab-run-btn tb-send-pkt" style="padding:6px 14px;font-size:.78rem;margin:0">▶ Отправить пакет</button>
+        <button class="dnd-btn tb-analyze" style="padding:6px 14px;font-size:.78rem">📊 Анализ трафика</button>
       </div>
       <div class="tb-trace-log" style="max-height:180px;overflow-y:auto"></div>
+      <div class="tb-traffic-stats" style="margin-top:8px"></div>
     </div>
     <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="dnd-btn tb-export" style="padding:6px 12px;font-size:.72rem">\u{1F4BE} \u042D\u043A\u0441\u043F\u043E\u0440\u0442 JSON</button>
-      <button class="dnd-btn tb-clear" style="padding:6px 12px;font-size:.72rem">\u{1F5D1}\uFE0F \u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C</button>
+      <button class="dnd-btn tb-export" style="padding:6px 12px;font-size:.72rem">💾 Экспорт JSON</button>
+      <button class="dnd-btn tb-clear" style="padding:6px 12px;font-size:.72rem">🗑️ Очистить</button>
     </div>`;
 
   canvas = container.querySelector('.tb-canvas');
   ctx = canvas.getContext('2d');
   resizeCanvas();
 
+  /* -- Generation params -- */
+  const genCountInput = container.querySelector('.tb-gen-count');
+  const genCountVal = container.querySelector('.tb-gen-count-val');
+  if (genCountInput && genCountVal) {
+    genCountInput.addEventListener('input', () => { genCountVal.textContent = genCountInput.value; });
+  }
+
+  container.querySelector('.tb-gen-btn')?.addEventListener('click', () => {
+    const opts = {
+      topoType: container.querySelector('.tb-gen-topo')?.value || 'random',
+      deviceCount: parseInt(container.querySelector('.tb-gen-count')?.value || '15'),
+      mediumPreference: container.querySelector('.tb-gen-medium')?.value || 'auto',
+      includeFirewall: container.querySelector('.tb-gen-fw')?.checked || false,
+      includeLB: container.querySelector('.tb-gen-lb')?.checked || false
+    };
+    generateRandomTopology(opts);
+    updateSelects(container); renderProps(container);
+  });
+
   /* -- Presets -- */
   container.querySelectorAll('.tb-preset').forEach(btn => btn.addEventListener('click', () => {
-    if (btn.dataset.preset === 'random') {
-      generateRandomTopology();
-    } else {
-      loadPreset(btn.dataset.preset);
-    }
+    loadPreset(btn.dataset.preset);
     updateSelects(container); renderProps(container);
   }));
 
@@ -881,6 +1045,23 @@ function buildUI(container) {
   });
 
   container.querySelector('.tb-send-pkt').addEventListener('click', () => tracePacket(container));
+
+  /* -- Traffic Analysis -- */
+  container.querySelector('.tb-analyze')?.addEventListener('click', () => {
+    const statsEl = container.querySelector('.tb-traffic-stats');
+    if (devices.length < 2) { statsEl.innerHTML = '<div style="color:#e74c3c;font-size:.78rem">Нужно минимум 2 устройства</div>'; return; }
+    const srcId = parseInt(container.querySelector('[data-role="src"]').value);
+    const dstId = parseInt(container.querySelector('[data-role="dst"]').value);
+    if (srcId === dstId) { statsEl.innerHTML = '<div style="color:#e74c3c;font-size:.78rem">Источник и назначение совпадают</div>'; return; }
+    const path = findPath(srcId, dstId);
+    if (!path) { statsEl.innerHTML = '<div style="color:#e74c3c;font-size:.78rem">Маршрут не найден!</div>'; return; }
+    const analysis = analyzeTrafficPath(path, links, devices, linkInfo, devById, typeInfo);
+    if (analysis) {
+      renderTrafficStats(statsEl, analysis);
+      // Color links by load on the path
+      colorLinksByAnalysis(analysis);
+    }
+  });
 
   container.querySelector('.tb-export').addEventListener('click', () => {
     const blob = new Blob([getTopology()], { type: 'application/json' });
