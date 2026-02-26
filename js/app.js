@@ -18,6 +18,7 @@ import { initSignalGenerator } from './labs/signal-generator.js';
 import { initSpectrumAnalyzer } from './labs/spectrum-analyzer.js';
 import { initSignalChain } from './labs/signal-chain.js';
 import { initNetworkInstruments } from './labs/network-instruments.js';
+import { initSatGlobe } from './sections/sat-globe.js';
 import { initUnitsRef } from './sections/units-ref.js';
 import { initRadioLab } from './labs/radio-lab.js';
 import { initGuidedLabs } from './sections/guided-labs.js';
@@ -49,6 +50,7 @@ initSignalChain();
 initNetworkInstruments();
 
 // New sections
+initSatGlobe();
 initUnitsRef();
 initRadioLab();
 initGuidedLabs();
