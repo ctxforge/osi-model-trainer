@@ -4,7 +4,7 @@
 import * as THREE from '../libs/three.module.min.js';
 import { twoline2satrec, propagate, gstime, eciToGeodetic, degreesLat, degreesLong } from '../libs/satellite.es.js';
 import { CONSTELLATIONS, CONSTELLATION_CATEGORIES, getConstellationById } from '../data/sat-constellations.js';
-import { loadTLE, clearTleCache, getTleStatus } from '../data/sat-tle-data.js';
+import { loadTLE, clearTleCache, refreshAllTLE, BUNDLED_TLE_DATE } from '../data/sat-tle-data.js';
 import { addXP } from '../core/gamification.js';
 
 /* ================================================================
@@ -288,12 +288,25 @@ function setupEventHandlers(container) {
     container.querySelector('#sgSpeedLabel').textContent = `×${state.simSpeed}`;
   });
 
-  // Refresh TLE
-  container.querySelector('#sgRefreshTle').addEventListener('click', () => {
-    clearTleCache();
+  // Refresh TLE — full update from CelesTrak
+  container.querySelector('#sgRefreshTle').addEventListener('click', async () => {
+    const btn = container.querySelector('#sgRefreshTle');
+    btn.textContent = '⏳ Загружаю…';
+    btn.disabled = true;
+    showLoading(true, 'Обновляю TLE с CelesTrak…');
+    await refreshAllTLE(groupId => {
+      showLoading(true, `Обновляю: ${groupId}…`);
+    });
+    showLoading(false);
+    btn.textContent = '🔄 TLE';
+    btn.disabled = false;
     loadConstellation(state.activeId);
-    addXP(2);
+    addXP(5);
   });
+
+  // Show bundled date hint
+  const tleBtn = container.querySelector('#sgRefreshTle');
+  if (tleBtn && BUNDLED_TLE_DATE) tleBtn.title = `Встроенные данные от: ${BUNDLED_TLE_DATE}\nНажмите для обновления с CelesTrak`;
 
   // Geolocation
   container.querySelector('#sgLocBtn').addEventListener('click', () => {
