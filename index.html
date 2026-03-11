@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="Сетевой тренажёр — полный курс компьютерных сетей: 17 тем теории, 15 лабораторий, симулятор инкапсуляции, терминал">
-  <title>Сетевой тренажёр — Компьютерные сети</title>
+  <meta name="description" content="Интерактивный тренажёр по модели OSI — изучение, симулятор, лаборатория">
+  <title>Модель OSI — Интерактивный тренажёр</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
 </head>
@@ -26,95 +26,44 @@
 
   <!-- ===== HOME ===== -->
   <section class="section active" id="section-home">
-    <!-- 1. Hero -->
     <div class="hero">
-      <h1 class="hero__title">Сетевой тренажёр</h1>
-      <p class="hero__subtitle">Полный курс компьютерных сетей — от физики сигналов до прикладных протоколов</p>
-      <div class="hero__stats">
-        <span class="hero__pill">📚 17 тем</span>
-        <span class="hero__pill">🔬 34 лаборатории</span>
-        <span class="hero__pill">💻 35+ команд</span>
-      </div>
+      <h1 class="hero__title">Модель OSI</h1>
+      <p class="hero__subtitle">Интерактивный тренажёр по сетевой модели</p>
     </div>
 
-    <!-- 2. Progress (shown only if XP > 0, rendered by home.js) -->
-    <div id="homeProgress"></div>
+    <div class="osi-tower" id="homeTower"></div>
 
-    <!-- 3. Compact OSI Tower -->
-    <div class="osi-tower osi-tower--compact" id="homeTower"></div>
-
-    <!-- 4. Feature Cards -->
-    <div class="feature-cards">
-      <div class="feature-card" data-nav="theory">
-        <div class="feature-card__icon">📚</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Теория <span class="feature-card__badge" id="badgeTheory"></span></div>
-          <div class="feature-card__desc">17 тем по учебнику Олиферов — от эволюции сетей до QoS и сетевого управления</div>
-        </div>
+    <div class="nav-cards">
+      <div class="nav-card" data-nav="study">
+        <div class="nav-card__icon">📖</div>
+        <div class="nav-card__title">Модель OSI</div>
+        <div class="nav-card__desc">7 уровней</div>
       </div>
-      <div class="feature-card" data-nav="study">
-        <div class="feature-card__icon">📖</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Модель OSI <span class="feature-card__badge" id="badgeStudy"></span></div>
-          <div class="feature-card__desc">Подробное изучение каждого из 7 уровней с протоколами и примерами</div>
-        </div>
+      <div class="nav-card" data-nav="simulator">
+        <div class="nav-card__icon">📦</div>
+        <div class="nav-card__title">Инкапсуляция</div>
+        <div class="nav-card__desc">Пакеты и байты</div>
       </div>
-      <div class="feature-card" data-nav="protocols">
-        <div class="feature-card__icon">📋</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Протоколы</div>
-          <div class="feature-card__desc">Справочник 50+ сетевых протоколов с интерактивными заголовками и связями</div>
-        </div>
+      <div class="nav-card" data-nav="lab">
+        <div class="nav-card__icon">🔬</div>
+        <div class="nav-card__title">Лаборатория</div>
+        <div class="nav-card__desc">15 экспериментов</div>
       </div>
-      <div class="feature-card" data-nav="simulator">
-        <div class="feature-card__icon">📦</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Инкапсуляция</div>
-          <div class="feature-card__desc">Симулятор построения пакетов — заголовки, байты и биты на каждом уровне OSI</div>
-        </div>
+      <div class="nav-card" data-nav="siggen">
+        <div class="nav-card__icon">〰️</div>
+        <div class="nav-card__title">Физ. лаборатория</div>
+        <div class="nav-card__desc">Сигналы + Канал</div>
       </div>
-      <div class="feature-card" data-nav="lab">
-        <div class="feature-card__icon">🔬</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Лаборатория</div>
-          <div class="feature-card__desc">15 экспериментов: маршрутизация, фрагментация, TCP handshake, шифрование и другие</div>
-        </div>
+      <div class="nav-card" data-nav="terminal">
+        <div class="nav-card__icon">💻</div>
+        <div class="nav-card__title">Терминал</div>
+        <div class="nav-card__desc">21 команда</div>
       </div>
-      <div class="feature-card" data-nav="siggen">
-        <div class="feature-card__icon">〰️</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Физ. лаборатория</div>
-          <div class="feature-card__desc">Генератор сигналов, модуляция, каналы связи, спектральный анализ и передача данных</div>
-        </div>
+      <div class="nav-card" data-nav="dnd">
+        <div class="nav-card__icon">🧩</div>
+        <div class="nav-card__title">Тренажёр</div>
+        <div class="nav-card__desc">Drag & Drop</div>
       </div>
-      <div class="feature-card" data-nav="terminal">
-        <div class="feature-card__icon">💻</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Терминал</div>
-          <div class="feature-card__desc">35+ сетевых команд: ping, traceroute, netstat, dig, arp, iptables и другие</div>
-        </div>
-      </div>
-      <div class="feature-card" data-nav="dnd">
-        <div class="feature-card__icon">🧩</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Тренажёр</div>
-          <div class="feature-card__desc">Drag & Drop — разместите протоколы и устройства на правильных уровнях OSI</div>
-        </div>
-      </div>
-      <div class="feature-card" data-nav="campaign">
-        <div class="feature-card__icon">🏰</div>
-        <div class="feature-card__body">
-          <div class="feature-card__title">Кампания</div>
-          <div class="feature-card__desc">35 квестов в 6 главах — от стажёра до сетевого архитектора с рандомизированными заданиями</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. About -->
-    <div class="home-about">
-      <div class="home-about__title">О платформе</div>
-      <p>Интерактивная образовательная платформа для изучения компьютерных сетей. Теоретический материал структурирован по учебнику В.Г. и Н.А. Олиферов «Компьютерные сети» (5-е издание).</p>
-      <p>Все лаборатории работают прямо в браузере — без установки и регистрации.</p>
     </div>
   </section>
 
@@ -132,19 +81,6 @@
     <h3 class="mt-16 mb-12" style="font-size:.9rem">Сравнение OSI и TCP/IP</h3>
     <div style="overflow-x:auto">
       <table class="comparison-table" id="comparisonTable"></table>
-    </div>
-  </section>
-
-  <!-- ===== THEORY ===== -->
-  <section class="section" id="section-theory">
-    <div class="theory-layout">
-      <div class="theory-nav-bar">
-        <button class="theory-nav-toggle" id="theoryNavToggle">☰ Темы</button>
-        <div class="theory-nav-bar__title" id="theoryBarTitle">Теория сетей</div>
-        <div class="theory-nav-bar__progress" id="theoryBarProgress"></div>
-      </div>
-      <div class="theory-nav" id="theoryNav"></div>
-      <div id="theoryContent"></div>
     </div>
   </section>
 
@@ -172,32 +108,9 @@
           <input type="number" class="sim-input sim-input--sm" id="simDstPort" value="80" inputmode="numeric">
         </div>
       </div>
-      <div class="sim-config-grid mt-12">
-        <div class="sim-config-field">
-          <label>L7 протокол</label>
-          <select class="ch-phy-select" id="simL7Proto" style="margin-bottom:0">
-            <option value="http" selected>HTTP (POST)</option>
-            <option value="dns">DNS Query</option>
-            <option value="icmp">ICMP Echo (ping)</option>
-            <option value="arp">ARP Request</option>
-            <option value="dhcp">DHCP Discover</option>
-          </select>
-        </div>
-        <div class="sim-config-field">
-          <label>L4 транспорт</label>
-          <div class="lab-toggle" id="simProtoToggle">
-            <button class="lab-toggle__btn active" data-proto="tcp">TCP</button>
-            <button class="lab-toggle__btn" data-proto="udp">UDP</button>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <label class="ch-env-toggle" style="flex:1"><input type="checkbox" id="simVlanToggle"> 802.1Q VLAN</label>
-        <label class="ch-env-toggle" style="flex:1"><input type="checkbox" id="simIpv6Toggle"> IPv6</label>
-      </div>
-      <div class="lab-toggle mt-12" id="simModeToggle">
-        <button class="lab-toggle__btn active" data-mode="encap">📦 Инкапсуляция</button>
-        <button class="lab-toggle__btn" data-mode="deencap">📂 Деинкапсуляция</button>
+      <div class="lab-toggle mt-12" id="simProtoToggle">
+        <button class="lab-toggle__btn active" data-proto="tcp">TCP</button>
+        <button class="lab-toggle__btn" data-proto="udp">UDP</button>
       </div>
       <button class="lab-run-btn" id="simBuild">▶ Показать инкапсуляцию</button>
     </div>
@@ -254,13 +167,6 @@
       <div id="labParams-routing"></div>
       <button class="lab-run-btn" id="labRun-routing">▶ Отправить пакет</button>
       <div class="lab-result" id="labResult-routing"></div>
-    </div>
-
-    <!-- Routing Simulator (RIP/OSPF/BGP) -->
-    <div class="lab-content" id="lab-routingSim">
-      <div id="labParams-routingSim"></div>
-      <button class="lab-run-btn" id="labRun-routingSim">▶ Запустить симуляцию</button>
-      <div class="lab-result" id="labResult-routingSim"></div>
     </div>
 
     <!-- IP Calculator -->
@@ -330,38 +236,6 @@
       <div id="signalsUI"></div>
     </div>
 
-    <!-- Oscilloscope -->
-    <div class="lab-content" id="lab-oscilloscope">
-      <div id="labParams-oscilloscope"></div>
-      <div class="lab-result" id="labResult-oscilloscope"></div>
-    </div>
-
-    <!-- TCP State Machine -->
-    <div class="lab-content" id="lab-tcpStateMachine">
-      <div id="labParams-tcpStateMachine"></div>
-      <div class="lab-result" id="labResult-tcpStateMachine"></div>
-    </div>
-
-    <!-- TCP Congestion -->
-    <div class="lab-content" id="lab-tcpCongestion">
-      <div id="labParams-tcpCongestion"></div>
-      <button class="lab-run-btn" id="labRun-tcpCongestion">▶ Запустить симуляцию</button>
-      <div class="lab-result" id="labResult-tcpCongestion"></div>
-    </div>
-
-    <!-- TCP Window -->
-    <div class="lab-content" id="lab-tcpWindow">
-      <div id="labParams-tcpWindow"></div>
-      <button class="lab-run-btn" id="labRun-tcpWindow">▶ Запустить окно</button>
-      <div class="lab-result" id="labResult-tcpWindow"></div>
-    </div>
-
-    <!-- Firewall Simulator -->
-    <div class="lab-content" id="lab-firewallSim">
-      <div id="labParams-firewallSim"></div>
-      <div class="lab-result" id="labResult-firewallSim"></div>
-    </div>
-
     <!-- TLS/SSL -->
     <div class="lab-content" id="lab-tls">
       <div id="labParams-tls"></div>
@@ -375,38 +249,6 @@
       <div id="channelPhysicsUI"></div>
     </div>
 
-    <!-- VLAN Simulator -->
-    <div class="lab-content" id="lab-vlanSim">
-      <div id="labParams-vlanSim"></div>
-      <div class="lab-result" id="labResult-vlanSim"></div>
-    </div>
-
-    <!-- Topology Builder -->
-    <div class="lab-content" id="lab-topologyBuilder">
-      <div id="labParams-topologyBuilder"></div>
-      <div class="lab-result" id="labResult-topologyBuilder"></div>
-    </div>
-
-    <!-- Professional Signal Generator -->
-    <div class="lab-content" id="lab-proSignalGen">
-      <div id="signalGeneratorUI"></div>
-    </div>
-
-    <!-- Professional Spectrum Analyzer -->
-    <div class="lab-content" id="lab-proSpectrumAnalyzer">
-      <div id="spectrumAnalyzerUI"></div>
-    </div>
-
-    <!-- Signal Chain Visualizer -->
-    <div class="lab-content" id="lab-signalChain">
-      <div id="signalChainUI"></div>
-    </div>
-
-    <!-- Network Instruments -->
-    <div class="lab-content" id="lab-networkInstruments">
-      <div id="networkInstrumentsUI"></div>
-    </div>
-
     <!-- Network Path Builder -->
     <div class="lab-content" id="lab-netBuilder">
       <div class="nb-presets" id="nbPresets"></div>
@@ -416,68 +258,6 @@
       <button class="lab-run-btn" id="nbSend">▶ Отправить пакет</button>
       <div class="lab-result" id="nbResult"></div>
     </div>
-
-    <!-- Signal Generator (link to physics lab) -->
-    <div class="lab-content" id="lab-signalGenerator">
-      <div class="card" style="text-align:center;padding:24px">
-        <div style="font-size:2.5rem;margin-bottom:8px">🎛️</div>
-        <h3 style="margin:0 0 8px">Генератор сигналов</h3>
-        <p style="font-size:.85rem;color:var(--text-secondary);margin:0 0 16px">Создавайте сигналы произвольной формы, комбинируйте компоненты, применяйте модуляцию. Экспорт в CSV / WAV / MATLAB / JSON.</p>
-        <button class="lab-run-btn" id="labGo-signalGenerator">→ Открыть физическую лабораторию</button>
-      </div>
-    </div>
-
-    <!-- Channel Transmit (link to physics lab) -->
-    <div class="lab-content" id="lab-channelTransmit">
-      <div class="card" style="text-align:center;padding:24px">
-        <div style="font-size:2.5rem;margin-bottom:8px">📡</div>
-        <h3 style="margin:0 0 8px">Передача через канал</h3>
-        <p style="font-size:.85rem;color:var(--text-secondary);margin:0 0 16px">Отправьте сигнал или файл через смоделированный физический канал связи с затуханием, шумом и ограничением полосы.</p>
-        <button class="lab-run-btn" id="labGo-channelTransmit">→ Открыть физическую лабораторию</button>
-      </div>
-    </div>
-
-    <!-- Spectrum Analyzer (link to physics lab) -->
-    <div class="lab-content" id="lab-spectrumAnalyzer">
-      <div class="card" style="text-align:center;padding:24px">
-        <div style="font-size:2.5rem;margin-bottom:8px">📊</div>
-        <h3 style="margin:0 0 8px">Анализатор спектра</h3>
-        <p style="font-size:.85rem;color:var(--text-secondary);margin:0 0 16px">FFT-анализ сигнала: спектр мощности, waterfall-дисплей, усреднение, обнаружение пиков с дельта-маркерами.</p>
-        <button class="lab-run-btn" id="labGo-spectrumAnalyzer">→ Открыть физическую лабораторию</button>
-      </div>
-    </div>
-
-    <!-- WDM Multiplex (link to multiplexing lab) -->
-    <div class="lab-content" id="lab-wdmMultiplex">
-      <div class="card" style="text-align:center;padding:24px">
-        <div style="font-size:2.5rem;margin-bottom:8px">🌈</div>
-        <h3 style="margin:0 0 8px">WDM мультиплексирование</h3>
-        <p style="font-size:.85rem;color:var(--text-secondary);margin:0 0 16px">Wavelength Division Multiplexing: передача нескольких сигналов по одному оптоволокну на разных длинах волн.</p>
-        <button class="lab-run-btn" id="labGo-wdmMultiplex">→ Открыть лабораторию мультиплексирования</button>
-      </div>
-    </div>
-
-    <!-- ARP Discovery -->
-    <div class="lab-content" id="lab-arpDiscovery">
-      <div id="labParams-arpDiscovery"></div>
-      <button class="lab-run-btn" id="labRun-arpDiscovery">▶ Запустить ARP Discovery</button>
-      <div class="lab-result" id="labResult-arpDiscovery"></div>
-    </div>
-
-    <!-- NAT Traversal -->
-    <div class="lab-content" id="lab-natTraversal">
-      <div id="labParams-natTraversal"></div>
-      <button class="lab-run-btn" id="labRun-natTraversal">▶ Запустить NAT трансляцию</button>
-      <div class="lab-result" id="labResult-natTraversal"></div>
-    </div>
-
-    <!-- DHCP Lease -->
-    <div class="lab-content" id="lab-dhcpLease">
-      <div id="labParams-dhcpLease"></div>
-      <button class="lab-run-btn" id="labRun-dhcpLease">▶ Запустить DHCP DORA</button>
-      <div class="lab-result" id="labResult-dhcpLease"></div>
-    </div>
-
   </section>
 
   <!-- ===== PHYSICS LAB ===== -->
@@ -549,40 +329,6 @@
     </div>
   </section>
 
-  <!-- ===== SATELLITE GLOBE ===== -->
-  <section class="section" id="section-sat-globe">
-    <div id="satGlobeUI" style="height:100%;display:flex;flex-direction:column"></div>
-  </section>
-
-  <!-- ===== UNITS REFERENCE ===== -->
-  <section class="section" id="section-units-ref">
-    <div id="unitsRefUI"></div>
-  </section>
-
-  <!-- ===== RADIO LAB ===== -->
-  <section class="section" id="section-radio-lab">
-    <div id="radioLabUI"></div>
-  </section>
-
-  <!-- ===== GUIDED LABS ===== -->
-  <section class="section" id="section-guided-labs">
-    <div id="guidedLabsUI"></div>
-  </section>
-
-  <!-- ===== PROTOCOLS ===== -->
-  <section class="section" id="section-protocols">
-    <div class="proto-header">
-      <h2 class="proto-header__title">Справочник протоколов</h2>
-      <div class="proto-search-wrap">
-        <input type="text" class="proto-search" id="protoSearch" placeholder="Поиск протокола..." autocomplete="off">
-      </div>
-      <div class="proto-filters" id="protoFilters"></div>
-    </div>
-    <div class="proto-count" id="protoCount"></div>
-    <div class="proto-grid" id="protoGrid"></div>
-    <div class="proto-detail" id="protoDetail"></div>
-  </section>
-
   <!-- ===== TERMINAL ===== -->
   <section class="section" id="section-terminal">
     <div class="section-desc">Изучайте сетевые команды в интерактивном терминале. Нажмите кнопку или введите команду вручную</div>
@@ -604,29 +350,9 @@
     </div>
   </section>
 
-  <!-- ===== CAMPAIGN (QUEST) ===== -->
-  <section class="section" id="section-campaign">
-    <div class="section-desc">Пройдите путь от стажёра до сетевого архитектора через серию квестов с рандомизированными заданиями</div>
-
-    <div class="mode-switcher" id="modeSwitcher">
-      <button class="mode-switcher__btn active" data-mode="campaign">🏰 Кампания</button>
-      <button class="mode-switcher__btn" data-mode="free">🔬 Свободный режим</button>
-    </div>
-
-    <div id="campaignContent"></div>
-    <div id="campaignFreeContent" style="display:none">
-      <div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:.88rem">
-        В свободном режиме все лаборатории доступны без ограничений.<br>
-        Используйте меню навигации для доступа к разделам.
-      </div>
-    </div>
-  </section>
-
   <!-- ===== DRAG & DROP ===== -->
   <section class="section" id="section-dnd">
     <div class="section-desc">Перетащите протоколы и устройства на соответствующие уровни OSI</div>
-
-    <div class="dnd-modes" id="dndModes"></div>
 
     <div class="dnd-controls">
       <button class="dnd-btn dnd-btn--primary" id="dndCheck">✓ Проверить</button>
@@ -644,29 +370,17 @@
     <div class="side-menu__header">Навигация</div>
     <button class="side-menu__item active" data-section="home"><span class="side-menu__icon">🏠</span><span>Главная</span></button>
     <div class="side-menu__group">Изучение</div>
-    <button class="side-menu__item" data-section="theory"><span class="side-menu__icon">📚</span><span>Теория</span></button>
     <button class="side-menu__item" data-section="study"><span class="side-menu__icon">📖</span><span>Модель OSI</span></button>
-    <button class="side-menu__item" data-section="protocols"><span class="side-menu__icon">📋</span><span>Протоколы</span></button>
     <button class="side-menu__item" data-section="simulator"><span class="side-menu__icon">📦</span><span>Инкапсуляция</span></button>
     <button class="side-menu__item" data-section="dnd"><span class="side-menu__icon">🧩</span><span>Drag & Drop</span></button>
-    <div class="side-menu__group">Кампания</div>
-    <button class="side-menu__item" data-section="campaign"><span class="side-menu__icon">🏰</span><span>Квесты</span></button>
     <div class="side-menu__group">Лаборатория</div>
-    <button class="side-menu__item" data-section="lab"><span class="side-menu__icon">🔬</span><span>Лаборатории</span><span class="side-menu__badge">34</span></button>
-    <button class="side-menu__subitem" data-lab-nav="physical"><span class="side-menu__icon">⚡</span><span>L1 Физика</span><span class="side-menu__badge">11</span></button>
-    <button class="side-menu__subitem" data-lab-nav="network"><span class="side-menu__icon">🌐</span><span>L2-L3 Сеть</span><span class="side-menu__badge">11</span></button>
-    <button class="side-menu__subitem" data-lab-nav="transport"><span class="side-menu__icon">📦</span><span>L4 Транспорт</span><span class="side-menu__badge">7</span></button>
-    <button class="side-menu__subitem" data-lab-nav="security"><span class="side-menu__icon">🔐</span><span>L5-L7</span><span class="side-menu__badge">3</span></button>
+    <button class="side-menu__item" data-section="lab"><span class="side-menu__icon">🔬</span><span>Эксперименты</span></button>
     <button class="side-menu__item" data-section="siggen"><span class="side-menu__icon">〰️</span><span>Физ. лаборатория</span></button>
-    <button class="side-menu__item" data-section="sat-globe"><span class="side-menu__icon">🌍</span><span>Спутниковые системы</span></button>
-    <button class="side-menu__item" data-section="radio-lab"><span class="side-menu__icon">📡</span><span>Радиолаборатория</span></button>
-    <button class="side-menu__item" data-section="guided-labs"><span class="side-menu__icon">🧪</span><span>Лаб. работы</span></button>
-    <div class="side-menu__group">Справочник</div>
-    <button class="side-menu__item" data-section="units-ref"><span class="side-menu__icon">📐</span><span>Единицы измерений</span></button>
     <div class="side-menu__group">Инструменты</div>
     <button class="side-menu__item" data-section="terminal"><span class="side-menu__icon">💻</span><span>Терминал</span></button>
   </nav>
 
-  <script type="module" src="js/app.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
