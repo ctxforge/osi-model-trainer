@@ -1645,8 +1645,10 @@
 
     function drawSignal(canvas, txAmp, rxAmp, noiseAmp, color) {
       if (chPhyAnimId) cancelAnimationFrame(chPhyAnimId);
+      if (!canvas) return;
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) return;
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       const ctx0 = canvas.getContext('2d');
@@ -1834,40 +1836,38 @@
       `;
 
       const canvas = document.getElementById('chPhyCanvas');
-      const txAmp = 1;
-      const rxAmp = Math.max(Math.pow(10, -totalAtten / 40), 0.01);
-      const noiseAmp = Math.pow(10, -snr / 30) * 0.8;
-      drawSignal(canvas, txAmp, Math.min(rxAmp, 1), Math.min(noiseAmp, 1.2), qualColor);
+      if (canvas) {
+        const txAmp = 1;
+        const rxAmp = Math.max(Math.pow(10, -totalAtten / 40), 0.01);
+        const noiseAmp = Math.pow(10, -snr / 30) * 0.8;
+        drawSignal(canvas, txAmp, Math.min(rxAmp, 1), Math.min(noiseAmp, 1.2), qualColor);
+      }
 
-      container.querySelector('#chPhyMsg').addEventListener('input', (e) => {
-        chState.msg = e.target.value;
+    }
+
+    // Event delegation on container — survives innerHTML rebuilds
+    container.addEventListener('input', (e) => {
+      if (e.target.id === 'chPhyMsg') { chState.msg = e.target.value; render(); }
+      else if (e.target.id === 'chPhyDist') { chState.dist = parseInt(e.target.value); render(); }
+      else if (e.target.dataset?.env && e.target.type !== 'select-one') {
+        const key = e.target.dataset.env;
+        if (e.target.type === 'checkbox') chState.env[key] = e.target.checked;
+        else { chState.env[key] = parseFloat(e.target.value); const v = document.getElementById('chEnvVal-' + key); if (v) v.textContent = e.target.value; }
         render();
-      });
-
-      container.querySelector('#chPhySelect').addEventListener('change', (e) => {
+      }
+    });
+    container.addEventListener('change', (e) => {
+      if (e.target.id === 'chPhySelect') {
         const newCh = CHANNEL_TYPES.find(c => c.id === e.target.value);
         chState.channelId = e.target.value;
         chState.dist = newCh.defaultDist;
         chState.env = {};
         render();
-      });
-
-      container.querySelector('#chPhyDist').addEventListener('input', (e) => {
-        chState.dist = parseInt(e.target.value);
+      } else if (e.target.dataset?.env) {
+        chState.env[e.target.dataset.env] = parseInt(e.target.value);
         render();
-      });
-
-      container.querySelectorAll('[data-env]').forEach(el => {
-        const handler = () => {
-          const key = el.dataset.env;
-          if (el.type === 'checkbox') chState.env[key] = el.checked;
-          else if (el.tagName === 'SELECT') chState.env[key] = parseInt(el.value);
-          else { chState.env[key] = parseFloat(el.value); const valEl = document.getElementById('chEnvVal-' + key); if (valEl) valEl.textContent = el.value; }
-          render();
-        };
-        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', handler);
-      });
-    }
+      }
+    });
 
     const observer = new MutationObserver(() => {
       if (document.getElementById('lab-channelPhysics')?.classList.contains('active') && !container.children.length) render();
