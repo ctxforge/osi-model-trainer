@@ -1726,14 +1726,13 @@
       });
 
       const envPen = calcEnvPenalty(ch, chState.env);
-      const distUnit = ch.medium === 'fiber' ? chState.dist / 1000 : chState.dist / 100;
-      const cableAtten = ch.attenuation * distUnit;
+      const phys = calcChannelPhysics(ch, chState.dist, 'normal');
       const envAtten = envPen.totalDb;
-      const totalAtten = cableAtten + envAtten;
-      const txPower = ch.snrBase + 10;
+      const totalAtten = phys.attenTotal + envAtten;
+      const snr = phys.snr - envAtten;
+      const txPower = ch.medium === 'radio' && ch.txPowerDbm ? ch.txPowerDbm : ch.snrBase + 10;
       const rxPower = txPower - totalAtten;
-      const noiseFloor = -5 + (ch.interference === 'high' ? 5 : ch.interference === 'medium' ? 2 : 0);
-      const snr = rxPower - noiseFloor;
+      const noiseFloor = rxPower - snr;
       const snrLin = Math.pow(10, Math.max(snr, 0) / 10);
       const shannon = ch.bandwidthMHz * Math.log2(1 + snrLin);
       const effSpeed = Math.min(ch.speed, shannon) * envPen.speedFactor * (snr > 0 ? 1 : 0);
