@@ -184,8 +184,8 @@ function render() {
 
   container.innerHTML = `
     <div class="study-section__title">\u2460 Пресеты сигналов</div>
-    <div style="display:flex;gap:4px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;flex-wrap:wrap">
-      ${SG_SIGNAL_PRESETS.map((p, i) => `<button class="lab-tab" data-preset="${i}" style="font-size:.65rem">${p.name}</button>`).join('')}
+    <div style="display:flex;gap:4px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px">
+      ${SG_SIGNAL_PRESETS.map((p, i) => `<button class="lab-tab" data-preset="${i}" style="font-size:.65rem;flex-shrink:0">${p.name}</button>`).join('')}
     </div>
 
     <div class="study-section__title">\u2461 Генератор сигналов</div>
