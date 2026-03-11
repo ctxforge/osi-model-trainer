@@ -2512,8 +2512,24 @@
     let sgComponents = [
       { type: 'sin', freq: 100, amp: 1, phase: 0, dc: 0, carrier: 0, modType: 'none', modDepth: 1 }
     ];
-    const sgFs = 8000;
+    let sgFs = 8000;
     const sgN = 512;
+    const FS_OPTIONS = [
+      { value: 8000, label: '8 кГц (телефония)' },
+      { value: 22050, label: '22 кГц (AM-радио)' },
+      { value: 44100, label: '44.1 кГц (CD-качество)' },
+      { value: 96000, label: '96 кГц (студийное)' },
+      { value: 192000, label: '192 кГц (Hi-Res)' }
+    ];
+
+    function getScaleFactor() {
+      if (sgChannelId === 'none') return null;
+      const ch = CHANNEL_TYPES.find(c => c.id === sgChannelId);
+      if (!ch) return null;
+      const chBwHz = ch.bandwidthMHz * 1e6;
+      const modelBw = sgFs / 2;
+      return { factor: chBwHz / modelBw, chBw: chBwHz, modelBw, ch };
+    }
 
     const PARAM_HELP = {
       type: 'Форма базового сигнала. Синус — основа всех сигналов (теорема Фурье). Прямоугольный содержит нечётные гармоники. Шум — случайный.',
@@ -2523,7 +2539,8 @@
       carrier: 'Несущая частота для модуляции. 0 = без модуляции (baseband). >0 = сигнал модулирует несущую этой частоты. Разные несущие = FDM.',
       modType: 'AM — меняется амплитуда несущей. FM — меняется частота. PM — меняется фаза. На спектре видны боковые полосы.',
       modDepth: 'AM: глубина 0-1 (1 = 100%). FM: девиация частоты (Гц). PM: индекс модуляции (рад). Больше → шире спектр.',
-      noise: 'Аддитивный белый гауссовский шум (AWGN). Присутствует в любом канале — тепловой шум электроники, космическое излучение. Увеличьте, чтобы увидеть шумовую полку на спектре.'
+      noise: 'Аддитивный белый гауссовский шум (AWGN). Присутствует в любом канале — тепловой шум электроники, космическое излучение. Увеличьте, чтобы увидеть шумовую полку на спектре.',
+      fs: 'Частота дискретизации — сколько отсчётов в секунду. Определяет максимальную частоту сигнала (Fs/2 по Найквисту). 8 кГц = телефон, 44.1 кГц = CD, 192 кГц = студия. Больше Fs → выше макс. частота, но больше вычислений.'
     };
 
     const SG_CH_PRESETS = [
@@ -2802,7 +2819,22 @@
       const chResult = applyChannel(txSamples, sgChannelId, sgChDistance);
       const rxSamples = chResult.rx;
 
+      const sf = getScaleFactor();
+
       container.innerHTML = `
+        <div class="sg-param-grid" style="margin-bottom:10px">
+          <div class="sg-param"><label>Частота дискретизации (Fs) <span class="sg-help" data-help="fs">?</span></label>
+            <select id="sgFsSelect">${FS_OPTIONS.map(o => `<option value="${o.value}"${o.value === sgFs ? ' selected' : ''}>${o.label}</option>`).join('')}</select>
+          </div>
+          <div class="sg-param"><label>Макс. частота модели</label><div style="font-size:.85rem;font-weight:700;color:var(--accent);padding:6px 0">${(sgFs/2/1000).toFixed(1)} кГц</div></div>
+        </div>
+        ${sf ? `<div class="card" style="padding:8px 12px;margin-bottom:10px;font-size:.72rem;line-height:1.6;border-left:3px solid var(--l4)">
+          <strong>Масштаб модели → ${sf.ch.icon} ${sf.ch.name}:</strong><br>
+          Полоса канала: ${sf.chBw >= 1e9 ? (sf.chBw/1e9).toFixed(0) + ' ГГц' : sf.chBw >= 1e6 ? (sf.chBw/1e6).toFixed(0) + ' МГц' : (sf.chBw/1e3).toFixed(0) + ' кГц'} | Полоса модели: ${(sf.modelBw/1000).toFixed(1)} кГц<br>
+          <strong>1 Гц модели = ${sf.factor >= 1e6 ? (sf.factor/1e6).toFixed(1) + ' МГц' : sf.factor >= 1e3 ? (sf.factor/1e3).toFixed(1) + ' кГц' : sf.factor.toFixed(1) + ' Гц'} реального канала</strong><br>
+          Пример: сигнал 100 Гц в модели → ${sf.factor * 100 >= 1e9 ? (sf.factor*100/1e9).toFixed(1) + ' ГГц' : sf.factor * 100 >= 1e6 ? (sf.factor*100/1e6).toFixed(1) + ' МГц' : (sf.factor*100/1e3).toFixed(1) + ' кГц'} в реальном канале
+        </div>` : ''}
+
         <div class="study-section__title">① Пресеты сигналов</div>
         <div style="display:flex;gap:4px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none">
           ${SG_SIGNAL_PRESETS.map((p, i) => `<button class="lab-tab" data-preset="${i}" style="font-size:.65rem">${p.name}</button>`).join('')}
@@ -2817,10 +2849,10 @@
             </div>
             <div class="sg-param-grid">
               <div class="sg-param"><label>Форма <span class="sg-help" data-help="type">?</span></label><select data-ci="${i}" data-p="type">${Object.entries(WAVE_TYPES).map(([k, v]) => `<option value="${k}"${k === c.type ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
-              <div class="sg-param"><label>Частота (Гц) <span class="sg-help" data-help="freq">?</span></label><input type="number" data-ci="${i}" data-p="freq" value="${c.freq}" min="1" max="3900" step="10"></div>
+              <div class="sg-param"><label>Частота (Гц) <span class="sg-help" data-help="freq">?</span></label><input type="number" data-ci="${i}" data-p="freq" value="${c.freq}" min="1" max="${sgFs/2 - 100}" step="10"></div>
               <div class="sg-param"><label>Амплитуда <span class="sg-help" data-help="amp">?</span></label><input type="number" data-ci="${i}" data-p="amp" value="${c.amp}" min="0" max="10" step="0.1"></div>
               <div class="sg-param"><label>Фаза (°) <span class="sg-help" data-help="phase">?</span></label><input type="number" data-ci="${i}" data-p="phase" value="${c.phase}" min="0" max="360" step="15"></div>
-              <div class="sg-param"><label>Несущая (Гц) <span class="sg-help" data-help="carrier">?</span></label><input type="number" data-ci="${i}" data-p="carrier" value="${c.carrier || 0}" min="0" max="3900" step="50"></div>
+              <div class="sg-param"><label>Несущая (Гц) <span class="sg-help" data-help="carrier">?</span></label><input type="number" data-ci="${i}" data-p="carrier" value="${c.carrier || 0}" min="0" max="${sgFs/2 - 100}" step="50"></div>
               <div class="sg-param"><label>Модуляция <span class="sg-help" data-help="modType">?</span></label><select data-ci="${i}" data-p="modType"><option value="none"${c.modType === 'none' ? ' selected' : ''}>Нет</option><option value="am"${c.modType === 'am' ? ' selected' : ''}>AM</option><option value="fm"${c.modType === 'fm' ? ' selected' : ''}>FM</option><option value="pm"${c.modType === 'pm' ? ' selected' : ''}>PM</option></select></div>
               ${c.modType !== 'none' ? `<div class="sg-param" style="grid-column:span 2"><label>${c.modType === 'am' ? 'Глубина (0-1)' : c.modType === 'fm' ? 'Девиация (Гц)' : 'Индекс (рад)'} <span class="sg-help" data-help="modDepth">?</span></label><input type="number" data-ci="${i}" data-p="modDepth" value="${c.modDepth}" min="0" max="${c.modType === 'fm' ? 500 : 10}" step="${c.modType === 'fm' ? 10 : 0.1}"></div>` : ''}
             </div>
@@ -2941,6 +2973,7 @@
         });
       });
 
+      document.getElementById('sgFsSelect')?.addEventListener('change', (e) => { sgFs = parseInt(e.target.value); render(); });
       document.getElementById('sgNoiseSlider')?.addEventListener('input', (e) => { sgNoiseLevel = parseFloat(e.target.value); render(); });
       document.getElementById('sgScaleSlider')?.addEventListener('input', (e) => { sgSpectrumScale = parseInt(e.target.value); render(); });
       document.getElementById('sgWindowSel')?.addEventListener('change', (e) => { sgSpectrumWindow = e.target.value; render(); });
