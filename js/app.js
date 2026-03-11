@@ -161,15 +161,14 @@
       info.innerHTML = '<div style="color:var(--l7);font-size:.82rem;font-weight:700">⚠ Канал не выбран. Перейдите на вкладку «Генератор + Канал» и выберите канал связи в блоке ⑤</div>';
     } else {
       const ch = CHANNEL_TYPES.find(c => c.id === sgChannelId);
-      const distUnit = ch.medium === 'fiber' ? sgChDistance / 1000 : sgChDistance / 100;
-      const atten = ch.attenuation * distUnit;
-      const snr = Math.max(ch.snrBase - atten, -5);
-      const q = snr > 30 ? '🟢 Отличное' : snr > 20 ? '🟡 Хорошее' : snr > 10 ? '🟠 Среднее' : snr > 0 ? '🔴 Плохое' : '⚫ Нет связи';
+      const phys = calcChannelPhysics(ch, sgChDistance, 'normal');
+      const q = phys.snr > 30 ? '🟢 Отличное' : phys.snr > 20 ? '🟡 Хорошее' : phys.snr > 10 ? '🟠 Среднее' : phys.snr > 0 ? '🔴 Плохое' : '⚫ Нет связи';
       info.innerHTML = `<div class="study-section__title">Канал из генератора</div>
         <div style="font-size:.78rem;line-height:1.7">
           <strong>${ch.icon} ${ch.name}</strong> — расстояние: ${sgChDistance >= 1000 ? (sgChDistance/1000).toFixed(1)+' км' : sgChDistance+' м'}<br>
-          Затухание: ${atten.toFixed(1)} дБ | SNR: ${snr.toFixed(1)} дБ ${q}<br>
-          Шум генератора: ${sgNoiseLevel > 0 ? sgNoiseLevel.toFixed(2) : 'нет'} | Помехи: ${ch.interference}
+          ${ch.medium === 'radio' ? `FSPL: ${phys.attenTotal.toFixed(1)} дБ (обратный квадрат расстояния)` : `Затухание: ${phys.attenTotal.toFixed(1)} дБ`} | SNR: ${phys.snr.toFixed(1)} дБ ${q}<br>
+          ${ch.freqGHz ? `Несущая: ${ch.freqGHz} ГГц | TX: ${ch.txPowerDbm} дБм | RX антенна: +${ch.rxAntennaGain || 0} дБ<br>` : ''}
+          Помехи: ${ch.interference}
         </div>`;
     }
   }
@@ -1914,10 +1913,30 @@
   }
 
   function calcChannelPhysics(ch, dist, env) {
+    let attenTotal;
+    const envPenalty = env === 'harsh' ? (ch.medium === 'radio' ? 18 : ch.medium === 'fiber' ? 5 : 10) : env === 'ideal' ? 0 : (ch.medium === 'radio' ? 5 : ch.medium === 'fiber' ? 1 : 3);
+
+    if (ch.medium === 'radio' && ch.freqGHz) {
+      const distM = Math.max(dist, 1);
+      const fspl = 20 * Math.log10(distM) + 20 * Math.log10(ch.freqGHz * 1e9) - 147.55;
+      const rxPowerDbm = ch.txPowerDbm - fspl + (ch.rxAntennaGain || 0) - envPenalty;
+      const thermalNoise = -174 + 10 * Math.log10(ch.bandwidthMHz * 1e6) + (ch.noiseFigure || 6);
+      const snrCalc = rxPowerDbm - thermalNoise;
+      const snr = Math.max(snrCalc, -5);
+      const snrLinear = Math.pow(10, snr / 10);
+      attenTotal = fspl + envPenalty;
+      const shannonMbps = ch.bandwidthMHz * Math.log2(1 + Math.max(snrLinear, 0));
+      const effectiveSpeed = Math.min(ch.speed, shannonMbps) * (snr > 0 ? 1 : 0);
+      const propagationDelay = (distM / (ch.propagation * 299792458)) * 1000;
+      const totalDelay = ch.latency + propagationDelay;
+      let ber; if (snr > 30) ber = 1e-12; else if (snr > 20) ber = 1e-9; else if (snr > 15) ber = 1e-6; else if (snr > 10) ber = 1e-4; else if (snr > 5) ber = 1e-2; else ber = 0.5;
+      let quality; if (snr > 30) quality = 'excellent'; else if (snr > 20) quality = 'good'; else if (snr > 10) quality = 'fair'; else if (snr > 3) quality = 'poor'; else quality = 'dead';
+      return { attenTotal, snr, shannonMbps, effectiveSpeed, propagationDelay, totalDelay, ber, quality, overMax: dist > ch.maxDist };
+    }
+
     const distUnit = ch.medium === 'fiber' ? dist / 1000 : dist / 100;
     const cableAtten = ch.attenuation * distUnit;
-    const envPenalty = env === 'harsh' ? (ch.medium === 'radio' ? 18 : ch.medium === 'fiber' ? 5 : 10) : env === 'ideal' ? 0 : (ch.medium === 'radio' ? 5 : ch.medium === 'fiber' ? 1 : 3);
-    const attenTotal = cableAtten + envPenalty;
+    attenTotal = cableAtten + envPenalty;
     const snr = Math.max(ch.snrBase - attenTotal, -5);
     const snrLinear = Math.pow(10, snr / 10);
 
@@ -2535,10 +2554,20 @@
       if (chId === 'none') return { rx: samples.slice(), snr: 999, atten: 0, bw: sgFs / 2 };
       const ch = CHANNEL_TYPES.find(c => c.id === chId);
       if (!ch) return { rx: samples.slice(), snr: 999, atten: 0, bw: sgFs / 2 };
-      const distUnit = ch.medium === 'fiber' ? dist / 1000 : dist / 100;
-      const atten = ch.attenuation * distUnit;
-      const snr = Math.max(ch.snrBase - atten, -5);
-      const gain = Math.pow(10, -atten / 20);
+      let atten, snr;
+      if (ch.medium === 'radio' && ch.freqGHz) {
+        const distM = Math.max(dist, 1);
+        const fspl = 20 * Math.log10(distM) + 20 * Math.log10(ch.freqGHz * 1e9) - 147.55;
+        const rxPower = ch.txPowerDbm - fspl + (ch.rxAntennaGain || 0);
+        const thermalNoise = -174 + 10 * Math.log10(ch.bandwidthMHz * 1e6) + (ch.noiseFigure || 6);
+        snr = Math.max(rxPower - thermalNoise, -5);
+        atten = fspl;
+      } else {
+        const distUnit = ch.medium === 'fiber' ? dist / 1000 : dist / 100;
+        atten = ch.attenuation * distUnit;
+        snr = Math.max(ch.snrBase - atten, -5);
+      }
+      const gain = Math.pow(10, -Math.min(atten, 100) / 20);
       const noiseStd = gain / Math.max(Math.pow(10, snr / 20), 0.01);
       const bw = Math.min(ch.bandwidthMHz * 1e6, sgFs / 2);
       const bwNorm = bw / (sgFs / 2);
@@ -3029,9 +3058,9 @@
     }
 
     const ch = CHANNEL_TYPES.find(c => c.id === sgChannelId);
-    const distUnit = ch.medium === 'fiber' ? sgChDistance / 1000 : sgChDistance / 100;
-    const atten = ch.attenuation * distUnit;
-    const snr = Math.max(Math.round(ch.snrBase - atten), -5);
+    const phys = calcChannelPhysics(ch, sgChDistance, 'normal');
+    const snr = Math.round(phys.snr);
+    const atten = phys.attenTotal;
     const txBytes = chSrcBytes.slice(0, 4096);
     const txBits = [];
     txBytes.forEach(b => { for (let i = 7; i >= 0; i--) txBits.push((b >> i) & 1); });
